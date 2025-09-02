@@ -63,7 +63,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                             onValueChange={(value) => onItemChange(index, 'itemName', value)}
                         />
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
                         <Input 
                             type="number" 
                             value={item.quantity} 
@@ -72,7 +72,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                         />
                     </TableCell>
                     <TableCell>{item.unit}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
                         <Input 
                             type="number" 
                             value={item.uCap} 
@@ -80,7 +80,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                              className="text-right"
                         />
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
                         <Input 
                             type="number" 
                             value={item.lCap} 

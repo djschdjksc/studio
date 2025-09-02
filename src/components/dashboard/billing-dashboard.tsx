@@ -5,30 +5,75 @@ import { NewPartyDialog } from "@/components/dashboard/new-party-dialog";
 import SearchFilters from "@/components/dashboard/search-filters";
 import MainBillingTable from "@/components/dashboard/main-billing-table";
 import TotalsSummary from "@/components/dashboard/totals-summary";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Party, Item, BillingItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 
+const defaultParties: Party[] = [
+  { id: "1", name: "ABC Company", address: "123 Main St, Anytown", phone: "(123) 456-7890" }
+];
+
+const defaultItems: Item[] = [
+  { id: "1", name: "UltraTech Cement", group: "cement", unit: "Bags", alias: "UTC01", price: 350 },
+  { id: "2", name: "TMT Steel Bar 8mm", group: "steel", unit: "Kg", alias: "TMT8", price: 55 },
+  { id: "3", name: "River Sand", group: "aggregates", unit: "Brass", alias: "RS01", price: 2500 },
+  { id: "4", name: "Bricks - Class A", group: "bricks", unit: "Pcs", alias: "BRICKA", price: 8 },
+  { id: "5", name: "TMT Steel Bar 12mm", group: "steel", unit: "Kg", alias: "TMT12", price: 60 },
+  { id: "6", name: "ACC Cement", group: "cement", unit: "Bags", alias: "ACC01", price: 360 },
+  { id: "7", name: "Crushed Stone 20mm", group: "aggregates", unit: "Brass", alias: "CS20", price: 2200 },
+];
+
+const defaultBillingItems: BillingItem[] = [
+  { srNo: 1, itemName: "UltraTech Cement", quantity: 100, unit: "Bags", uCap: 50.00, lCap: 49.85 },
+  { srNo: 2, itemName: "TMT Steel Bar 8mm", quantity: 500, unit: "Kg", uCap: 12.1, lCap: 11.9 },
+  { srNo: 3, itemName: "River Sand", quantity: 2, unit: "Brass", uCap: 1.0, lCap: 0.98 },
+  { srNo: 4, itemName: "Bricks - Class A", quantity: 2000, unit: "Pcs", uCap: 2.5, lCap: 2.4 },
+];
+
+
 export default function BillingDashboard() {
-  const [parties, setParties] = useState<Party[]>([
-    { id: "1", name: "ABC Company", address: "123 Main St, Anytown", phone: "(123) 456-7890" }
-  ]);
-  const [items, setItems] = useState<Item[]>([
-    { id: "1", name: "UltraTech Cement", group: "cement", unit: "Bags", alias: "UTC01", price: 350 },
-    { id: "2", name: "TMT Steel Bar 8mm", group: "steel", unit: "Kg", alias: "TMT8", price: 55 },
-    { id: "3", name: "River Sand", group: "aggregates", unit: "Brass", alias: "RS01", price: 2500 },
-    { id: "4", name: "Bricks - Class A", group: "bricks", unit: "Pcs", alias: "BRICKA", price: 8 },
-    { id: "5", name: "TMT Steel Bar 12mm", group: "steel", unit: "Kg", alias: "TMT12", price: 60 },
-    { id: "6", name: "ACC Cement", group: "cement", unit: "Bags", alias: "ACC01", price: 360 },
-    { id: "7", name: "Crushed Stone 20mm", group: "aggregates", unit: "Brass", alias: "CS20", price: 2200 },
-  ]);
-  const [billingItems, setBillingItems] = useState<BillingItem[]>([
-    { srNo: 1, itemName: "UltraTech Cement", quantity: 100, unit: "Bags", uCap: 50.00, lCap: 49.85 },
-    { srNo: 2, itemName: "TMT Steel Bar 8mm", quantity: 500, unit: "Kg", uCap: 12.1, lCap: 11.9 },
-    { srNo: 3, itemName: "River Sand", quantity: 2, unit: "Brass", uCap: 1.0, lCap: 0.98 },
-    { srNo: 4, itemName: "Bricks - Class A", quantity: 2000, unit: "Pcs", uCap: 2.5, lCap: 2.4 },
-  ]);
+  const [parties, setParties] = useState<Party[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [billingItems, setBillingItems] = useState<BillingItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedParties = localStorage.getItem("parties");
+      const savedItems = localStorage.getItem("items");
+      const savedBillingItems = localStorage.getItem("billingItems");
+
+      setParties(savedParties ? JSON.parse(savedParties) : defaultParties);
+      setItems(savedItems ? JSON.parse(savedItems) : defaultItems);
+      setBillingItems(savedBillingItems ? JSON.parse(savedBillingItems) : defaultBillingItems);
+    } catch (error) {
+      console.error("Failed to parse from local storage", error);
+      setParties(defaultParties);
+      setItems(defaultItems);
+      setBillingItems(defaultBillingItems);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("parties", JSON.stringify(parties));
+    }
+  }, [parties, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("items", JSON.stringify(items));
+    }
+  }, [items, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("billingItems", JSON.stringify(billingItems));
+    }
+  }, [billingItems, isLoaded]);
+
 
   const addParty = (party: Omit<Party, 'id'>) => {
     setParties(prev => [...prev, { ...party, id: String(prev.length + 1) }]);
@@ -53,7 +98,7 @@ export default function BillingDashboard() {
     }
 
     if (field === 'itemName') {
-      const selectedItem = items.find(i => i.name === value);
+      const selectedItem = items.find(i => i.name.toLowerCase() === String(value).toLowerCase());
       if (selectedItem) {
         itemToUpdate.unit = selectedItem.unit;
       }
@@ -63,6 +108,10 @@ export default function BillingDashboard() {
     setBillingItems(updatedItems);
   };
   
+  if (!isLoaded) {
+    return <div>Loading...</div>; // Or a proper skeleton loader
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
