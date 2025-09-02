@@ -8,12 +8,28 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Party } from "@/lib/types";
+import { useState } from "react";
 
 interface SearchFiltersProps {
   parties: Party[];
 }
 
 export default function SearchFilters({ parties }: SearchFiltersProps) {
+  const [selectedParty, setSelectedParty] = useState<Party | undefined>();
+  const [address, setAddress] = useState("");
+
+  const handlePartyChange = (partyName: string) => {
+    const party = parties.find(p => p.name === partyName);
+    if (party) {
+        setSelectedParty(party);
+        setAddress(party.address);
+    } else {
+        setSelectedParty(undefined);
+        setAddress("");
+    }
+  }
+
+
   return (
     <Card>
       <CardHeader>
@@ -23,7 +39,7 @@ export default function SearchFilters({ parties }: SearchFiltersProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 items-end">
           <div className="space-y-2">
             <Label htmlFor="partyName">Party Name</Label>
-            <Select>
+            <Select onValueChange={handlePartyChange} value={selectedParty?.name}>
                 <SelectTrigger id="partyName">
                     <SelectValue placeholder="Select party" />
                 </SelectTrigger>
@@ -34,7 +50,7 @@ export default function SearchFilters({ parties }: SearchFiltersProps) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="address">Address</Label>
-            <Input id="address" placeholder="Enter address..." />
+            <Input id="address" placeholder="Enter address..." value={address} onChange={e => setAddress(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="date">Date</Label>

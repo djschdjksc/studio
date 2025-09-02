@@ -99,10 +99,11 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                         <Input 
                             id={`quantity-${index}`}
                             type="number" 
-                            value={item.quantity} 
+                            value={item.quantity || ''} 
                             onChange={(e) => onItemChange(index, 'quantity', e.target.value)} 
                             onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
                             className="text-right"
+                            placeholder="0"
                         />
                     </TableCell>
                     <TableCell>{item.unit}</TableCell>
@@ -110,20 +111,22 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                         <Input 
                             id={`uCap-${index}`}
                             type="number" 
-                            value={item.uCap} 
+                            value={item.uCap || ''} 
                             onChange={(e) => onItemChange(index, 'uCap', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, index, 'uCap')}
                              className="text-right"
+                             placeholder="0.00"
                         />
                     </TableCell>
                     <TableCell>
                         <Input 
                             id={`lCap-${index}`}
                             type="number" 
-                            value={item.lCap} 
+                            value={item.lCap || ''} 
                             onChange={(e) => onItemChange(index, 'lCap', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, index, 'lCap')}
                              className="text-right"
+                             placeholder="0.00"
                         />
                     </TableCell>
                     <TableCell>

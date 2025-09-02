@@ -11,28 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
 
-const defaultParties: Party[] = [
-  { id: "1", name: "ABC Company", address: "123 Main St, Anytown", phone: "(123) 456-7890" }
-];
-
-const defaultItemGroups: string[] = ["cement", "steel", "aggregates", "bricks"];
-
-const defaultItems: Item[] = [
-  { id: "1", name: "UltraTech Cement", group: "cement", unit: "Bags", alias: "UTC01", price: 350 },
-  { id: "2", name: "TMT Steel Bar 8mm", group: "steel", unit: "Kg", alias: "TMT8", price: 55 },
-  { id: "3", name: "River Sand", group: "aggregates", unit: "Brass", alias: "RS01", price: 2500 },
-  { id: "4", name: "Bricks - Class A", group: "bricks", unit: "Pcs", alias: "BRICKA", price: 8 },
-  { id: "5", name: "TMT Steel Bar 12mm", group: "steel", unit: "Kg", alias: "TMT12", price: 60 },
-  { id: "6", name: "ACC Cement", group: "cement", unit: "Bags", alias: "ACC01", price: 360 },
-  { id: "7", name: "Crushed Stone 20mm", group: "aggregates", unit: "Brass", alias: "CS20", price: 2200 },
-];
-
-const defaultBillingItems: BillingItem[] = [
-  { srNo: 1, itemName: "UltraTech Cement", quantity: 100, unit: "Bags", uCap: 50.00, lCap: 49.85 },
-  { srNo: 2, itemName: "TMT Steel Bar 8mm", quantity: 500, unit: "Kg", uCap: 12.1, lCap: 11.9 },
-  { srNo: 3, itemName: "River Sand", quantity: 2, unit: "Brass", uCap: 1.0, lCap: 0.98 },
-  { srNo: 4, itemName: "Bricks - Class A", quantity: 2000, unit: "Pcs", uCap: 2.5, lCap: 2.4 },
-];
+const defaultParties: Party[] = [];
+const defaultItemGroups: string[] = [];
+const defaultItems: Item[] = [];
+const defaultBillingItems: BillingItem[] = [];
 
 
 export default function BillingDashboard() {
@@ -41,6 +23,7 @@ export default function BillingDashboard() {
   const [itemGroups, setItemGroups] = useState<string[]>([]);
   const [billingItems, setBillingItems] = useState<BillingItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     try {
@@ -115,7 +98,8 @@ export default function BillingDashboard() {
     const itemToUpdate = { ...updatedItems[index] };
     
     if (typeof itemToUpdate[field] === 'number') {
-        (itemToUpdate[field] as number) = Number(value);
+        const numValue = Number(value);
+        (itemToUpdate[field] as number) = isNaN(numValue) ? 0 : numValue;
     } else {
         (itemToUpdate[field] as string) = String(value);
     }
@@ -124,12 +108,18 @@ export default function BillingDashboard() {
       const selectedItem = items.find(i => i.name.toLowerCase() === String(value).toLowerCase());
       if (selectedItem) {
         itemToUpdate.unit = selectedItem.unit;
+      } else {
+        itemToUpdate.unit = "";
       }
     }
 
     updatedItems[index] = itemToUpdate;
     setBillingItems(updatedItems);
   };
+
+  const handleManualPriceChange = (group: string, price: number) => {
+    setManualPrices(prev => ({...prev, [group.toLowerCase()]: price}))
+  }
   
   if (!isLoaded) {
     return <div>Loading...</div>; // Or a proper skeleton loader
@@ -151,8 +141,8 @@ export default function BillingDashboard() {
       </header>
       <main className="flex-1 p-4 md:p-6 space-y-4">
         <SearchFilters parties={parties} />
-        <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div className="lg:col-span-2 xl:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-3">
             <MainBillingTable 
               billingItems={billingItems}
               items={items}
@@ -161,8 +151,13 @@ export default function BillingDashboard() {
               onRemoveRow={removeBillingItem}
             />
           </div>
-          <div className="lg:col-span-1 xl:col-span-1">
-            <TotalsSummary billingItems={billingItems} items={items} />
+          <div className="lg:col-span-2">
+            <TotalsSummary 
+              billingItems={billingItems} 
+              items={items}
+              manualPrices={manualPrices}
+              onManualPriceChange={handleManualPriceChange}
+             />
           </div>
         </div>
       </main>
