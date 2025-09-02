@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BillingItem, Item } from "@/lib/types";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { Input } from "../ui/input";
 
 interface TotalsSummaryProps {
     billingItems: BillingItem[];
@@ -19,6 +20,8 @@ interface SummaryItem {
 }
 
 export default function TotalsSummary({ billingItems, items }: TotalsSummaryProps) {
+    const [manualQtys, setManualQtys] = useState<Record<string, number>>({});
+
     const { summaryItems, grandTotal } = useMemo(() => {
         const summaryMap = new Map<string, { totalQty: number, totalPrice: number, price: number }>();
 
@@ -38,7 +41,7 @@ export default function TotalsSummary({ billingItems, items }: TotalsSummaryProp
                 summaryMap.set(group, {
                     totalQty: billItem.quantity,
                     totalPrice: itemTotal,
-                    price: price, // This is simplistic, might need average price
+                    price: price, 
                 });
             }
         });
@@ -46,7 +49,7 @@ export default function TotalsSummary({ billingItems, items }: TotalsSummaryProp
         const summaryItems: SummaryItem[] = Array.from(summaryMap.entries()).map(([item, data]) => ({
             item: item.charAt(0).toUpperCase() + item.slice(1), // Capitalize
             totalQty: data.totalQty,
-            price: data.totalPrice / data.totalQty, // Average price
+            price: data.totalPrice / data.totalQty || 0, // Average price
             totalPrice: data.totalPrice,
         }));
 
@@ -55,6 +58,20 @@ export default function TotalsSummary({ billingItems, items }: TotalsSummaryProp
         return { summaryItems, grandTotal };
 
     }, [billingItems, items]);
+
+    const handleQtyChange = (item: string, value: string) => {
+        const newQtys = {...manualQtys, [item.toLowerCase()]: Number(value) };
+        setManualQtys(newQtys);
+    }
+
+    const getDisplayQty = (item: SummaryItem) => {
+        const key = item.item.toLowerCase();
+        if(manualQtys[key] !== undefined) {
+            return manualQtys[key];
+        }
+        return item.totalQty;
+    }
+
 
   return (
     <Card className="h-full flex flex-col">
@@ -77,7 +94,14 @@ export default function TotalsSummary({ billingItems, items }: TotalsSummaryProp
               {summaryItems.map((item) => (
                 <TableRow key={item.item}>
                   <TableCell className="font-medium">{item.item}</TableCell>
-                  <TableCell className="text-right">{item.totalQty.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    <Input 
+                        type="number"
+                        value={getDisplayQty(item)}
+                        onChange={(e) => handleQtyChange(item.item, e.target.value)}
+                        className="text-right h-8"
+                    />
+                  </TableCell>
                   <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
                   <TableCell className="text-right font-semibold">₹{item.totalPrice.toFixed(2)}</TableCell>
                 </TableRow>

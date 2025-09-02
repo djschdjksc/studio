@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BillingItem, Item } from "@/lib/types";
 import { ItemAutocomplete } from "./item-autocomplete";
@@ -15,9 +15,10 @@ interface MainBillingTableProps {
   items: Item[];
   onAddRow: () => void;
   onItemChange: (index: number, field: keyof BillingItem, value: string | number) => void;
+  onRemoveRow: (srNo: number) => void;
 }
 
-export default function MainBillingTable({ billingItems, items, onAddRow, onItemChange }: MainBillingTableProps) {
+export default function MainBillingTable({ billingItems, items, onAddRow, onItemChange, onRemoveRow }: MainBillingTableProps) {
   const grandTotal = useMemo(() => {
     return billingItems.reduce((total, billItem) => {
         const item = items.find(i => i.name === billItem.itemName);
@@ -50,6 +51,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                 <TableHead>Unit</TableHead>
                 <TableHead className="text-right">U Cap</TableHead>
                 <TableHead className="text-right">L Cap</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,6 +89,11 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                             onChange={(e) => onItemChange(index, 'lCap', e.target.value)}
                              className="text-right"
                         />
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => onRemoveRow(item.srNo)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </TableCell>
                 </TableRow>
                 ))}

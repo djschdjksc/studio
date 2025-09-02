@@ -18,7 +18,7 @@ import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 interface NewItemDialogProps {
-    onSave: (item: Omit<Item, 'id'>) => void;
+    onSave: (item: Omit<Item, 'id' | 'price'>) => void;
     itemGroups: string[];
 }
 
@@ -27,16 +27,14 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
   const [group, setGroup] = useState("");
   const [unit, setUnit] = useState("");
   const [alias, setAlias] = useState("");
-  const [price, setPrice] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSave = () => {
-    onSave({ name, group, unit, alias, price });
+    onSave({ name, group, unit, alias });
     setName("");
     setGroup("");
     setUnit("");
     setAlias("");
-    setPrice(0);
     setIsOpen(false);
   }
 
@@ -82,12 +80,6 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
               Unit
             </Label>
             <Input id="unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g., Bags, Kg, Pcs" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="price" className="text-right">
-              Price
-            </Label>
-            <Input id="price" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} placeholder="e.g., 350" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="alias" className="text-right">

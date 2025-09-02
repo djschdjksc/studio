@@ -92,8 +92,8 @@ export default function BillingDashboard() {
     setParties(prev => [...prev, { ...party, id: String(prev.length + 1) }]);
   };
 
-  const addItem = (item: Omit<Item, 'id'>) => {
-    setItems(prev => [...prev, { ...item, id: String(prev.length + 1) }]);
+  const addItem = (item: Omit<Item, 'id' | 'price'>) => {
+    setItems(prev => [...prev, { ...item, id: String(prev.length + 1), price: 0 }]);
   };
   
   const addItemGroup = (groupName: string) => {
@@ -104,6 +104,10 @@ export default function BillingDashboard() {
 
   const addBillingItem = () => {
     setBillingItems(prev => [...prev, { srNo: prev.length + 1, itemName: "", quantity: 0, unit: "", uCap: 0, lCap: 0 }]);
+  }
+  
+  const removeBillingItem = (srNo: number) => {
+    setBillingItems(prev => prev.filter(item => item.srNo !== srNo).map((item, index) => ({...item, srNo: index + 1})));
   }
 
   const handleBillingItemChange = (index: number, field: keyof BillingItem, value: string | number) => {
@@ -154,6 +158,7 @@ export default function BillingDashboard() {
               items={items}
               onAddRow={addBillingItem}
               onItemChange={handleBillingItemChange}
+              onRemoveRow={removeBillingItem}
             />
           </div>
           <div className="lg:col-span-1 xl:col-span-1">
