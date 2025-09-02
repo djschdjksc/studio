@@ -6,18 +6,26 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { BillingItem, Item } from "@/lib/types";
+import { ItemAutocomplete } from "./item-autocomplete";
+import { useMemo } from "react";
 
-const billingItems = [
-  { srNo: 1, itemName: "UltraTech Cement", quantity: 100, unit: "Bags", uCap: 50.00, lCap: 49.85 },
-  { srNo: 2, itemName: "TMT Steel Bar 8mm", quantity: 500, unit: "Kg", uCap: 12.1, lCap: 11.9 },
-  { srNo: 3, itemName: "River Sand", quantity: 2, unit: "Brass", uCap: 1.0, lCap: 0.98 },
-  { srNo: 4, itemName: "Bricks - Class A", quantity: 2000, unit: "Pcs", uCap: 2.5, lCap: 2.4 },
-  { srNo: 5, itemName: "TMT Steel Bar 12mm", quantity: 350, unit: "Kg", uCap: 12.1, lCap: 11.9 },
-  { srNo: 6, itemName: "ACC Cement", quantity: 150, unit: "Bags", uCap: 50.00, lCap: 49.85 },
-  { srNo: 7, itemName: "Crushed Stone 20mm", quantity: 1.5, unit: "Brass", uCap: 1.0, lCap: 0.97 },
-];
+interface MainBillingTableProps {
+  billingItems: BillingItem[];
+  items: Item[];
+  onAddRow: () => void;
+  onItemChange: (index: number, field: keyof BillingItem, value: string | number) => void;
+}
 
-export default function MainBillingTable() {
+export default function MainBillingTable({ billingItems, items, onAddRow, onItemChange }: MainBillingTableProps) {
+  const grandTotal = useMemo(() => {
+    return billingItems.reduce((total, billItem) => {
+        const item = items.find(i => i.name === billItem.itemName);
+        const price = item?.price || 0;
+        return total + (billItem.quantity * price);
+    }, 0);
+  }, [billingItems, items]);
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -26,7 +34,7 @@ export default function MainBillingTable() {
                 <CardTitle>Billing Details</CardTitle>
                 <CardDescription>All items for the current bill.</CardDescription>
             </div>
-            <Button variant="outline" className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button variant="outline" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={onAddRow}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Row
             </Button>
         </div>
@@ -45,19 +53,41 @@ export default function MainBillingTable() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {billingItems.map((item) => (
+                {billingItems.map((item, index) => (
                 <TableRow key={item.srNo}>
                     <TableCell>{item.srNo}</TableCell>
                     <TableCell className="font-medium">
-                        <div className="relative flex items-center">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input defaultValue={item.itemName} className="pl-9" />
-                        </div>
+                        <ItemAutocomplete 
+                            items={items} 
+                            value={item.itemName}
+                            onValueChange={(value) => onItemChange(index, 'itemName', value)}
+                        />
                     </TableCell>
-                    <TableCell className="text-right">{item.quantity.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                        <Input 
+                            type="number" 
+                            value={item.quantity} 
+                            onChange={(e) => onItemChange(index, 'quantity', e.target.value)} 
+                            className="text-right"
+                        />
+                    </TableCell>
                     <TableCell>{item.unit}</TableCell>
-                    <TableCell className="text-right">{item.uCap.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{item.lCap.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                        <Input 
+                            type="number" 
+                            value={item.uCap} 
+                            onChange={(e) => onItemChange(index, 'uCap', e.target.value)}
+                             className="text-right"
+                        />
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <Input 
+                            type="number" 
+                            value={item.lCap} 
+                            onChange={(e) => onItemChange(index, 'lCap', e.target.value)}
+                             className="text-right"
+                        />
+                    </TableCell>
                 </TableRow>
                 ))}
             </TableBody>
@@ -67,7 +97,7 @@ export default function MainBillingTable() {
       <CardFooter className="flex justify-end p-4 border-t bg-card">
         <div className="flex items-center gap-4 text-lg font-bold">
             <span>Grand Total:</span>
-            <span className="text-primary">₹ 1,23,456.78</span>
+            <span className="text-primary">₹ {grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       </CardFooter>
     </Card>

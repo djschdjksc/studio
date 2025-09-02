@@ -7,8 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
+import { Party } from "@/lib/types";
 
-export default function SearchFilters() {
+interface SearchFiltersProps {
+  parties: Party[];
+}
+
+export default function SearchFilters({ parties }: SearchFiltersProps) {
   return (
     <Card>
       <CardHeader>
@@ -18,7 +23,14 @@ export default function SearchFilters() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 items-end">
           <div className="space-y-2">
             <Label htmlFor="partyName">Party Name</Label>
-            <Input id="partyName" placeholder="Enter party name..." />
+            <Select>
+                <SelectTrigger id="partyName">
+                    <SelectValue placeholder="Select party" />
+                </SelectTrigger>
+                <SelectContent>
+                    {parties.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="address">Address</Label>

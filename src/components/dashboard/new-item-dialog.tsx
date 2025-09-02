@@ -13,11 +13,34 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Item } from "@/lib/types";
 import { PlusCircle } from "lucide-react";
+import { useState } from "react";
 
-export function NewItemDialog() {
+interface NewItemDialogProps {
+    onSave: (item: Omit<Item, 'id'>) => void;
+}
+
+export function NewItemDialog({ onSave }: NewItemDialogProps) {
+  const [name, setName] = useState("");
+  const [group, setGroup] = useState("");
+  const [unit, setUnit] = useState("");
+  const [alias, setAlias] = useState("");
+  const [price, setPrice] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSave = () => {
+    onSave({ name, group, unit, alias, price });
+    setName("");
+    setGroup("");
+    setUnit("");
+    setAlias("");
+    setPrice(0);
+    setIsOpen(false);
+  }
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -36,13 +59,13 @@ export function NewItemDialog() {
             <Label htmlFor="itemName" className="text-right">
               Item Name
             </Label>
-            <Input id="itemName" placeholder="e.g., UltraTech Cement" className="col-span-3" />
+            <Input id="itemName" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., UltraTech Cement" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="itemGroup" className="text-right">
               Item Group
             </Label>
-            <Select>
+            <Select onValueChange={setGroup} value={group}>
               <SelectTrigger id="itemGroup" className="col-span-3">
                 <SelectValue placeholder="Select a group" />
               </SelectTrigger>
@@ -58,17 +81,23 @@ export function NewItemDialog() {
             <Label htmlFor="unit" className="text-right">
               Unit
             </Label>
-            <Input id="unit" placeholder="e.g., Bags, Kg, Pcs" className="col-span-3" />
+            <Input id="unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g., Bags, Kg, Pcs" className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="price" className="text-right">
+              Price
+            </Label>
+            <Input id="price" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} placeholder="e.g., 350" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="alias" className="text-right">
               Alias Code
             </Label>
-            <Input id="alias" placeholder="e.g., UTC01" className="col-span-3" />
+            <Input id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g., UTC01" className="col-span-3" />
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground">Save Item</Button>
+          <Button onClick={handleSave} className="bg-accent hover:bg-accent/90 text-accent-foreground">Save Item</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

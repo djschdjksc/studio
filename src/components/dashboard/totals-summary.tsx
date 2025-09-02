@@ -3,15 +3,59 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BillingItem, Item } from "@/lib/types";
+import { useMemo } from "react";
 
-const summaryItems = [
-    { item: "Cement", totalQty: 250, price: 350.00, totalPrice: 87500.00 },
-    { item: "TMT Steel", totalQty: 850, price: 55.00, totalPrice: 46750.00 },
-    { item: "Aggregates", totalQty: 3.5, price: 2500.00, totalPrice: 8750.00 },
-    { item: "Bricks", totalQty: 2000, price: 8.00, totalPrice: 16000.00 },
-];
+interface TotalsSummaryProps {
+    billingItems: BillingItem[];
+    items: Item[];
+}
 
-export default function TotalsSummary() {
+interface SummaryItem {
+    item: string;
+    totalQty: number;
+    price: number;
+    totalPrice: number;
+}
+
+export default function TotalsSummary({ billingItems, items }: TotalsSummaryProps) {
+    const { summaryItems, grandTotal } = useMemo(() => {
+        const summaryMap = new Map<string, { totalQty: number, totalPrice: number, price: number }>();
+
+        billingItems.forEach(billItem => {
+            const itemInfo = items.find(i => i.name === billItem.itemName);
+            if (!itemInfo) return;
+
+            const group = itemInfo.group || 'Other';
+            const price = itemInfo.price || 0;
+            const itemTotal = billItem.quantity * price;
+
+            if (summaryMap.has(group)) {
+                const current = summaryMap.get(group)!;
+                current.totalQty += billItem.quantity;
+                current.totalPrice += itemTotal;
+            } else {
+                summaryMap.set(group, {
+                    totalQty: billItem.quantity,
+                    totalPrice: itemTotal,
+                    price: price, // This is simplistic, might need average price
+                });
+            }
+        });
+        
+        const summaryItems: SummaryItem[] = Array.from(summaryMap.entries()).map(([item, data]) => ({
+            item: item.charAt(0).toUpperCase() + item.slice(1), // Capitalize
+            totalQty: data.totalQty,
+            price: data.totalPrice / data.totalQty, // Average price
+            totalPrice: data.totalPrice,
+        }));
+
+        const grandTotal = summaryItems.reduce((acc, item) => acc + item.totalPrice, 0);
+
+        return { summaryItems, grandTotal };
+
+    }, [billingItems, items]);
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -23,9 +67,9 @@ export default function TotalsSummary() {
           <Table>
             <TableHeader className="sticky top-0 bg-card">
               <TableRow>
-                <TableHead>Item</TableHead>
+                <TableHead>Item Group</TableHead>
                 <TableHead className="text-right">Total Qty</TableHead>
-                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Avg. Price</TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -45,7 +89,7 @@ export default function TotalsSummary() {
       <CardFooter className="flex justify-end p-4 border-t bg-card">
         <div className="flex items-center gap-4 text-lg font-bold">
             <span>Grand Total:</span>
-            <span className="text-primary">₹ 1,59,000.00</span>
+            <span className="text-primary">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       </CardFooter>
     </Card>
