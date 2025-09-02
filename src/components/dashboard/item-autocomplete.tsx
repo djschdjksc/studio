@@ -25,7 +25,7 @@ interface ItemAutocompleteProps {
     items: Item[];
     value: string;
     onValueChange: (value: string) => void;
-    onKeyDown?: (e: React.KeyboardEvent<HTMLButtonElement>) => void;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLButtonElement | HTMLInputElement>) => void;
 }
 
 export function ItemAutocomplete({ id, items, value, onValueChange, onKeyDown }: ItemAutocompleteProps) {
@@ -33,10 +33,33 @@ export function ItemAutocomplete({ id, items, value, onValueChange, onKeyDown }:
 
   const getDisplayText = (val: string) => {
     const item = items.find((item) => item.name.toLowerCase() === val.toLowerCase());
-    if (item) {
-        return item.alias ? `${item.name} (${item.alias})` : item.name;
+    return item ? item.name : "";
+  }
+  
+  const handleSelect = (currentValue: string) => {
+    const selectedItem = items.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
+    onValueChange(selectedItem ? selectedItem.name : "")
+    setOpen(false)
+    
+    // Manually trigger focus on the next element if onKeyDown is provided
+    const fakeEvent = {
+        key: 'Enter',
+        preventDefault: () => {},
+        currentTarget: document.getElementById(id || ''),
+    } as React.KeyboardEvent<HTMLInputElement>;
+    
+    if (onKeyDown && document.activeElement) {
+        // We need to find the button and simulate the event on it.
+        const triggerButton = document.getElementById(id || '');
+        if (triggerButton) {
+            const buttonEvent = {
+                key: 'Enter',
+                preventDefault: () => {},
+                currentTarget: triggerButton,
+            } as unknown as React.KeyboardEvent<HTMLButtonElement>;
+            onKeyDown(buttonEvent);
+        }
     }
-    return "";
   }
 
   return (
@@ -61,12 +84,12 @@ export function ItemAutocomplete({ id, items, value, onValueChange, onKeyDown }:
             const item = items.find(i => i.name.toLowerCase() === value.toLowerCase());
             if (item) {
                 const nameMatch = item.name.toLowerCase().includes(search.toLowerCase());
-                const aliasMatch = item.alias.toLowerCase().includes(search.toLowerCase());
+                const aliasMatch = item.alias && item.alias.toLowerCase().includes(search.toLowerCase());
                 if (nameMatch || aliasMatch) return 1;
             }
             return 0;
         }}>
-          <CommandInput placeholder="Search item or alias..." />
+          <CommandInput placeholder="Search item or alias..." onKeyDown={onKeyDown} />
           <CommandList>
             <CommandEmpty>No item found.</CommandEmpty>
             <CommandGroup>
@@ -74,11 +97,7 @@ export function ItemAutocomplete({ id, items, value, onValueChange, onKeyDown }:
                 <CommandItem
                   key={item.id}
                   value={item.name}
-                  onSelect={(currentValue) => {
-                    const selectedItem = items.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
-                    onValueChange(selectedItem ? selectedItem.name : "")
-                    setOpen(false)
-                  }}
+                  onSelect={handleSelect}
                 >
                   <Check
                     className={cn(
