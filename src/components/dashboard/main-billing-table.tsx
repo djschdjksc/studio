@@ -31,14 +31,17 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
       } else if (field === 'uCap') {
         nextField = document.getElementById(`lCap-${rowIndex}`);
       } else if (field === 'lCap') {
-        if(rowIndex < billingItems.length - 1) {
-            nextField = document.getElementById(`itemName-input-${rowIndex + 1}`);
+        if (rowIndex < billingItems.length - 1) {
+          nextField = document.getElementById(`itemName-input-${rowIndex + 1}`);
         } else {
-            onAddRow();
-            setTimeout(() => {
-                const nextInput = document.getElementById(`itemName-input-${rowIndex + 1}`);
-                nextInput?.focus();
-            }, 0);
+          onAddRow();
+          // Use setTimeout to allow React to re-render and the new element to be available
+          setTimeout(() => {
+            const nextInput = document.getElementById(`itemName-input-${rowIndex + 1}`);
+            if (nextInput) {
+              nextInput.focus();
+            }
+          }, 0);
         }
       }
 
