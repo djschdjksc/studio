@@ -24,49 +24,66 @@ interface SummaryItem {
 export default function TotalsSummary({ billingItems, items, manualPrices, onManualPriceChange }: TotalsSummaryProps) {
 
     const { summaryItems, grandTotal } = useMemo(() => {
-        const summaryMap = new Map<string, { totalQty: number, totalPrice: number, price: number }>();
+        const summaryMap = new Map<string, { totalQty: number, totalPrice: number }>();
 
+        // Calculate totals for regular item groups
         billingItems.forEach(billItem => {
-            const itemInfo = items.find(i => i.name === billItem.itemName);
-            if (!itemInfo || !billItem.quantity) return;
+            const itemInfo = items.find(i => i.name.toLowerCase() === billItem.itemName.toLowerCase());
+            if (!itemInfo || !billItem.quantity || !itemInfo.group) return;
 
-            const group = itemInfo.group || 'Other';
+            const group = itemInfo.group;
             
-            const manualPrice = manualPrices[group.toLowerCase()];
-            const effectivePrice = manualPrice !== undefined ? manualPrice : (itemInfo.price || 0);
-
-            const itemTotal = billItem.quantity * effectivePrice;
-
             if (summaryMap.has(group)) {
-                const current = summaryMap.get(group)!;
-                current.totalQty += billItem.quantity;
-                current.totalPrice += billItem.quantity * effectivePrice; // Recalculate based on potentially mixed prices
+                summaryMap.get(group)!.totalQty += billItem.quantity;
             } else {
                 summaryMap.set(group, {
                     totalQty: billItem.quantity,
-                    totalPrice: itemTotal,
-                    price: 0, // Will be calculated as an average later
+                    totalPrice: 0,
                 });
             }
         });
-        
-        const summaryItems: SummaryItem[] = Array.from(summaryMap.entries()).map(([item, data]) => {
+
+        // Calculate totals for U Cap and L Cap
+        const uCapTotal = billingItems.reduce((sum, item) => sum + (item.uCap || 0), 0);
+        const lCapTotal = billingItems.reduce((sum, item) => sum + (item.lCap || 0), 0);
+
+        const allSummaryItems: SummaryItem[] = Array.from(summaryMap.entries()).map(([item, data]) => {
             const groupKey = item.toLowerCase();
             const manualPrice = manualPrices[groupKey];
-            const avgPrice = data.totalQty > 0 ? data.totalPrice / data.totalQty : 0;
-            const displayPrice = manualPrice !== undefined ? manualPrice : avgPrice;
-
+            const price = manualPrice !== undefined ? manualPrice : 0;
             return {
-                item: item.charAt(0).toUpperCase() + item.slice(1), // Capitalize
+                item: item.charAt(0).toUpperCase() + item.slice(1),
                 totalQty: data.totalQty,
-                price: displayPrice,
-                totalPrice: data.totalQty * displayPrice,
-            }
+                price: price,
+                totalPrice: data.totalQty * price,
+            };
         });
 
-        const grandTotal = summaryItems.reduce((acc, item) => acc + item.totalPrice, 0);
+        // Add U Cap summary item
+        const uCapPrice = manualPrices['u cap'] !== undefined ? manualPrices['u cap'] : 0;
+        if(uCapTotal > 0 || manualPrices['u cap'] !== undefined) {
+            allSummaryItems.push({
+                item: "U Cap",
+                totalQty: uCapTotal,
+                price: uCapPrice,
+                totalPrice: uCapTotal * uCapPrice
+            });
+        }
+        
+        // Add L Cap summary item
+        const lCapPrice = manualPrices['l cap'] !== undefined ? manualPrices['l cap'] : 0;
+        if(lCapTotal > 0 || manualPrices['l cap'] !== undefined) {
+            allSummaryItems.push({
+                item: "L Cap",
+                totalQty: lCapTotal,
+                price: lCapPrice,
+                totalPrice: lCapTotal * lCapPrice
+            });
+        }
 
-        return { summaryItems, grandTotal };
+        const grandTotal = allSummaryItems.reduce((acc, item) => acc + item.totalPrice, 0);
+
+        return { summaryItems: allSummaryItems, grandTotal };
 
     }, [billingItems, items, manualPrices]);
 
@@ -74,7 +91,7 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
     const handlePriceChange = (item: string, value: string) => {
         const price = Number(value);
         if (!isNaN(price)) {
-            onManualPriceChange(item, price);
+            onManualPriceChange(item.toLowerCase(), price);
         }
     }
 
@@ -91,7 +108,7 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
               <TableRow>
                 <TableHead>Item Group</TableHead>
                 <TableHead className="text-right">Total Qty</TableHead>
-                <TableHead className="text-right">Avg. Price</TableHead>
+                <TableHead className="text-right">Price</TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>

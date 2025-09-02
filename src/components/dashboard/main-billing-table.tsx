@@ -140,12 +140,6 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
             </Table>
         </ScrollArea>
       </CardContent>
-      <CardFooter className="flex justify-end p-4 border-t bg-card">
-        <div className="flex items-center gap-4 text-lg font-bold">
-            <span>Grand Total:</span>
-            <span className="text-primary">₹ {grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-      </CardFooter>
     </Card>
   );
 }
