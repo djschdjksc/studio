@@ -1,3 +1,4 @@
+
 "use client";
 
 import { NewItemDialog } from "@/components/dashboard/new-item-dialog";
@@ -5,7 +6,7 @@ import { NewPartyDialog } from "@/components/dashboard/new-party-dialog";
 import SearchFilters from "@/components/dashboard/search-filters";
 import MainBillingTable from "@/components/dashboard/main-billing-table";
 import TotalsSummary from "@/components/dashboard/totals-summary";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Party, Item, BillingItem, SearchFiltersState } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Download, Save } from "lucide-react";
@@ -18,6 +19,15 @@ const defaultItemGroups: string[] = [];
 const defaultItems: Item[] = [];
 const defaultBillingItems: BillingItem[] = [];
 
+const initialFilters: Omit<SearchFiltersState, 'date'> = {
+    partyName: "",
+    address: "",
+    slipNo: "",
+    vehicleNo: "",
+    vehicleType: "",
+    billType: "sale",
+};
+
 
 export default function BillingDashboard() {
   const [parties, setParties] = useState<Party[]>([]);
@@ -27,13 +37,8 @@ export default function BillingDashboard() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
   const [searchFilters, setSearchFilters] = useState<SearchFiltersState>({
-    partyName: "",
-    address: "",
+    ...initialFilters,
     date: new Date(),
-    slipNo: "",
-    vehicleNo: "",
-    vehicleType: "",
-    billType: "sale",
   });
   const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
   const [savedBills, setSavedBills] = useState<Record<string, {
@@ -53,7 +58,13 @@ export default function BillingDashboard() {
       setParties(savedParties ? JSON.parse(savedParties) : defaultParties);
       setItems(savedItems ? JSON.parse(savedItems) : defaultItems);
       setItemGroups(savedItemGroups ? JSON.parse(savedItemGroups) : defaultItemGroups);
-      setSavedBills(loadedSavedBills ? JSON.parse(loadedSavedBills) : {});
+      
+      const parsedSavedBills = loadedSavedBills ? JSON.parse(loadedSavedBills) : {};
+      setSavedBills(parsedSavedBills);
+
+      const slipNumbers = Object.keys(parsedSavedBills).map(Number).filter(n => !isNaN(n));
+      const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
+      setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
       
     } catch (error) {
       console.error("Failed to parse from local storage", error);
@@ -88,6 +99,16 @@ export default function BillingDashboard() {
         localStorage.setItem("savedBills", JSON.stringify(savedBills));
     }
   }, [savedBills, isLoaded]);
+
+  const clearForm = useCallback((nextSlipNo: string) => {
+    setBillingItems([]);
+    setManualPrices({});
+    setSearchFilters(prev => ({
+        ...initialFilters,
+        date: prev.date, // Keep the same date
+        slipNo: nextSlipNo,
+    }));
+  }, []);
 
 
   const addParty = (party: Omit<Party, 'id'>) => {
@@ -156,15 +177,22 @@ export default function BillingDashboard() {
       manualPrices
     };
 
-    setSavedBills(prev => ({
-      ...prev,
-      [searchFilters.slipNo]: billData
-    }));
+    const newSavedBills = {
+        ...savedBills,
+        [searchFilters.slipNo]: billData
+    };
+    
+    setSavedBills(newSavedBills);
 
     toast({
         title: "Bill Saved!",
         description: `Bill with Slip No. ${searchFilters.slipNo} has been saved successfully.`,
-    })
+    });
+
+    const currentSlipNo = Number(searchFilters.slipNo);
+    const nextSlipNo = isNaN(currentSlipNo) ? "" : String(currentSlipNo + 1);
+
+    clearForm(nextSlipNo);
   }
 
   const handleLoadBill = () => {
