@@ -100,7 +100,7 @@ export function BillPreviewDialog({
     if (!billRef.current) return;
 
     htmlToImage
-      .toPng(billRef.current, { cacheBust: true, pixelRatio: 2 })
+      .toPng(billRef.current, { cacheBust: true, pixelRatio: 2, skipFonts: true })
       .then((dataUrl) => {
         const link = document.createElement("a");
         link.download = `bill-${filters.partyName.replace(/\s/g, '_')}-${format(new Date(), 'yyyy-MM-dd')}.png`;
@@ -132,7 +132,7 @@ export function BillPreviewDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
-        <DialogHeader className="sr-only">
+        <DialogHeader>
           <DialogTitle>Bill Preview</DialogTitle>
           <DialogDescription>A preview of the generated bill for printing or sharing.</DialogDescription>
         </DialogHeader>
