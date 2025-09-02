@@ -55,9 +55,14 @@ export default function SearchFilters({ parties }: SearchFiltersProps) {
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="truck">Truck</SelectItem>
-                <SelectItem value="tractor">Tractor</SelectItem>
-                <SelectItem value="dumper">Dumper</SelectItem>
+                <SelectItem value="self">SELF</SelectItem>
+                <SelectItem value="truck">TRUCK</SelectItem>
+                <SelectItem value="rikshaw">RIKSHAW</SelectItem>
+                <SelectItem value="e-rikshaw">E-RIKSHAW</SelectItem>
+                <SelectItem value="by canter">BY CANTER</SelectItem>
+                <SelectItem value="by jeep">BY JEEP</SelectItem>
+                <SelectItem value="by auto">BY AUTO</SelectItem>
+                <SelectItem value="by tempo">BY TEMPO</SelectItem>
               </SelectContent>
             </Select>
           </div>

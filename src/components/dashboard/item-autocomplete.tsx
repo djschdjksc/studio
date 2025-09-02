@@ -31,6 +31,14 @@ interface ItemAutocompleteProps {
 export function ItemAutocomplete({ id, items, value, onValueChange, onKeyDown }: ItemAutocompleteProps) {
   const [open, setOpen] = React.useState(false)
 
+  const getDisplayText = (val: string) => {
+    const item = items.find((item) => item.name.toLowerCase() === val.toLowerCase());
+    if (item) {
+        return item.alias ? `${item.name} (${item.alias})` : item.name;
+    }
+    return "";
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -43,14 +51,22 @@ export function ItemAutocomplete({ id, items, value, onValueChange, onKeyDown }:
           onKeyDown={onKeyDown}
         >
           {value
-            ? items.find((item) => item.name.toLowerCase() === value.toLowerCase())?.name
+            ? getDisplayText(value)
             : "Select item..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
-        <Command>
-          <CommandInput placeholder="Search item..." />
+        <Command filter={(value, search) => {
+            const item = items.find(i => i.name.toLowerCase() === value.toLowerCase());
+            if (item) {
+                const nameMatch = item.name.toLowerCase().includes(search.toLowerCase());
+                const aliasMatch = item.alias.toLowerCase().includes(search.toLowerCase());
+                if (nameMatch || aliasMatch) return 1;
+            }
+            return 0;
+        }}>
+          <CommandInput placeholder="Search item or alias..." />
           <CommandList>
             <CommandEmpty>No item found.</CommandEmpty>
             <CommandGroup>
@@ -70,7 +86,7 @@ export function ItemAutocomplete({ id, items, value, onValueChange, onKeyDown }:
                       value.toLowerCase() === item.name.toLowerCase() ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {item.name}
+                  {item.alias ? `${item.name} (${item.alias})` : item.name}
                 </CommandItem>
               ))}
             </CommandGroup>
