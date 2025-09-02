@@ -20,34 +20,55 @@ interface MainBillingTableProps {
 
 export default function MainBillingTable({ billingItems, items, onAddRow, onItemChange, onRemoveRow }: MainBillingTableProps) {
   
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLButtonElement>, rowIndex: number, field: string) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      let nextField: HTMLElement | null = null;
-      if (field === 'itemName') {
-        nextField = document.getElementById(`quantity-${rowIndex}`);
-      } else if (field === 'quantity') {
-        nextField = document.getElementById(`uCap-${rowIndex}`);
-      } else if (field === 'uCap') {
-        nextField = document.getElementById(`lCap-${rowIndex}`);
-      } else if (field === 'lCap') {
-        if (rowIndex < billingItems.length - 1) {
-          nextField = document.getElementById(`itemName-input-${rowIndex + 1}`);
-        } else {
-          onAddRow();
-          // Use setTimeout to allow React to re-render and the new element to be available
-          setTimeout(() => {
-            const nextInput = document.getElementById(`itemName-input-${rowIndex + 1}`);
-            if (nextInput) {
-              nextInput.focus();
-            }
-          }, 0);
-        }
-      }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLButtonElement>, rowIndex: number, fieldName: keyof BillingItem | 'itemName-input') => {
+    const fieldIdMap: (keyof BillingItem | 'itemName-input')[] = ['itemName-input', 'quantity', 'uCap', 'lCap'];
+    const currentFieldIndex = fieldIdMap.indexOf(fieldName);
+    
+    let nextRowIndex = rowIndex;
+    let nextFieldIndex = currentFieldIndex;
 
-      if (nextField) {
-        nextField.focus();
-      }
+    const focusCell = (row: number, field: keyof BillingItem | 'itemName-input') => {
+        const fieldId = `${field}-${row}`;
+        const nextField = document.getElementById(fieldId);
+        if (nextField) {
+            nextField.focus();
+            (nextField as HTMLInputElement).select?.();
+        }
+    }
+
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (currentFieldIndex === fieldIdMap.length - 1) { // Last field in the row
+            if (rowIndex === billingItems.length - 1) { // Last row
+                onAddRow();
+                // Use setTimeout to allow React to re-render
+                setTimeout(() => focusCell(rowIndex + 1, 'itemName-input'), 0);
+            } else {
+                focusCell(rowIndex + 1, 'itemName-input');
+            }
+        } else {
+            focusCell(rowIndex, fieldIdMap[currentFieldIndex + 1]);
+        }
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (rowIndex > 0) {
+            focusCell(rowIndex - 1, fieldName);
+        }
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (rowIndex < billingItems.length - 1) {
+            focusCell(rowIndex + 1, fieldName);
+        }
+    } else if (e.key === 'ArrowLeft') {
+       if (currentFieldIndex > 0) {
+            e.preventDefault();
+            focusCell(rowIndex, fieldIdMap[currentFieldIndex - 1]);
+       }
+    } else if (e.key === 'ArrowRight') {
+        if (currentFieldIndex < fieldIdMap.length - 1) {
+            e.preventDefault();
+            focusCell(rowIndex, fieldIdMap[currentFieldIndex + 1]);
+        }
     }
   };
 
@@ -85,11 +106,11 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                     <TableCell>{item.srNo}</TableCell>
                     <TableCell className="font-medium">
                         <ItemSearchInput
-                            id={`itemName-${index}`}
+                            id={`itemName-input-${index}`}
                             items={items} 
                             value={item.itemName}
                             onValueChange={(value) => onItemChange(index, 'itemName', value)}
-                            onKeyDown={(e) => handleKeyDown(e, index, 'itemName')}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'itemName-input')}
                         />
                     </TableCell>
                     <TableCell>
