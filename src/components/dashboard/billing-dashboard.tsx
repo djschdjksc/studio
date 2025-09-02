@@ -9,10 +9,13 @@ import React, { useState, useEffect } from "react";
 import { Party, Item, BillingItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
+import { NewItemGroupDialog } from "./new-item-group-dialog";
 
 const defaultParties: Party[] = [
   { id: "1", name: "ABC Company", address: "123 Main St, Anytown", phone: "(123) 456-7890" }
 ];
+
+const defaultItemGroups: string[] = ["cement", "steel", "aggregates", "bricks"];
 
 const defaultItems: Item[] = [
   { id: "1", name: "UltraTech Cement", group: "cement", unit: "Bags", alias: "UTC01", price: 350 },
@@ -35,6 +38,7 @@ const defaultBillingItems: BillingItem[] = [
 export default function BillingDashboard() {
   const [parties, setParties] = useState<Party[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [itemGroups, setItemGroups] = useState<string[]>([]);
   const [billingItems, setBillingItems] = useState<BillingItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -42,15 +46,18 @@ export default function BillingDashboard() {
     try {
       const savedParties = localStorage.getItem("parties");
       const savedItems = localStorage.getItem("items");
+      const savedItemGroups = localStorage.getItem("itemGroups");
       const savedBillingItems = localStorage.getItem("billingItems");
 
       setParties(savedParties ? JSON.parse(savedParties) : defaultParties);
       setItems(savedItems ? JSON.parse(savedItems) : defaultItems);
+      setItemGroups(savedItemGroups ? JSON.parse(savedItemGroups) : defaultItemGroups);
       setBillingItems(savedBillingItems ? JSON.parse(savedBillingItems) : defaultBillingItems);
     } catch (error) {
       console.error("Failed to parse from local storage", error);
       setParties(defaultParties);
       setItems(defaultItems);
+      setItemGroups(defaultItemGroups);
       setBillingItems(defaultBillingItems);
     }
     setIsLoaded(true);
@@ -70,6 +77,12 @@ export default function BillingDashboard() {
 
   useEffect(() => {
     if (isLoaded) {
+      localStorage.setItem("itemGroups", JSON.stringify(itemGroups));
+    }
+  }, [itemGroups, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
       localStorage.setItem("billingItems", JSON.stringify(billingItems));
     }
   }, [billingItems, isLoaded]);
@@ -81,6 +94,12 @@ export default function BillingDashboard() {
 
   const addItem = (item: Omit<Item, 'id'>) => {
     setItems(prev => [...prev, { ...item, id: String(prev.length + 1) }]);
+  };
+  
+  const addItemGroup = (groupName: string) => {
+    if (groupName && !itemGroups.includes(groupName)) {
+      setItemGroups(prev => [...prev, groupName]);
+    }
   };
 
   const addBillingItem = () => {
@@ -117,7 +136,8 @@ export default function BillingDashboard() {
       <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
         <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
         <div className="flex items-center gap-2">
-          <NewItemDialog onSave={addItem} />
+          <NewItemGroupDialog onSave={addItemGroup} />
+          <NewItemDialog onSave={addItem} itemGroups={itemGroups} />
           <NewPartyDialog onSave={addParty} />
           <Button variant="secondary" onClick={() => alert("Bill Saved!")}>
             <Save className="mr-2 h-4 w-4" />

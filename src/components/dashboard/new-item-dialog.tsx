@@ -19,9 +19,10 @@ import { useState } from "react";
 
 interface NewItemDialogProps {
     onSave: (item: Omit<Item, 'id'>) => void;
+    itemGroups: string[];
 }
 
-export function NewItemDialog({ onSave }: NewItemDialogProps) {
+export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
   const [name, setName] = useState("");
   const [group, setGroup] = useState("");
   const [unit, setUnit] = useState("");
@@ -70,10 +71,9 @@ export function NewItemDialog({ onSave }: NewItemDialogProps) {
                 <SelectValue placeholder="Select a group" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cement">Cement</SelectItem>
-                <SelectItem value="steel">TMT Steel</SelectItem>
-                <SelectItem value="aggregates">Aggregates</SelectItem>
-                <SelectItem value="bricks">Bricks</SelectItem>
+                {itemGroups.map(g => (
+                    <SelectItem key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
