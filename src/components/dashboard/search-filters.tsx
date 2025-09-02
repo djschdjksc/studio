@@ -20,7 +20,7 @@ export default function SearchFilters({ parties }: SearchFiltersProps) {
         <CardTitle>Search & Filters</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 items-end">
           <div className="space-y-2">
             <Label htmlFor="partyName">Party Name</Label>
             <Select>
@@ -47,6 +47,19 @@ export default function SearchFilters({ parties }: SearchFiltersProps) {
           <div className="space-y-2">
             <Label htmlFor="vehicleNo">Vehicle No</Label>
             <Input id="vehicleNo" placeholder="Enter vehicle no..." />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vehicleType">Vehicle Type</Label>
+            <Select>
+              <SelectTrigger id="vehicleType">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="truck">Truck</SelectItem>
+                <SelectItem value="tractor">Tractor</SelectItem>
+                <SelectItem value="dumper">Dumper</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="billType">Bill Type</Label>

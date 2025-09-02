@@ -27,6 +27,34 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
     }, 0);
   }, [billingItems, items]);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLButtonElement>, rowIndex: number, field: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      let nextField: HTMLElement | null = null;
+      if (field === 'itemName') {
+        nextField = document.getElementById(`quantity-${rowIndex}`);
+      } else if (field === 'quantity') {
+        nextField = document.getElementById(`uCap-${rowIndex}`);
+      } else if (field === 'uCap') {
+        nextField = document.getElementById(`lCap-${rowIndex}`);
+      } else if (field === 'lCap') {
+        if(rowIndex < billingItems.length - 1) {
+            nextField = document.getElementById(`itemName-${rowIndex + 1}`);
+        } else {
+            onAddRow();
+            setTimeout(() => {
+                document.getElementById(`itemName-${rowIndex + 1}`)?.focus();
+            }, 0);
+        }
+      }
+
+      if (nextField) {
+        nextField.focus();
+      }
+    }
+  };
+
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -60,33 +88,41 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                     <TableCell>{item.srNo}</TableCell>
                     <TableCell className="font-medium">
                         <ItemAutocomplete 
+                            id={`itemName-${index}`}
                             items={items} 
                             value={item.itemName}
                             onValueChange={(value) => onItemChange(index, 'itemName', value)}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'itemName')}
                         />
                     </TableCell>
                     <TableCell>
                         <Input 
+                            id={`quantity-${index}`}
                             type="number" 
                             value={item.quantity} 
                             onChange={(e) => onItemChange(index, 'quantity', e.target.value)} 
+                            onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
                             className="text-right"
                         />
                     </TableCell>
                     <TableCell>{item.unit}</TableCell>
                     <TableCell>
                         <Input 
+                            id={`uCap-${index}`}
                             type="number" 
                             value={item.uCap} 
                             onChange={(e) => onItemChange(index, 'uCap', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'uCap')}
                              className="text-right"
                         />
                     </TableCell>
                     <TableCell>
                         <Input 
+                            id={`lCap-${index}`}
                             type="number" 
                             value={item.lCap} 
                             onChange={(e) => onItemChange(index, 'lCap', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'lCap')}
                              className="text-right"
                         />
                     </TableCell>

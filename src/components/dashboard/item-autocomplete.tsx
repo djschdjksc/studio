@@ -21,25 +21,29 @@ import {
 import { Item } from "@/lib/types"
 
 interface ItemAutocompleteProps {
+    id?: string;
     items: Item[];
     value: string;
     onValueChange: (value: string) => void;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLButtonElement>) => void;
 }
 
-export function ItemAutocomplete({ items, value, onValueChange }: ItemAutocompleteProps) {
+export function ItemAutocomplete({ id, items, value, onValueChange, onKeyDown }: ItemAutocompleteProps) {
   const [open, setOpen] = React.useState(false)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          onKeyDown={onKeyDown}
         >
           {value
-            ? items.find((item) => item.name === value)?.name
+            ? items.find((item) => item.name.toLowerCase() === value.toLowerCase())?.name
             : "Select item..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -55,14 +59,15 @@ export function ItemAutocomplete({ items, value, onValueChange }: ItemAutocomple
                   key={item.id}
                   value={item.name}
                   onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? "" : currentValue)
+                    const selectedItem = items.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
+                    onValueChange(selectedItem ? selectedItem.name : "")
                     setOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === item.name ? "opacity-100" : "opacity-0"
+                      value.toLowerCase() === item.name.toLowerCase() ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {item.name}
