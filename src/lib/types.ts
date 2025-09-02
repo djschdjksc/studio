@@ -22,3 +22,20 @@ export interface BillingItem {
     uCap: number;
     lCap: number;
 }
+
+export interface SearchFiltersState {
+    partyName: string;
+    address: string;
+    date: Date;
+    slipNo: string;
+    vehicleNo: string;
+    vehicleType: string;
+    billType: string;
+}
+
+export interface SummaryItem {
+    item: string;
+    totalQty: number;
+    price: number;
+    totalPrice: number;
+}

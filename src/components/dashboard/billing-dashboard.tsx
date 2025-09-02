@@ -10,6 +10,8 @@ import { Party, Item, BillingItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
+import { BillPreviewDialog } from "./bill-preview-dialog";
+import { SearchFiltersState } from "@/lib/types";
 
 const defaultParties: Party[] = [];
 const defaultItemGroups: string[] = [];
@@ -24,6 +26,16 @@ export default function BillingDashboard() {
   const [billingItems, setBillingItems] = useState<BillingItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
+  const [searchFilters, setSearchFilters] = useState<SearchFiltersState>({
+    partyName: "",
+    address: "",
+    date: new Date(),
+    slipNo: "",
+    vehicleNo: "",
+    vehicleType: "",
+    billType: "sale",
+  });
+  const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -127,20 +139,32 @@ export default function BillingDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
+       <BillPreviewDialog 
+          isOpen={isBillPreviewOpen}
+          onClose={() => setIsBillPreviewOpen(false)}
+          filters={searchFilters}
+          billingItems={billingItems}
+          items={items}
+          manualPrices={manualPrices}
+       />
+      <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
         <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
         <div className="flex items-center gap-2">
           <NewItemGroupDialog onSave={addItemGroup} />
           <NewItemDialog onSave={addItem} itemGroups={itemGroups} />
           <NewPartyDialog onSave={addParty} />
-          <Button variant="secondary" onClick={() => alert("Bill Saved!")}>
+          <Button variant="secondary" onClick={() => setIsBillPreviewOpen(true)}>
             <Save className="mr-2 h-4 w-4" />
             Save Bill
           </Button>
         </div>
       </header>
       <main className="flex-1 p-4 md:p-6 space-y-4">
-        <SearchFilters parties={parties} />
+        <SearchFilters 
+          parties={parties}
+          filters={searchFilters}
+          onFiltersChange={setSearchFilters}
+         />
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3">
             <MainBillingTable 
