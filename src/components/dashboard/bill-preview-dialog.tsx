@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -131,6 +132,10 @@ export function BillPreviewDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Bill Preview</DialogTitle>
+          <DialogDescription>A preview of the generated bill for printing or sharing.</DialogDescription>
+        </DialogHeader>
         <style>{`
           @media print {
             body * {
@@ -255,3 +260,5 @@ export function BillPreviewDialog({
     </Dialog>
   );
 }
+
+    
