@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BillingItem, Item } from "@/lib/types";
-import { ItemAutocomplete } from "./item-autocomplete";
+import { ItemSearchInput } from "./item-search-input";
 import { useMemo } from "react";
 
 interface MainBillingTableProps {
@@ -39,11 +39,11 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
         nextField = document.getElementById(`lCap-${rowIndex}`);
       } else if (field === 'lCap') {
         if(rowIndex < billingItems.length - 1) {
-            nextField = document.getElementById(`itemName-${rowIndex + 1}`);
+            nextField = document.getElementById(`itemName-input-${rowIndex + 1}`);
         } else {
             onAddRow();
             setTimeout(() => {
-                document.getElementById(`itemName-${rowIndex + 1}`)?.focus();
+                document.getElementById(`itemName-input-${rowIndex + 1}`)?.focus();
             }, 0);
         }
       }
@@ -87,7 +87,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                 <TableRow key={item.srNo}>
                     <TableCell>{item.srNo}</TableCell>
                     <TableCell className="font-medium">
-                        <ItemAutocomplete 
+                        <ItemSearchInput
                             id={`itemName-${index}`}
                             items={items} 
                             value={item.itemName}
