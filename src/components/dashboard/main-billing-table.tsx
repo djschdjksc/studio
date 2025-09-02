@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,6 @@ import { PlusCircle, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BillingItem, Item } from "@/lib/types";
 import { ItemSearchInput } from "./item-search-input";
-import { useMemo } from "react";
 
 interface MainBillingTableProps {
   billingItems: BillingItem[];
@@ -19,14 +19,7 @@ interface MainBillingTableProps {
 }
 
 export default function MainBillingTable({ billingItems, items, onAddRow, onItemChange, onRemoveRow }: MainBillingTableProps) {
-  const grandTotal = useMemo(() => {
-    return billingItems.reduce((total, billItem) => {
-        const item = items.find(i => i.name === billItem.itemName);
-        const price = item?.price || 0;
-        return total + (billItem.quantity * price);
-    }, 0);
-  }, [billingItems, items]);
-
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLButtonElement>, rowIndex: number, field: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -43,7 +36,8 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
         } else {
             onAddRow();
             setTimeout(() => {
-                document.getElementById(`itemName-input-${rowIndex + 1}`)?.focus();
+                const nextInput = document.getElementById(`itemName-input-${rowIndex + 1}`);
+                nextInput?.focus();
             }, 0);
         }
       }

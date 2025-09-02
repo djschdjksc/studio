@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,6 +96,17 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
         }
     }
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const nextInput = document.getElementById(`price-${rowIndex + 1}`);
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }
+    };
+
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -113,17 +125,19 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
               </TableRow>
             </TableHeader>
             <TableBody>
-              {summaryItems.map((item) => (
+              {summaryItems.map((item, index) => (
                 <TableRow key={item.item}>
                   <TableCell className="font-medium">{item.item}</TableCell>
                   <TableCell className="text-right">
                     {item.totalQty || ''}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Input 
+                    <Input
+                        id={`price-${index}`}
                         type="number"
                         value={item.price || ''}
                         onChange={(e) => handlePriceChange(item.item, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, index)}
                         className="text-right h-8"
                         placeholder="0.00"
                     />

@@ -17,7 +17,17 @@ import { useToast } from "@/hooks/use-toast";
 const defaultParties: Party[] = [];
 const defaultItemGroups: string[] = [];
 const defaultItems: Item[] = [];
-const defaultBillingItems: BillingItem[] = [];
+
+const generateInitialBillingItems = (count: number): BillingItem[] => {
+    return Array.from({ length: count }, (_, i) => ({
+        srNo: i + 1,
+        itemName: "",
+        quantity: 0,
+        unit: "",
+        uCap: 0,
+        lCap: 0,
+    }));
+};
 
 const initialFilters: Omit<SearchFiltersState, 'date'> = {
     partyName: "",
@@ -33,7 +43,7 @@ export default function BillingDashboard() {
   const [parties, setParties] = useState<Party[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [itemGroups, setItemGroups] = useState<string[]>([]);
-  const [billingItems, setBillingItems] = useState<BillingItem[]>([]);
+  const [billingItems, setBillingItems] = useState<BillingItem[]>(generateInitialBillingItems(5));
   const [isLoaded, setIsLoaded] = useState(false);
   const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
   const [searchFilters, setSearchFilters] = useState<SearchFiltersState>({
@@ -101,7 +111,7 @@ export default function BillingDashboard() {
   }, [savedBills, isLoaded]);
 
   const clearForm = useCallback((nextSlipNo: string) => {
-    setBillingItems([]);
+    setBillingItems(generateInitialBillingItems(5));
     setManualPrices({});
     setSearchFilters(prev => ({
         ...initialFilters,
