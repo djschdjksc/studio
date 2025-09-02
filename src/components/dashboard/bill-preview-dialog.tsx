@@ -132,121 +132,119 @@ export function BillPreviewDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
-        <DialogHeader>
-          <DialogTitle>Bill Preview</DialogTitle>
-          <DialogDescription>A preview of the generated bill for printing or sharing.</DialogDescription>
-        </DialogHeader>
-        <style>{`
-          @media print {
-            body * {
-              visibility: hidden;
-            }
-            #bill-preview-content, #bill-preview-content * {
-              visibility: visible;
-            }
-            #bill-preview-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-            }
-            #dialog-footer {
-                display: none;
-            }
-          }
-        `}</style>
-        <div ref={billRef} className="bg-white text-black" id="bill-preview-content">
-          <ScrollArea className="max-h-[80vh]">
-            <div className="p-8">
-              <header className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
-                <p className="text-sm text-gray-500">Your Trusted Billing Partner</p>
-                <p className="text-xs text-gray-500 mt-1">123 Business Rd, Commerce City, 12345</p>
-              </header>
+        <ScrollArea className="max-h-[90vh]">
+            <div ref={billRef} className="bg-white text-black" id="bill-preview-content">
+                <div className="p-8">
+                <DialogHeader className="mb-8">
+                    <DialogTitle className="text-center text-4xl font-bold text-gray-800">BillTrack Pro</DialogTitle>
+                    <DialogDescription className="text-center text-sm text-gray-500">
+                        Your Trusted Billing Partner <br />
+                        123 Business Rd, Commerce City, 12345
+                    </DialogDescription>
+                </DialogHeader>
+                <style>{`
+                @media print {
+                    body * {
+                    visibility: hidden;
+                    }
+                    #bill-preview-content, #bill-preview-content * {
+                    visibility: visible;
+                    }
+                    #bill-preview-content {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    }
+                    #dialog-footer {
+                        display: none;
+                    }
+                }
+                `}</style>
+                
+                <section id="filters-section" className="mb-6 p-4 border rounded-lg">
+                    <h2 className="text-lg font-semibold mb-3 border-b pb-2">Bill Details</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                        <div><strong>Party Name:</strong> {filters.partyName}</div>
+                        <div className="col-span-2"><strong>Address:</strong> {filters.address}</div>
+                        <div><strong>Date:</strong> {filters.date ? format(filters.date, 'PPP') : 'N/A'}</div>
+                        <div><strong>Slip No:</strong> {filters.slipNo || 'N/A'}</div>
+                        <div><strong>Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
+                        <div><strong>Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
+                        <div><strong>Bill Type:</strong> <span className="capitalize">{filters.billType}</span></div>
+                    </div>
+                </section>
 
-              <section id="filters-section" className="mb-6 p-4 border rounded-lg">
-                 <h2 className="text-lg font-semibold mb-3 border-b pb-2">Bill Details</h2>
-                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
-                    <div><strong>Party Name:</strong> {filters.partyName}</div>
-                    <div className="col-span-2"><strong>Address:</strong> {filters.address}</div>
-                    <div><strong>Date:</strong> {filters.date ? format(filters.date, 'PPP') : 'N/A'}</div>
-                    <div><strong>Slip No:</strong> {filters.slipNo || 'N/A'}</div>
-                    <div><strong>Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
-                    <div><strong>Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
-                    <div><strong>Bill Type:</strong> <span className="capitalize">{filters.billType}</span></div>
-                 </div>
-              </section>
+                <Separator className="my-6" />
 
-              <Separator className="my-6" />
-
-              <section id="billing-items-section" className="mb-6">
-                 <h2 className="text-lg font-semibold mb-3 border-b pb-2">Items</h2>
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[50px]">Sr.No</TableHead>
-                            <TableHead>Item Name</TableHead>
-                            <TableHead className="text-right">Quantity</TableHead>
-                            <TableHead>Unit</TableHead>
-                            <TableHead className="text-right">U Cap</TableHead>
-                            <TableHead className="text-right">L Cap</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredBillingItems.map((item) => (
-                            <TableRow key={item.srNo}>
-                                <TableCell>{item.srNo}</TableCell>
-                                <TableCell className="font-medium">{item.itemName}</TableCell>
-                                <TableCell className="text-right">{item.quantity}</TableCell>
-                                <TableCell>{item.unit}</TableCell>
-                                <TableCell className="text-right">{item.uCap || ''}</TableCell>
-                                <TableCell className="text-right">{item.lCap || ''}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                 </Table>
-              </section>
-
-              <Separator className="my-6" />
-
-              <section id="summary-section" className="flex justify-end">
-                <div className="w-full md:w-2/3 lg:w-1/2">
-                    <h2 className="text-lg font-semibold mb-3 border-b pb-2">Summary</h2>
+                <section id="billing-items-section" className="mb-6">
+                    <h2 className="text-lg font-semibold mb-3 border-b pb-2">Items</h2>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Item Group</TableHead>
-                                <TableHead className="text-right">Total Qty</TableHead>
-                                <TableHead className="text-right">Price</TableHead>
-                                <TableHead className="text-right">Total</TableHead>
+                                <TableHead className="w-[50px]">Sr.No</TableHead>
+                                <TableHead>Item Name</TableHead>
+                                <TableHead className="text-right">Quantity</TableHead>
+                                <TableHead>Unit</TableHead>
+                                <TableHead className="text-right">U Cap</TableHead>
+                                <TableHead className="text-right">L Cap</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {summaryItems.map((item) => (
-                                <TableRow key={item.item}>
-                                    <TableCell className="font-medium">{item.item}</TableCell>
-                                    <TableCell className="text-right">{item.totalQty}</TableCell>
-                                    <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right font-semibold">₹{item.totalPrice.toFixed(2)}</TableCell>
+                            {filteredBillingItems.map((item) => (
+                                <TableRow key={item.srNo}>
+                                    <TableCell>{item.srNo}</TableCell>
+                                    <TableCell className="font-medium">{item.itemName}</TableCell>
+                                    <TableCell className="text-right">{item.quantity}</TableCell>
+                                    <TableCell>{item.unit}</TableCell>
+                                    <TableCell className="text-right">{item.uCap || ''}</TableCell>
+                                    <TableCell className="text-right">{item.lCap || ''}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
-                    <div className="flex justify-end mt-4 p-4 bg-gray-100 rounded-lg">
-                        <div className="flex items-center gap-4 text-xl font-bold">
-                            <span>Grand Total:</span>
-                            <span className="text-gray-800">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </section>
+
+                <Separator className="my-6" />
+
+                <section id="summary-section" className="flex justify-end">
+                    <div className="w-full md:w-2/3 lg:w-1/2">
+                        <h2 className="text-lg font-semibold mb-3 border-b pb-2">Summary</h2>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Item Group</TableHead>
+                                    <TableHead className="text-right">Total Qty</TableHead>
+                                    <TableHead className="text-right">Price</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {summaryItems.map((item) => (
+                                    <TableRow key={item.item}>
+                                        <TableCell className="font-medium">{item.item}</TableCell>
+                                        <TableCell className="text-right">{item.totalQty}</TableCell>
+                                        <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-semibold">₹{item.totalPrice.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        <div className="flex justify-end mt-4 p-4 bg-gray-100 rounded-lg">
+                            <div className="flex items-center gap-4 text-xl font-bold">
+                                <span>Grand Total:</span>
+                                <span className="text-gray-800">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
                         </div>
                     </div>
+                </section>
+                <footer className="text-center mt-12 text-xs text-gray-500">
+                    <p>Thank you for your business!</p>
+                    <p>All disputes subject to local jurisdiction.</p>
+                </footer>
                 </div>
-              </section>
-              <footer className="text-center mt-12 text-xs text-gray-500">
-                <p>Thank you for your business!</p>
-                <p>All disputes subject to local jurisdiction.</p>
-              </footer>
             </div>
-          </ScrollArea>
-        </div>
+        </ScrollArea>
         <DialogFooter className="p-4 border-t bg-background" id="dialog-footer">
           <Button variant="outline" onClick={onClose}>
             Close
@@ -260,5 +258,3 @@ export function BillPreviewDialog({
     </Dialog>
   );
 }
-
-    
