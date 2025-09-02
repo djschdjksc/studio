@@ -6,12 +6,12 @@ import SearchFilters from "@/components/dashboard/search-filters";
 import MainBillingTable from "@/components/dashboard/main-billing-table";
 import TotalsSummary from "@/components/dashboard/totals-summary";
 import React, { useState, useEffect } from "react";
-import { Party, Item, BillingItem } from "@/lib/types";
+import { Party, Item, BillingItem, SearchFiltersState } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Download, Save } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
 import { BillPreviewDialog } from "./bill-preview-dialog";
-import { SearchFiltersState } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 const defaultParties: Party[] = [];
 const defaultItemGroups: string[] = [];
@@ -36,24 +36,31 @@ export default function BillingDashboard() {
     billType: "sale",
   });
   const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
+  const [savedBills, setSavedBills] = useState<Record<string, {
+    filters: SearchFiltersState;
+    billingItems: BillingItem[];
+    manualPrices: Record<string, number>;
+  }>>({});
+  const { toast } = useToast();
 
   useEffect(() => {
     try {
       const savedParties = localStorage.getItem("parties");
       const savedItems = localStorage.getItem("items");
       const savedItemGroups = localStorage.getItem("itemGroups");
-      const savedBillingItems = localStorage.getItem("billingItems");
+      const loadedSavedBills = localStorage.getItem("savedBills");
 
       setParties(savedParties ? JSON.parse(savedParties) : defaultParties);
       setItems(savedItems ? JSON.parse(savedItems) : defaultItems);
       setItemGroups(savedItemGroups ? JSON.parse(savedItemGroups) : defaultItemGroups);
-      setBillingItems(savedBillingItems ? JSON.parse(savedBillingItems) : defaultBillingItems);
+      setSavedBills(loadedSavedBills ? JSON.parse(loadedSavedBills) : {});
+      
     } catch (error) {
       console.error("Failed to parse from local storage", error);
       setParties(defaultParties);
       setItems(defaultItems);
       setItemGroups(defaultItemGroups);
-      setBillingItems(defaultBillingItems);
+      setSavedBills({});
     }
     setIsLoaded(true);
   }, []);
@@ -77,10 +84,10 @@ export default function BillingDashboard() {
   }, [itemGroups, isLoaded]);
 
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("billingItems", JSON.stringify(billingItems));
+    if(isLoaded) {
+        localStorage.setItem("savedBills", JSON.stringify(savedBills));
     }
-  }, [billingItems, isLoaded]);
+  }, [savedBills, isLoaded]);
 
 
   const addParty = (party: Omit<Party, 'id'>) => {
@@ -132,6 +139,65 @@ export default function BillingDashboard() {
   const handleManualPriceChange = (group: string, price: number) => {
     setManualPrices(prev => ({...prev, [group.toLowerCase()]: price}))
   }
+
+  const handleSaveBill = () => {
+    if (!searchFilters.slipNo) {
+      toast({
+        variant: "destructive",
+        title: "Slip No. required",
+        description: "Please enter a Slip No. before saving.",
+      });
+      return;
+    }
+
+    const billData = {
+      filters: { ...searchFilters, date: searchFilters.date.toISOString() }, // Store date as ISO string
+      billingItems,
+      manualPrices
+    };
+
+    setSavedBills(prev => ({
+      ...prev,
+      [searchFilters.slipNo]: billData
+    }));
+
+    toast({
+        title: "Bill Saved!",
+        description: `Bill with Slip No. ${searchFilters.slipNo} has been saved successfully.`,
+    })
+  }
+
+  const handleLoadBill = () => {
+    if(!searchFilters.slipNo) {
+        toast({
+            variant: "destructive",
+            title: "Slip No. required",
+            description: "Please enter a Slip No. to load a bill.",
+        });
+        return;
+    }
+    const billData = savedBills[searchFilters.slipNo];
+    if (billData) {
+      // Convert date back from ISO string
+      const loadedFilters = {
+        ...billData.filters,
+        date: new Date(billData.filters.date),
+      };
+      setSearchFilters(loadedFilters);
+      setBillingItems(billData.billingItems);
+      setManualPrices(billData.manualPrices);
+      toast({
+        title: "Bill Loaded",
+        description: `Bill with Slip No. ${searchFilters.slipNo} has been loaded.`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Bill not found",
+        description: `No bill found with Slip No. ${searchFilters.slipNo}.`,
+      });
+    }
+  };
   
   if (!isLoaded) {
     return <div>Loading...</div>; // Or a proper skeleton loader
@@ -153,9 +219,13 @@ export default function BillingDashboard() {
           <NewItemGroupDialog onSave={addItemGroup} />
           <NewItemDialog onSave={addItem} itemGroups={itemGroups} />
           <NewPartyDialog onSave={addParty} />
-          <Button variant="secondary" onClick={() => setIsBillPreviewOpen(true)}>
+          <Button variant="outline" onClick={handleSaveBill}>
             <Save className="mr-2 h-4 w-4" />
             Save Bill
+          </Button>
+          <Button variant="secondary" onClick={() => setIsBillPreviewOpen(true)}>
+            <Download className="mr-2 h-4 w-4" />
+            Preview Bill
           </Button>
         </div>
       </header>
@@ -164,6 +234,7 @@ export default function BillingDashboard() {
           parties={parties}
           filters={searchFilters}
           onFiltersChange={setSearchFilters}
+          onLoadBill={handleLoadBill}
          />
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3">

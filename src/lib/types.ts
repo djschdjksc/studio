@@ -26,7 +26,7 @@ export interface BillingItem {
 export interface SearchFiltersState {
     partyName: string;
     address: string;
-    date: Date;
+    date: Date | string; // Allow string for serialization
     slipNo: string;
     vehicleNo: string;
     vehicleType: string;

@@ -6,16 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { Party, SearchFiltersState } from "@/lib/types";
 
 interface SearchFiltersProps {
   parties: Party[];
   filters: SearchFiltersState;
   onFiltersChange: (filters: SearchFiltersState) => void;
+  onLoadBill: () => void;
 }
 
-export default function SearchFilters({ parties, filters, onFiltersChange }: SearchFiltersProps) {
+export default function SearchFilters({ parties, filters, onFiltersChange, onLoadBill }: SearchFiltersProps) {
 
   const handleFieldChange = (field: keyof SearchFiltersState, value: any) => {
     const newFilters = { ...filters, [field]: value };
@@ -39,7 +40,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange }: Sea
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 items-end">
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2">
             <Label htmlFor="partyName">Party Name</Label>
             <Select onValueChange={(val) => handleFieldChange('partyName', val)} value={filters.partyName}>
                 <SelectTrigger id="partyName">
@@ -50,7 +51,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange }: Sea
                 </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2">
             <Label htmlFor="address">Address</Label>
             <Input id="address" placeholder="Enter address..." value={filters.address} onChange={e => handleFieldChange('address', e.target.value)} />
           </div>
@@ -60,7 +61,12 @@ export default function SearchFilters({ parties, filters, onFiltersChange }: Sea
           </div>
           <div className="space-y-2">
             <Label htmlFor="slipNo">Slip No</Label>
-            <Input id="slipNo" placeholder="Enter slip no..." value={filters.slipNo} onChange={e => handleFieldChange('slipNo', e.target.value)} />
+            <div className="flex items-center gap-2">
+              <Input id="slipNo" placeholder="Enter slip no..." value={filters.slipNo} onChange={e => handleFieldChange('slipNo', e.target.value)} />
+              <Button size="icon" variant="outline" onClick={onLoadBill} aria-label="Load Bill">
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="vehicleNo">Vehicle No</Label>
@@ -96,10 +102,6 @@ export default function SearchFilters({ parties, filters, onFiltersChange }: Sea
               </SelectContent>
             </Select>
           </div>
-          <Button className="w-full xl:w-auto">
-            <Search className="mr-2 h-4 w-4" />
-            Search
-          </Button>
         </div>
       </CardContent>
     </Card>
