@@ -26,7 +26,7 @@ export interface BillingItem {
 export interface SearchFiltersState {
     partyName: string;
     address: string;
-    date: Date | string; // Allow string for serialization
+    date: Date | string;
     slipNo: string;
     vehicleNo: string;
     vehicleType: string;
@@ -38,4 +38,10 @@ export interface SummaryItem {
     totalQty: number;
     price: number;
     totalPrice: number;
+}
+
+export interface SavedBill {
+    filters: SearchFiltersState;
+    billingItems: BillingItem[];
+    manualPrices: Record<string, number>;
 }

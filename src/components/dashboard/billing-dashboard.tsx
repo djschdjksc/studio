@@ -7,11 +7,12 @@ import SearchFilters from "@/components/dashboard/search-filters";
 import MainBillingTable from "@/components/dashboard/main-billing-table";
 import TotalsSummary from "@/components/dashboard/totals-summary";
 import React, { useState, useEffect, useCallback } from "react";
-import { Party, Item, BillingItem, SearchFiltersState } from "@/lib/types";
+import { Party, Item, BillingItem, SearchFiltersState, SavedBill } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Download, Save } from "lucide-react";
+import { Download, Save, BookOpen } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
 import { BillPreviewDialog } from "./bill-preview-dialog";
+import { AllBillsDialog } from "./all-bills-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const defaultParties: Party[] = [];
@@ -51,11 +52,8 @@ export default function BillingDashboard() {
     date: new Date(),
   });
   const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
-  const [savedBills, setSavedBills] = useState<Record<string, {
-    filters: SearchFiltersState;
-    billingItems: BillingItem[];
-    manualPrices: Record<string, number>;
-  }>>({});
+  const [isAllBillsOpen, setIsAllBillsOpen] = useState(false);
+  const [savedBills, setSavedBills] = useState<Record<string, SavedBill>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -182,7 +180,7 @@ export default function BillingDashboard() {
     }
 
     const billData = {
-      filters: { ...searchFilters, date: searchFilters.date.toISOString() }, // Store date as ISO string
+      filters: { ...searchFilters, date: searchFilters.date ? new Date(searchFilters.date).toISOString() : new Date().toISOString() },
       billingItems,
       manualPrices
     };
@@ -205,8 +203,10 @@ export default function BillingDashboard() {
     clearForm(nextSlipNo);
   }
 
-  const handleLoadBill = () => {
-    if(!searchFilters.slipNo) {
+  const handleLoadBill = (slipNoToLoad?: string) => {
+    const slipNo = slipNoToLoad || searchFilters.slipNo;
+
+    if(!slipNo) {
         toast({
             variant: "destructive",
             title: "Slip No. required",
@@ -214,31 +214,30 @@ export default function BillingDashboard() {
         });
         return;
     }
-    const billData = savedBills[searchFilters.slipNo];
+    const billData = savedBills[slipNo];
     if (billData) {
-      // Convert date back from ISO string
       const loadedFilters = {
         ...billData.filters,
-        date: new Date(billData.filters.date),
+        date: billData.filters.date ? new Date(billData.filters.date) : new Date(),
       };
       setSearchFilters(loadedFilters);
       setBillingItems(billData.billingItems);
       setManualPrices(billData.manualPrices);
       toast({
         title: "Bill Loaded",
-        description: `Bill with Slip No. ${searchFilters.slipNo} has been loaded.`,
+        description: `Bill with Slip No. ${slipNo} has been loaded.`,
       });
     } else {
       toast({
         variant: "destructive",
         title: "Bill not found",
-        description: `No bill found with Slip No. ${searchFilters.slipNo}.`,
+        description: `No bill found with Slip No. ${slipNo}.`,
       });
     }
   };
   
   if (!isLoaded) {
-    return <div>Loading...</div>; // Or a proper skeleton loader
+    return <div>Loading...</div>;
   }
 
   return (
@@ -251,9 +250,32 @@ export default function BillingDashboard() {
           items={items}
           manualPrices={manualPrices}
        />
+       <AllBillsDialog
+          isOpen={isAllBillsOpen}
+          onClose={() => setIsAllBillsOpen(false)}
+          savedBills={savedBills}
+          onLoadBill={(slipNo) => {
+            handleLoadBill(slipNo);
+            setIsAllBillsOpen(false);
+          }}
+          onDeleteBill={(slipNo) => {
+            const newSavedBills = { ...savedBills };
+            delete newSavedBills[slipNo];
+            setSavedBills(newSavedBills);
+            toast({
+                title: "Bill Deleted",
+                description: `Bill with Slip No. ${slipNo} has been deleted.`,
+            });
+          }}
+          items={items}
+       />
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
         <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setIsAllBillsOpen(true)}>
+            <BookOpen className="mr-2 h-4 w-4" />
+            All Bills
+          </Button>
           <NewItemGroupDialog onSave={addItemGroup} />
           <NewItemDialog onSave={addItem} itemGroups={itemGroups} />
           <NewPartyDialog onSave={addParty} />
@@ -272,7 +294,7 @@ export default function BillingDashboard() {
           parties={parties}
           filters={searchFilters}
           onFiltersChange={setSearchFilters}
-          onLoadBill={handleLoadBill}
+          onLoadBill={() => handleLoadBill()}
          />
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3">
