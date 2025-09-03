@@ -12,63 +12,79 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Item } from "@/lib/types";
-import { PackagePlus } from "lucide-react";
-import { useState } from "react";
+import { PackagePlus, PlusCircle, Trash2 } from "lucide-react";
+import { useState, useId } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { ScrollArea } from "../ui/scroll-area";
+
+type BulkItem = Omit<Item, 'id' | 'price'> & { tempId: string };
 
 interface BulkAddItemDialogProps {
-    onSave: (items: Omit<Item, 'id' | 'price' | 'alias'>[]) => void;
+    onSave: (items: Omit<Item, 'id' | 'price'>[]) => void;
     itemGroups: string[];
 }
 
+const createNewBulkItem = (tempId: string): BulkItem => ({
+    tempId,
+    name: "",
+    group: "",
+    unit: "",
+    alias: "",
+});
+
 export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps) {
-  const [group, setGroup] = useState("");
-  const [unit, setUnit] = useState("");
-  const [itemNames, setItemNames] = useState("");
+  const [items, setItems] = useState<BulkItem[]>([createNewBulkItem(crypto.randomUUID())]);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
+  const dialogId = useId();
+
+  const handleItemChange = (tempId: string, field: keyof Omit<BulkItem, 'tempId'>, value: string) => {
+    setItems(currentItems => 
+        currentItems.map(item => 
+            item.tempId === tempId ? {...item, [field]: value} : item
+        )
+    );
+  };
+  
+  const handleAddRow = () => {
+    setItems(currentItems => [...currentItems, createNewBulkItem(crypto.randomUUID())]);
+  }
+
+  const handleRemoveRow = (tempId: string) => {
+    setItems(currentItems => {
+      if(currentItems.length <= 1) return currentItems;
+      return currentItems.filter(item => item.tempId !== tempId);
+    });
+  }
 
   const handleSave = () => {
-    if(!group.trim() || !unit.trim() || !itemNames.trim()) {
+    const validItems = items.map(item => ({...item})).filter(item => {
+        return item.name.trim() && item.group.trim() && item.unit.trim();
+    });
+
+    if(validItems.length === 0) {
         toast({
             variant: "destructive",
-            title: "Missing Information",
-            description: "Please select a group, enter a unit, and provide at least one item name.",
+            title: "No Valid Items",
+            description: "Please fill out at least one complete item row (Name, Group, and Unit are required).",
         });
         return;
     }
-
-    const namesArray = itemNames.split('\n').map(name => name.trim()).filter(name => name.length > 0);
     
-    if(namesArray.length === 0) {
-        toast({
-            variant: "destructive",
-            title: "No Item Names",
-            description: "Please enter at least one item name.",
-        });
-        return;
-    }
+    // remove tempId from the objects
+    const itemsToSave = validItems.map(({tempId, ...rest}) => rest);
 
-    const newItems = namesArray.map(name => ({
-        name,
-        group,
-        unit,
-    }));
-
-    onSave(newItems);
+    onSave(itemsToSave);
     
     toast({
         title: "Items Added!",
-        description: `${newItems.length} new items have been added to the '${group}' group.`,
+        description: `${itemsToSave.length} new items have been added.`,
     });
 
-    setGroup("");
-    setUnit("");
-    setItemNames("");
+    setItems([createNewBulkItem(crypto.randomUUID())]);
     setIsOpen(false);
   }
 
@@ -80,49 +96,76 @@ export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps
           Bulk Add Items
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Bulk Add New Items</DialogTitle>
           <DialogDescription>
-            Create multiple items at once. Enter one item name per line.
+            Add multiple items at once using this table. Name, Group, and Unit are required for each item.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="itemGroup" className="text-right">
-              Item Group
-            </Label>
-            <Select onValueChange={setGroup} value={group}>
-              <SelectTrigger id="itemGroup" className="col-span-3">
-                <SelectValue placeholder="Select a group" />
-              </SelectTrigger>
-              <SelectContent>
-                {itemGroups.map(g => (
-                    <SelectItem key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="unit" className="text-right">
-              Unit
-            </Label>
-            <Input id="unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g., Bags, Kg, Pcs" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="itemNames" className="text-right pt-2">
-              Item Names
-            </Label>
-            <Textarea 
-                id="itemNames" 
-                value={itemNames} 
-                onChange={(e) => setItemNames(e.target.value)} 
-                placeholder="UltraTech Cement&#10;Ambuja Cement&#10;ACC Suraksha" 
-                className="col-span-3 min-h-[120px]" 
-            />
-          </div>
+            <ScrollArea className="h-[50vh] w-full">
+            <Table>
+                <TableHeader className="sticky top-0 bg-background">
+                    <TableRow>
+                        <TableHead>Item Name</TableHead>
+                        <TableHead className="w-[180px]">Item Group</TableHead>
+                        <TableHead className="w-[120px]">Unit</TableHead>
+                        <TableHead className="w-[150px]">Alias Code</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {items.map((item) => (
+                        <TableRow key={item.tempId}>
+                            <TableCell>
+                                <Input 
+                                    placeholder="e.g., UltraTech Cement"
+                                    value={item.name}
+                                    onChange={(e) => handleItemChange(item.tempId, 'name', e.target.value)}
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <Select onValueChange={(value) => handleItemChange(item.tempId, 'group', value)} value={item.group}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select group" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {itemGroups.map(g => (
+                                            <SelectItem key={`${dialogId}-${item.tempId}-${g}`} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </TableCell>
+                            <TableCell>
+                                <Input 
+                                    placeholder="e.g., Bags"
+                                    value={item.unit}
+                                    onChange={(e) => handleItemChange(item.tempId, 'unit', e.target.value)}
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <Input 
+                                    placeholder="Optional"
+                                    value={item.alias}
+                                    onChange={(e) => handleItemChange(item.tempId, 'alias', e.target.value)}
+                                />
+                            </TableCell>
+                             <TableCell>
+                                <Button variant="ghost" size="icon" onClick={() => handleRemoveRow(item.tempId)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+            </ScrollArea>
         </div>
-        <DialogFooter>
+        <DialogFooter className="justify-between">
+           <Button variant="outline" onClick={handleAddRow}>
+             <PlusCircle className="mr-2 h-4 w-4" /> Add Row
+          </Button>
           <Button onClick={handleSave} className="bg-accent hover:bg-accent/90 text-accent-foreground">Save Items</Button>
         </DialogFooter>
       </DialogContent>

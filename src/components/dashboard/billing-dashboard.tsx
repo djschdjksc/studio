@@ -9,7 +9,7 @@ import TotalsSummary from "@/components/dashboard/totals-summary";
 import React, { useState, useEffect, useCallback } from "react";
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Download, Save, BookOpen, FileUp, PackagePlus } from "lucide-react";
+import { BookOpen, FileUp, PackagePlus, Save } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
 import { BillPreviewDialog } from "./bill-preview-dialog";
 import { AllBillsDialog } from "./all-bills-dialog";
@@ -129,12 +129,11 @@ export default function BillingDashboard() {
     setItems(prev => [...prev, { ...item, id: String(prev.length + 1), price: 0 }]);
   };
   
-  const addBulkItems = (newItems: Omit<Item, 'id' | 'price' | 'alias'>[]) => {
+  const addBulkItems = (newItems: Omit<Item, 'id' | 'price'>[]) => {
     const itemsToAdd = newItems.map((item, index) => ({
       ...item,
       id: String(items.length + index + 1),
       price: 0,
-      alias: ""
     }));
     setItems(prev => [...prev, ...itemsToAdd]);
   };
