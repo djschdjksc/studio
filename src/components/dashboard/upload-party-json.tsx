@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Party } from "@/lib/types";
-import { Upload } from "lucide-react";
+import { UploadCloud } from "lucide-react";
 import { useRef } from "react";
 
 interface UploadPartyJsonProps {
@@ -27,19 +27,30 @@ export function UploadPartyJson({ onUpload }: UploadPartyJsonProps) {
             throw new Error("File content is not a string");
         }
         const json = JSON.parse(text);
+        
+        let partiesToUpload: Omit<Party, 'id'>[] = [];
+
+        // Check if it's a full backup file
+        if(json.parties && Array.isArray(json.parties)) {
+            partiesToUpload = json.parties;
+        } else if (Array.isArray(json)) { // Check if it's just a party array
+            partiesToUpload = json;
+        } else {
+            throw new Error("Invalid JSON format. Expects an array of parties or a backup file with a 'parties' key.");
+        }
 
         // Basic validation
-        if (!Array.isArray(json) || !json.every(item => typeof item.name === 'string')) {
-            throw new Error("Invalid JSON format for parties. Expects an array of objects with at least a 'name' property.");
+        if (!partiesToUpload.every(item => typeof item.name === 'string')) {
+            throw new Error("Invalid party data. Each party must have at least a 'name' property.");
         }
         
-        const partiesToUpload = json.map(party => ({
+        const finalParties = partiesToUpload.map(party => ({
             name: party.name,
             address: party.address || "",
             phone: party.phone || "",
         }))
 
-        onUpload(partiesToUpload);
+        onUpload(finalParties);
 
       } catch (error) {
         console.error("Error parsing JSON file:", error);
@@ -79,8 +90,8 @@ export function UploadPartyJson({ onUpload }: UploadPartyJsonProps) {
         accept=".json"
       />
       <Button onClick={handleButtonClick} variant="outline">
-        <Upload className="mr-2 h-4 w-4" />
-        Upload Party JSON
+        <UploadCloud className="mr-2 h-4 w-4" />
+        Restore Parties
       </Button>
     </>
   );

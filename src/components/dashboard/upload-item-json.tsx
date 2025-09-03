@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Item } from "@/lib/types";
-import { Upload } from "lucide-react";
+import { UploadCloud } from "lucide-react";
 import { useRef } from "react";
 
 interface UploadItemJsonProps {
@@ -28,19 +28,31 @@ export function UploadItemJson({ onUpload }: UploadItemJsonProps) {
         }
         const json = JSON.parse(text);
 
+        let itemsToUpload: Omit<Item, 'id' | 'price'>[] = [];
+
+        // Check if it's a full backup file
+        if(json.items && Array.isArray(json.items)) {
+            itemsToUpload = json.items;
+        } else if (Array.isArray(json)) { // Check if it's just an items array
+            itemsToUpload = json;
+        } else {
+            throw new Error("Invalid JSON format. Expects an array of items or a backup file with an 'items' key.");
+        }
+
+
         // Basic validation
-        if (!Array.isArray(json) || !json.every(item => typeof item.name === 'string' && typeof item.group === 'string' && typeof item.unit === 'string')) {
-            throw new Error("Invalid JSON format for items. Expects an array of objects with name, group, and unit.");
+        if (!itemsToUpload.every(item => typeof item.name === 'string' && typeof item.group === 'string' && typeof item.unit === 'string')) {
+            throw new Error("Invalid item data. Each item must have name, group, and unit.");
         }
         
-        const itemsToUpload = json.map(item => ({
+        const finalItems = itemsToUpload.map(item => ({
             name: item.name,
             group: item.group,
             unit: item.unit,
             alias: item.alias || "",
         }))
 
-        onUpload(itemsToUpload);
+        onUpload(finalItems);
 
       } catch (error) {
         console.error("Error parsing JSON file:", error);
@@ -80,8 +92,8 @@ export function UploadItemJson({ onUpload }: UploadItemJsonProps) {
         accept=".json"
       />
       <Button onClick={handleButtonClick} variant="outline">
-        <Upload className="mr-2 h-4 w-4" />
-        Upload Item JSON
+        <UploadCloud className="mr-2 h-4 w-4" />
+        Restore Items
       </Button>
     </>
   );
