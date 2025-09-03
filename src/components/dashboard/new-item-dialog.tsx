@@ -23,6 +23,8 @@ interface NewItemDialogProps {
     itemGroups: string[];
 }
 
+const unitOptions = ["PCS", "BOXE", "BUNDLE", "SQM", "MTR"];
+
 export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
   const [name, setName] = useState("");
   const [group, setGroup] = useState("");
@@ -32,7 +34,7 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
 
   const nameRef = useRef<HTMLInputElement>(null);
   const groupTriggerRef = useRef<HTMLButtonElement>(null);
-  const unitRef = useRef<HTMLInputElement>(null);
+  const unitTriggerRef = useRef<HTMLButtonElement>(null);
   const aliasRef = useRef<HTMLInputElement>(null);
   const saveBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -88,7 +90,7 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
               Item Group
             </Label>
             <Select onValueChange={setGroup} value={group}>
-              <SelectTrigger ref={groupTriggerRef} id="itemGroup" className="col-span-3" onKeyDown={(e) => {if(e.key === 'Enter') { e.preventDefault(); unitRef.current?.focus()}}}>
+              <SelectTrigger ref={groupTriggerRef} id="itemGroup" className="col-span-3" onKeyDown={(e) => {if(e.key === 'Enter') { e.preventDefault(); unitTriggerRef.current?.focus(); unitTriggerRef.current?.click();}}}>
                 <SelectValue placeholder="Select a group" />
               </SelectTrigger>
               <SelectContent>
@@ -102,7 +104,16 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
             <Label htmlFor="unit" className="text-right">
               Unit
             </Label>
-            <Input ref={unitRef} id="unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g., Bags, Kg, Pcs" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, aliasRef)} />
+            <Select onValueChange={setUnit} value={unit}>
+                <SelectTrigger ref={unitTriggerRef} id="unit" className="col-span-3" onKeyDown={(e) => {if(e.key === 'Enter') { e.preventDefault(); aliasRef.current?.focus()}}}>
+                    <SelectValue placeholder="Select a unit" />
+                </SelectTrigger>
+                <SelectContent>
+                    {unitOptions.map(u => (
+                        <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="alias" className="text-right">

@@ -35,6 +35,8 @@ const createNewBulkItem = (tempId: string): BulkItem => ({
     alias: "",
 });
 
+const unitOptions = ["PCS", "BOXE", "BUNDLE", "SQM", "MTR"];
+
 export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps) {
   const [items, setItems] = useState<BulkItem[]>([createNewBulkItem(crypto.randomUUID())]);
   const [isOpen, setIsOpen] = useState(false);
@@ -74,7 +76,6 @@ export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps
         return;
     }
     
-    // remove tempId from the objects
     const itemsToSave = validItems.map(({tempId, ...rest}) => rest);
 
     onSave(itemsToSave);
@@ -87,6 +88,40 @@ export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps
     setItems([createNewBulkItem(crypto.randomUUID())]);
     setIsOpen(false);
   }
+
+  const handleKeyDown = (e: React.KeyboardEvent, tempId: string, fieldName: 'name' | 'group' | 'unit' | 'alias') => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+
+    const fieldOrder: ('name' | 'group' | 'unit' | 'alias')[] = ['name', 'group', 'unit', 'alias'];
+    const currentIndex = fieldOrder.indexOf(fieldName);
+    
+    if (currentIndex < fieldOrder.length - 1) {
+        const nextField = fieldOrder[currentIndex + 1];
+        const nextInput = document.getElementById(`${nextField}-${tempId}`);
+        if(nextInput) {
+            nextInput.focus();
+            if(nextInput.getAttribute('role') === 'combobox') {
+              (nextInput as HTMLButtonElement).click();
+            }
+        }
+    } else {
+        const currentItemIndex = items.findIndex(item => item.tempId === tempId);
+        if(currentItemIndex === items.length - 1) {
+            handleAddRow();
+            setTimeout(() => {
+                const nextItem = items[items.length - 1];
+                const nextInput = document.getElementById(`name-${nextItem.tempId}`);
+                nextInput?.focus();
+            }, 0)
+        } else {
+            const nextItem = items[currentItemIndex + 1];
+            const nextInput = document.getElementById(`name-${nextItem.tempId}`);
+            nextInput?.focus();
+        }
+    }
+  }
+
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -120,14 +155,16 @@ export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps
                         <TableRow key={item.tempId}>
                             <TableCell>
                                 <Input 
+                                    id={`name-${item.tempId}`}
                                     placeholder="e.g., UltraTech Cement"
                                     value={item.name}
                                     onChange={(e) => handleItemChange(item.tempId, 'name', e.target.value)}
+                                    onKeyDown={(e) => handleKeyDown(e, item.tempId, 'name')}
                                 />
                             </TableCell>
                             <TableCell>
                                 <Select onValueChange={(value) => handleItemChange(item.tempId, 'group', value)} value={item.group}>
-                                    <SelectTrigger>
+                                    <SelectTrigger id={`group-${item.tempId}`} onKeyDown={(e) => handleKeyDown(e, item.tempId, 'group')}>
                                         <SelectValue placeholder="Select group" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -138,17 +175,24 @@ export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps
                                 </Select>
                             </TableCell>
                             <TableCell>
-                                <Input 
-                                    placeholder="e.g., Bags"
-                                    value={item.unit}
-                                    onChange={(e) => handleItemChange(item.tempId, 'unit', e.target.value)}
-                                />
+                               <Select onValueChange={(value) => handleItemChange(item.tempId, 'unit', value)} value={item.unit}>
+                                    <SelectTrigger id={`unit-${item.tempId}`} onKeyDown={(e) => handleKeyDown(e, item.tempId, 'unit')}>
+                                        <SelectValue placeholder="Select unit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {unitOptions.map(u => (
+                                            <SelectItem key={`${dialogId}-${item.tempId}-${u}`} value={u}>{u}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </TableCell>
                             <TableCell>
                                 <Input 
+                                    id={`alias-${item.tempId}`}
                                     placeholder="Optional"
                                     value={item.alias}
                                     onChange={(e) => handleItemChange(item.tempId, 'alias', e.target.value)}
+                                    onKeyDown={(e) => handleKeyDown(e, item.tempId, 'alias')}
                                 />
                             </TableCell>
                              <TableCell>
