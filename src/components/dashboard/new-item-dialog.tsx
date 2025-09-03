@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Item } from "@/lib/types";
 import { PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, KeyboardEvent } from "react";
 
 interface NewItemDialogProps {
     onSave: (item: Omit<Item, 'id' | 'price'>) => void;
@@ -29,7 +30,14 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
   const [alias, setAlias] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
+  const nameRef = useRef<HTMLInputElement>(null);
+  const groupTriggerRef = useRef<HTMLButtonElement>(null);
+  const unitRef = useRef<HTMLInputElement>(null);
+  const aliasRef = useRef<HTMLInputElement>(null);
+  const saveBtnRef = useRef<HTMLButtonElement>(null);
+
   const handleSave = () => {
+    if(!name.trim() || !group.trim() || !unit.trim()) return;
     onSave({ name, group, unit, alias });
     setName("");
     setGroup("");
@@ -37,6 +45,21 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
     setAlias("");
     setIsOpen(false);
   }
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, nextFieldRef: React.RefObject<HTMLInputElement | HTMLButtonElement>) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (nextFieldRef.current) {
+            nextFieldRef.current.focus();
+            if(nextFieldRef.current.getAttribute('role') === 'combobox') {
+              (nextFieldRef.current as HTMLButtonElement).click();
+            }
+        } else {
+          handleSave();
+        }
+    }
+  }
+
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -46,7 +69,7 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
           New Item
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={() => nameRef.current?.focus()}>
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
           <DialogDescription>
@@ -58,14 +81,14 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
             <Label htmlFor="itemName" className="text-right">
               Item Name
             </Label>
-            <Input id="itemName" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., UltraTech Cement" className="col-span-3" />
+            <Input ref={nameRef} id="itemName" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., UltraTech Cement" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, groupTriggerRef)} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="itemGroup" className="text-right">
               Item Group
             </Label>
             <Select onValueChange={setGroup} value={group}>
-              <SelectTrigger id="itemGroup" className="col-span-3">
+              <SelectTrigger ref={groupTriggerRef} id="itemGroup" className="col-span-3" onKeyDown={(e) => {if(e.key === 'Enter') { e.preventDefault(); unitRef.current?.focus()}}}>
                 <SelectValue placeholder="Select a group" />
               </SelectTrigger>
               <SelectContent>
@@ -79,17 +102,17 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
             <Label htmlFor="unit" className="text-right">
               Unit
             </Label>
-            <Input id="unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g., Bags, Kg, Pcs" className="col-span-3" />
+            <Input ref={unitRef} id="unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g., Bags, Kg, Pcs" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, aliasRef)} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="alias" className="text-right">
               Alias Code
             </Label>
-            <Input id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g., UTC01" className="col-span-3" />
+            <Input ref={aliasRef} id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g., UTC01" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, saveBtnRef)} />
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave} className="bg-accent hover:bg-accent/90 text-accent-foreground">Save Item</Button>
+          <Button ref={saveBtnRef} onClick={handleSave} className="bg-accent hover:bg-accent/90 text-accent-foreground">Save Item</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

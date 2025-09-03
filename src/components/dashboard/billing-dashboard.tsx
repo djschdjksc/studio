@@ -9,7 +9,7 @@ import TotalsSummary from "@/components/dashboard/totals-summary";
 import React, { useState, useEffect, useCallback } from "react";
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Download, Save, BookOpen } from "lucide-react";
+import { Download, Save, BookOpen, FileUp } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
 import { BillPreviewDialog } from "./bill-preview-dialog";
 import { AllBillsDialog } from "./all-bills-dialog";
@@ -37,6 +37,7 @@ const initialFilters: Omit<SearchFiltersState, 'date'> = {
     vehicleNo: "",
     vehicleType: "",
     billType: "sale",
+    notes: "",
 };
 
 
@@ -283,8 +284,8 @@ export default function BillingDashboard() {
             <Save className="mr-2 h-4 w-4" />
             Save Bill
           </Button>
-          <Button variant="secondary" onClick={() => setIsBillPreviewOpen(true)}>
-            <Download className="mr-2 h-4 w-4" />
+          <Button onClick={() => setIsBillPreviewOpen(true)}>
+            <FileUp className="mr-2 h-4 w-4" />
             Preview Bill
           </Button>
         </div>

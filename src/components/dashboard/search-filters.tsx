@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
-import { Download, Search } from "lucide-react";
+import { Download } from "lucide-react";
 import { Party, SearchFiltersState } from "@/lib/types";
+import { Textarea } from "../ui/textarea";
 
 interface SearchFiltersProps {
   parties: Party[];
@@ -40,7 +42,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 items-end">
-          <div className="space-y-2 col-span-2">
+          <div className="space-y-2 col-span-2 xl:col-span-1">
             <Label htmlFor="partyName">Party Name</Label>
             <Select onValueChange={(val) => handleFieldChange('partyName', val)} value={filters.partyName}>
                 <SelectTrigger id="partyName">
@@ -51,15 +53,15 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
                 </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2 col-span-2">
+          <div className="space-y-2 col-span-2 xl:col-span-2">
             <Label htmlFor="address">Address</Label>
             <Input id="address" placeholder="Enter address..." value={filters.address} onChange={e => handleFieldChange('address', e.target.value)} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2 md:col-span-1">
             <Label htmlFor="date">Date</Label>
-            <DatePicker date={filters.date} onDateChange={(date) => handleFieldChange('date', date)} />
+            <DatePicker date={filters.date ? new Date(filters.date) : undefined} onDateChange={(date) => handleFieldChange('date', date)} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2 md:col-span-1">
             <Label htmlFor="slipNo">Slip No</Label>
             <div className="flex items-center gap-2">
               <Input id="slipNo" placeholder="Enter slip no..." value={filters.slipNo} onChange={e => handleFieldChange('slipNo', e.target.value)} />
@@ -101,6 +103,10 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
                 <SelectItem value="sale-return">Sale Return</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2 col-span-full xl:col-span-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea id="notes" placeholder="Enter any notes for the bill..." value={filters.notes || ''} onChange={e => handleFieldChange('notes', e.target.value)} className="h-10 resize-none" />
           </div>
         </div>
       </CardContent>

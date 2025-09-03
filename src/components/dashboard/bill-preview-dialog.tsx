@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import React, { useRef, useMemo, useCallback } from "react";
 import * as htmlToImage from "html-to-image";
 import { useToast } from "@/hooks/use-toast";
+import { FileUp, Printer, Send } from "lucide-react";
 
 interface BillPreviewDialogProps {
   isOpen: boolean;
@@ -103,7 +104,8 @@ export function BillPreviewDialog({
       .toPng(billRef.current, { cacheBust: true, pixelRatio: 2, skipFonts: true })
       .then((dataUrl) => {
         const link = document.createElement("a");
-        link.download = `bill-${filters.partyName.replace(/\s/g, '_')}-${format(new Date(), 'yyyy-MM-dd')}.png`;
+        const date = filters.date ? format(new Date(filters.date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+        link.download = `bill-${filters.partyName.replace(/\s/g, '_')}-${date}.png`;
         link.href = dataUrl;
         link.click();
         
@@ -113,7 +115,7 @@ export function BillPreviewDialog({
         });
 
         const phoneNumber = "7528847355";
-        const message = encodeURIComponent(`Bill for ${filters.partyName}.`);
+        const message = encodeURIComponent(`Bill for ${filters.partyName}. Slip No: ${filters.slipNo}`);
         window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
 
       })
@@ -125,36 +127,45 @@ export function BillPreviewDialog({
             description: "Could not create bill image. Please try again.",
         })
       });
-  }, [filters.partyName, toast]);
+  }, [filters.partyName, filters.date, filters.slipNo, toast]);
 
   const filteredBillingItems = billingItems.filter(item => item.itemName && item.quantity);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
-        <ScrollArea className="max-h-[90vh]">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle>Bill Preview</DialogTitle>
+          <DialogDescription>
+            Review the bill details below before printing or sending.
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="max-h-[70vh] border-t">
             <div ref={billRef} className="bg-white text-black" id="bill-preview-content">
                 <div className="p-8">
-                <DialogHeader className="mb-8">
-                    <DialogTitle className="text-center text-4xl font-bold text-gray-800">BillTrack Pro</DialogTitle>
-                    <DialogDescription className="text-center text-sm text-gray-500">
+                <header className="mb-8 text-center">
+                    <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
+                    <p className="text-sm text-gray-500">
                         Your Trusted Billing Partner <br />
                         123 Business Rd, Commerce City, 12345
-                    </DialogDescription>
-                </DialogHeader>
+                    </p>
+                </header>
                 <style>{`
                 @media print {
                     body * {
-                    visibility: hidden;
+                      visibility: hidden;
                     }
-                    #bill-preview-content, #bill-preview-content * {
-                    visibility: visible;
+                    #bill-preview-dialog, #bill-preview-dialog * {
+                      visibility: visible;
                     }
-                    #bill-preview-content {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
+                    #bill-preview-dialog {
+                      position: absolute;
+                      left: 0;
+                      top: 0;
+                      width: 100%;
+                      height: auto;
+                      overflow: visible;
+                      max-height: none;
                     }
                     #dialog-footer {
                         display: none;
@@ -167,7 +178,7 @@ export function BillPreviewDialog({
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
                         <div><strong>Party Name:</strong> {filters.partyName}</div>
                         <div className="col-span-2"><strong>Address:</strong> {filters.address}</div>
-                        <div><strong>Date:</strong> {filters.date ? format(filters.date, 'PPP') : 'N/A'}</div>
+                        <div><strong>Date:</strong> {filters.date ? format(new Date(filters.date), 'PPP') : 'N/A'}</div>
                         <div><strong>Slip No:</strong> {filters.slipNo || 'N/A'}</div>
                         <div><strong>Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
                         <div><strong>Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
@@ -207,7 +218,15 @@ export function BillPreviewDialog({
 
                 <Separator className="my-6" />
 
-                <section id="summary-section" className="flex justify-end">
+                <section id="summary-section" className="flex justify-between items-start">
+                     <div className="w-full md:w-1/3">
+                        {filters.notes && (
+                             <>
+                                <h2 className="text-lg font-semibold mb-3 border-b pb-2">Notes</h2>
+                                <p className="text-sm text-gray-600 whitespace-pre-wrap">{filters.notes}</p>
+                             </>
+                        )}
+                    </div>
                     <div className="w-full md:w-2/3 lg:w-1/2">
                         <h2 className="text-lg font-semibold mb-3 border-b pb-2">Summary</h2>
                         <Table>
@@ -249,8 +268,9 @@ export function BillPreviewDialog({
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-          <Button onClick={handlePrint}>Print Bill</Button>
+          <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/>Print Bill</Button>
           <Button onClick={handleSendWhatsApp} className="bg-green-600 hover:bg-green-700 text-white">
+            <Send className="mr-2 h-4 w-4" />
             Send to WhatsApp
           </Button>
         </DialogFooter>

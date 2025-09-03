@@ -1,3 +1,4 @@
+
 export interface Party {
     id: string;
     name: string;
@@ -31,6 +32,7 @@ export interface SearchFiltersState {
     vehicleNo: string;
     vehicleType: string;
     billType: string;
+    notes?: string;
 }
 
 export interface SummaryItem {
