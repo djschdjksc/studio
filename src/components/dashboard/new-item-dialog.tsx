@@ -23,7 +23,7 @@ interface NewItemDialogProps {
     itemGroups: string[];
 }
 
-const unitOptions = ["PCS", "BOXE", "BUNDLE", "SQM", "MTR"];
+const unitOptions = ["PCS", "BOXE", "BUNDLE", "SQM", "MTR", "PKT"];
 
 export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
   const [name, setName] = useState("");

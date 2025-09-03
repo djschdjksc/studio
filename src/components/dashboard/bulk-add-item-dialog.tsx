@@ -35,7 +35,7 @@ const createNewBulkItem = (tempId: string): BulkItem => ({
     alias: "",
 });
 
-const unitOptions = ["PCS", "BOXE", "BUNDLE", "SQM", "MTR"];
+const unitOptions = ["PCS", "BOXE", "BUNDLE", "SQM", "MTR", "PKT"];
 
 export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps) {
   const [items, setItems] = useState<BulkItem[]>([createNewBulkItem(crypto.randomUUID())]);

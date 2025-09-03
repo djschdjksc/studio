@@ -173,16 +173,16 @@ export function BillPreviewDialog({
                 }
                 `}</style>
                 
-                <section id="filters-section" className="mb-6 p-4 border rounded-lg">
-                    <h2 className="text-lg font-semibold mb-3 border-b pb-2">Bill Details</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
-                        <div><strong>Party Name:</strong> {filters.partyName}</div>
-                        <div className="col-span-2"><strong>Address:</strong> {filters.address}</div>
-                        <div><strong>Date:</strong> {filters.date ? format(new Date(filters.date), 'PPP') : 'N/A'}</div>
-                        <div><strong>Slip No:</strong> {filters.slipNo || 'N/A'}</div>
-                        <div><strong>Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
-                        <div><strong>Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
-                        <div><strong>Bill Type:</strong> <span className="capitalize">{filters.billType}</span></div>
+                <section id="filters-section" className="mb-6 p-4 border rounded-lg text-base">
+                    <h2 className="text-xl font-semibold mb-3 border-b pb-2">Bill Details</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+                        <div><strong className="font-semibold">Party Name:</strong> {filters.partyName}</div>
+                        <div className="col-span-2"><strong className="font-semibold">Address:</strong> {filters.address}</div>
+                        <div><strong className="font-semibold">Date:</strong> {filters.date ? format(new Date(filters.date), 'PPP') : 'N/A'}</div>
+                        <div><strong className="font-semibold">Slip No:</strong> {filters.slipNo || 'N/A'}</div>
+                        <div><strong className="font-semibold">Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
+                        <div><strong className="font-semibold">Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
+                        <div><strong className="font-semibold">Bill Type:</strong> <span className="capitalize">{filters.billType}</span></div>
                     </div>
                 </section>
 
