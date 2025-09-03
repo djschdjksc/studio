@@ -64,7 +64,7 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant="outline">
           <PlusCircle className="mr-2 h-4 w-4" />
           New Item
         </Button>
@@ -108,7 +108,7 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
             <Label htmlFor="alias" className="text-right">
               Alias Code
             </Label>
-            <Input ref={aliasRef} id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g., UTC01" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, saveBtnRef)} />
+            <Input ref={aliasRef} id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g., UTC01 (Optional)" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, saveBtnRef)} />
           </div>
         </div>
         <DialogFooter>
