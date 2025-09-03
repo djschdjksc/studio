@@ -15,6 +15,8 @@ import { BillPreviewDialog } from "./bill-preview-dialog";
 import { AllBillsDialog } from "./all-bills-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { BulkAddItemDialog } from "./bulk-add-item-dialog";
+import { UploadPartyJson } from "./upload-party-json";
+import { UploadItemJson } from "./upload-item-json";
 
 const defaultParties: Party[] = [];
 const defaultItemGroups: string[] = [];
@@ -124,6 +126,18 @@ export default function BillingDashboard() {
   const addParty = (party: Omit<Party, 'id'>) => {
     setParties(prev => [...prev, { ...party, id: String(prev.length + 1) }]);
   };
+  
+  const handlePartyUpload = (uploadedParties: Omit<Party, 'id'>[]) => {
+    const newParties = uploadedParties.map((party, index) => ({
+      ...party,
+      id: String(parties.length + index + 1),
+    }));
+    setParties(prev => [...prev, ...newParties]);
+     toast({
+        title: "Parties Uploaded!",
+        description: `${newParties.length} parties have been added.`,
+    });
+  }
 
   const addItem = (item: Omit<Item, 'id' | 'price'>) => {
     setItems(prev => [...prev, { ...item, id: String(prev.length + 1), price: 0 }]);
@@ -136,6 +150,19 @@ export default function BillingDashboard() {
       price: 0,
     }));
     setItems(prev => [...prev, ...itemsToAdd]);
+  };
+
+  const handleItemUpload = (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
+    const newItems = uploadedItems.map((item, index) => ({
+      ...item,
+      id: String(items.length + index + 1),
+      price: 0
+    }));
+    setItems(prev => [...prev, ...newItems]);
+    toast({
+        title: "Items Uploaded!",
+        description: `${newItems.length} items have been added.`,
+    });
   };
 
   const addItemGroup = (groupName: string) => {
@@ -283,6 +310,8 @@ export default function BillingDashboard() {
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
         <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
         <div className="flex items-center gap-2">
+          <UploadPartyJson onUpload={handlePartyUpload} />
+          <UploadItemJson onUpload={handleItemUpload} />
           <Button variant="outline" onClick={() => setIsAllBillsOpen(true)}>
             <BookOpen className="mr-2 h-4 w-4" />
             All Bills
