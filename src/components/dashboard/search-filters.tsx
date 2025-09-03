@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { Party, SearchFiltersState } from "@/lib/types";
 import { Textarea } from "../ui/textarea";
+import { PartySearchCombobox } from "./party-search-combobox";
 
 interface SearchFiltersProps {
   parties: Party[];
@@ -24,7 +25,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
     const newFilters = { ...filters, [field]: value };
     
     if (field === 'partyName') {
-      const party = parties.find(p => p.name === value);
+      const party = parties.find(p => p.name.toLowerCase() === String(value).toLowerCase());
       if (party) {
         newFilters.address = party.address;
       } else {
@@ -44,14 +45,11 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 items-end">
           <div className="space-y-2 col-span-2 xl:col-span-1">
             <Label htmlFor="partyName">Party Name</Label>
-            <Select onValueChange={(val) => handleFieldChange('partyName', val)} value={filters.partyName}>
-                <SelectTrigger id="partyName">
-                    <SelectValue placeholder="Select party" />
-                </SelectTrigger>
-                <SelectContent>
-                    {parties.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
-                </SelectContent>
-            </Select>
+            <PartySearchCombobox
+                parties={parties}
+                value={filters.partyName}
+                onChange={(value) => handleFieldChange('partyName', value)}
+            />
           </div>
           <div className="space-y-2 col-span-2 xl:col-span-2">
             <Label htmlFor="address">Address</Label>
