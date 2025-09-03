@@ -59,14 +59,22 @@ export function PartySearchCombobox({ parties, value, onChange }: PartySearchCom
                     onChange(currentValue === value ? "" : currentValue)
                     setOpen(false)
                   }}
+                  className="flex-col items-start px-2 py-1.5"
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value.toLowerCase() === party.name.toLowerCase() ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {party.name}
+                  <div className="flex items-center w-full">
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value.toLowerCase() === party.name.toLowerCase() ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="font-medium">{party.name}</span>
+                  </div>
+                  {party.address && (
+                    <div className="ml-6 text-xs text-muted-foreground">
+                      {party.address}
+                    </div>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
