@@ -33,7 +33,7 @@ export interface BillingItem {
 export interface SearchFiltersState {
     partyName: string;
     address: string;
-    date: Date | string;
+    date: Date | string | undefined;
     slipNo: string;
     vehicleNo: string;
     vehicleType: string;
