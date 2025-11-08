@@ -1,95 +1,14 @@
-/**
- * @file Firestore Security Rules for BillTrack Pro
- * @description This ruleset enforces a public-read, owner-write model for top-level collections,
- *  and allows full access to all authenticated users for all entities.
- *
- * Data Structure:
- * - /parties/{partyId}: Stores party information.
- * - /itemGroups/{itemGroupId}: Stores item group information.
- * - /itemGroups/{itemGroupId}/items/{itemId}: Stores items associated with an item group.
- * - /billingRecords/{billingRecordId}: Stores billing records.
- * - /billingRecords/{billingRecordId}/billingRecordItems/{billingRecordItemId}: Stores individual items associated with a billing record.
- *
- * Key Security Decisions:
- * - Read access (get, list) is open to the public for all collections to ensure data availability.
- * - Write access (create, update, delete) is allowed for all authenticated users, prioritizing ease of use during the prototyping phase.
- * - No specific schema validation is enforced beyond requiring a valid authentication state.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Manages access to party information.
-     * @path /parties/{partyId}
-     * @allow (get, list) Public read access is allowed.
-     * @allow (create, update, delete) Any authenticated user can create, update, or delete party data.
-     * @deny (create, update, delete) Unauthenticated users cannot modify party data.
-     * @principle Allows public read access for all parties.
-     */
-    match /parties/{partyId} {
-      allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
-    }
-
-    /**
-     * @description Manages access to item group information.
-     * @path /itemGroups/{itemGroupId}
-     * @allow (get, list) Public read access is allowed.
-     * @allow (create, update, delete) Any authenticated user can create, update, or delete item group data.
-     * @deny (create, update, delete) Unauthenticated users cannot modify item group data.
-     * @principle Allows public read access for all item groups.
-     */
-    match /itemGroups/{itemGroupId} {
-      allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
-
-      /**
-       * @description Manages access to items within an item group.
-       * @path /itemGroups/{itemGroupId}/items/{itemId}
-       * @allow (get, list) Public read access is allowed.
-       * @allow (create, update, delete) Any authenticated user can create, update, or delete item data.
-       * @deny (create, update, delete) Unauthenticated users cannot modify item data.
-       * @principle Allows public read access for all items within an item group.
-       */
-      match /items/{itemId} {
-        allow get, list: if true;
-        allow create, update, delete: if isSignedIn();
-      }
-    }
-
-    /**
-     * @description Manages access to billing records.
-     * @path /billingRecords/{billingRecordId}
-     * @allow (get, list) Public read access is allowed.
-     * @allow (create, update, delete) Any authenticated user can create, update, or delete billing record data.
-     * @deny (create, update, delete) Unauthenticated users cannot modify billing record data.
-     * @principle Allows public read access for all billing records.
-     */
-    match /billingRecords/{billingRecordId} {
-      allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
-
-      /**
-       * @description Manages access to billing record items within a billing record.
-       * @path /billingRecords/{billingRecordId}/billingRecordItems/{billingRecordItemId}
-       * @allow (get, list) Public read access is allowed.
-       * @allow (create, update, delete) Any authenticated user can create, update, or delete billing record item data.
-       * @deny (create, update, delete) Unauthenticated users cannot modify billing record item data.
-       * @principle Allows public read access for all billing record items within a billing record.
-       */
-      match /billingRecordItems/{billingRecordItemId} {
-        allow get, list: if true;
-        allow create, update, delete: if isSignedIn();
-      }
-    }
-
-    /**
-     * @description Checks if the user is signed in.
-     * @return {bool} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
+    // Allow public read access and authenticated write access to all collections
+    // This is a permissive rule for rapid prototyping.
+    // Consider adding more granular security rules for production.
+    match /{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
   }
 }

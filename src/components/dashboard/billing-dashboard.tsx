@@ -7,7 +7,7 @@ import SearchFilters from "@/components/dashboard/search-filters";
 import MainBillingTable from "@/components/dashboard/main-billing-table";
 import TotalsSummary from "@/components/dashboard/totals-summary";
 import React, { useState, useEffect, useCallback } from "react";
-import { Party, Item, BillingItem, SearchFiltersState, SavedBill } from "@/lib/types";
+import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { BookOpen, FileUp, PackagePlus, Save, DatabaseBackup } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
@@ -18,10 +18,9 @@ import { BulkAddItemDialog } from "./bulk-add-item-dialog";
 import { UploadPartyJson } from "./upload-party-json";
 import { UploadItemJson } from "./upload-item-json";
 import { BackupDialog } from "./backup-dialog";
-
-const defaultParties: Party[] = [];
-const defaultItemGroups: string[] = [];
-const defaultItems: Item[] = [];
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc, writeBatch, setDoc, deleteDoc } from "firebase/firestore";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -46,11 +45,22 @@ const initialFilters: Omit<SearchFiltersState, 'date'> = {
 
 
 export default function BillingDashboard() {
-  const [parties, setParties] = useState<Party[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
-  const [itemGroups, setItemGroups] = useState<string[]>([]);
+  const firestore = useFirestore();
+
+  const partiesQuery = useMemoFirebase(() => collection(firestore, 'parties'), [firestore]);
+  const { data: parties, isLoading: partiesLoading } = useCollection<Party>(partiesQuery);
+
+  const itemsQuery = useMemoFirebase(() => collection(firestore, 'items'), [firestore]);
+  const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
+
+  const itemGroupsQuery = useMemoFirebase(() => collection(firestore, 'itemGroups'), [firestore]);
+  const { data: itemGroups, isLoading: itemGroupsLoading } = useCollection<ItemGroup>(itemGroupsQuery);
+
+  const savedBillsQuery = useMemoFirebase(() => collection(firestore, 'billingRecords'), [firestore]);
+  const { data: savedBills, isLoading: billsLoading } = useCollection<SavedBill>(savedBillsQuery);
+
+
   const [billingItems, setBillingItems] = useState<BillingItem[]>(generateInitialBillingItems(5));
-  const [isLoaded, setIsLoaded] = useState(false);
   const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
   const [searchFilters, setSearchFilters] = useState<SearchFiltersState>({
     ...initialFilters,
@@ -59,60 +69,18 @@ export default function BillingDashboard() {
   const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
   const [isAllBillsOpen, setIsAllBillsOpen] = useState(false);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
-  const [savedBills, setSavedBills] = useState<Record<string, SavedBill>>({});
+
   const { toast } = useToast();
 
+  const isLoaded = !partiesLoading && !itemsLoading && !itemGroupsLoading && !billsLoading;
+
   useEffect(() => {
-    try {
-      const savedParties = localStorage.getItem("parties");
-      const savedItems = localStorage.getItem("items");
-      const savedItemGroups = localStorage.getItem("itemGroups");
-      const loadedSavedBills = localStorage.getItem("savedBills");
-
-      setParties(savedParties ? JSON.parse(savedParties) : defaultParties);
-      setItems(savedItems ? JSON.parse(savedItems) : defaultItems);
-      setItemGroups(savedItemGroups ? JSON.parse(savedItemGroups) : defaultItemGroups);
-      
-      const parsedSavedBills = loadedSavedBills ? JSON.parse(loadedSavedBills) : {};
-      setSavedBills(parsedSavedBills);
-
-      const slipNumbers = Object.keys(parsedSavedBills).map(Number).filter(n => !isNaN(n));
+    if (savedBills) {
+      const slipNumbers = savedBills.map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
       const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
       setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
-      
-    } catch (error) {
-      console.error("Failed to parse from local storage", error);
-      setParties(defaultParties);
-      setItems(defaultItems);
-      setItemGroups(defaultItemGroups);
-      setSavedBills({});
     }
-    setIsLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("parties", JSON.stringify(parties));
-    }
-  }, [parties, isLoaded]);
-
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("items", JSON.stringify(items));
-    }
-  }, [items, isLoaded]);
-
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("itemGroups", JSON.stringify(itemGroups));
-    }
-  }, [itemGroups, isLoaded]);
-
-  useEffect(() => {
-    if(isLoaded) {
-        localStorage.setItem("savedBills", JSON.stringify(savedBills));
-    }
-  }, [savedBills, isLoaded]);
+  }, [savedBills]);
 
   const clearForm = useCallback((nextSlipNo: string) => {
     setBillingItems(generateInitialBillingItems(5));
@@ -126,50 +94,66 @@ export default function BillingDashboard() {
 
 
   const addParty = (party: Omit<Party, 'id'>) => {
-    setParties(prev => [...prev, { ...party, id: String(prev.length + 1) }]);
+    const partyRef = doc(collection(firestore, 'parties'));
+    addDocumentNonBlocking(collection(firestore, 'parties'), { ...party, id: partyRef.id });
   };
   
-  const handlePartyUpload = (uploadedParties: Omit<Party, 'id'>[]) => {
-    const newParties = uploadedParties.map((party, index) => ({
-      ...party,
-      id: String(index + 1), // Reset IDs
-    }));
-    setParties(newParties); // Replace old parties
+  const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
+    const batch = writeBatch(firestore);
+    parties?.forEach(party => {
+        const docRef = doc(firestore, 'parties', party.id);
+        batch.delete(docRef);
+    });
+    uploadedParties.forEach(party => {
+        const docRef = doc(collection(firestore, 'parties'));
+        batch.set(docRef, { ...party, id: docRef.id });
+    });
+    await batch.commit();
      toast({
         title: "Parties Restored!",
-        description: `Restored ${newParties.length} parties. Old data has been replaced.`,
+        description: `Restored ${uploadedParties.length} parties. Old data has been replaced.`,
     });
   }
 
   const addItem = (item: Omit<Item, 'id' | 'price'>) => {
-    setItems(prev => [...prev, { ...item, id: String(prev.length + 1), price: 0 }]);
+    const itemRef = doc(collection(firestore, 'items'));
+    addDocumentNonBlocking(collection(firestore, 'items'), { ...item, id: itemRef.id, price: 0 });
   };
   
-  const addBulkItems = (newItems: Omit<Item, 'id' | 'price'>[]) => {
-    const itemsToAdd = newItems.map((item, index) => ({
-      ...item,
-      id: String(items.length + index + 1),
-      price: 0,
-    }));
-    setItems(prev => [...prev, ...itemsToAdd]);
+  const addBulkItems = async (newItems: Omit<Item, 'id' | 'price'>[]) => {
+    const batch = writeBatch(firestore);
+    newItems.forEach(item => {
+        const docRef = doc(collection(firestore, 'items'));
+        batch.set(docRef, { ...item, id: docRef.id, price: 0 });
+    });
+    await batch.commit();
+    toast({
+      title: "Items Added!",
+      description: `${newItems.length} new items have been added.`,
+    });
   };
 
-  const handleItemUpload = (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
-    const newItems = uploadedItems.map((item, index) => ({
-      ...item,
-      id: String(index + 1), // Reset IDs
-      price: 0
-    }));
-    setItems(newItems); // Replace old items
+  const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
+    const batch = writeBatch(firestore);
+    items?.forEach(item => {
+        const docRef = doc(firestore, 'items', item.id);
+        batch.delete(docRef);
+    });
+    uploadedItems.forEach(item => {
+        const docRef = doc(collection(firestore, 'items'));
+        batch.set(docRef, { ...item, id: docRef.id, price: 0 });
+    });
+    await batch.commit();
     toast({
         title: "Items Restored!",
-        description: `Restored ${newItems.length} items. Old data has been replaced.`,
+        description: `Restored ${uploadedItems.length} items. Old data has been replaced.`,
     });
   };
 
   const addItemGroup = (groupName: string) => {
-    if (groupName && !itemGroups.includes(groupName)) {
-      setItemGroups(prev => [...prev, groupName]);
+    if (groupName && !itemGroups?.some(g => g.name.toLowerCase() === groupName.toLowerCase())) {
+       const groupRef = doc(collection(firestore, 'itemGroups'));
+       setDocumentNonBlocking(groupRef, { name: groupName, id: groupRef.id }, {});
     }
   };
 
@@ -193,7 +177,7 @@ export default function BillingDashboard() {
     }
 
     if (field === 'itemName') {
-      const selectedItem = items.find(i => i.name.toLowerCase() === String(value).toLowerCase());
+      const selectedItem = items?.find(i => i.name.toLowerCase() === String(value).toLowerCase());
       if (selectedItem) {
         itemToUpdate.unit = selectedItem.unit;
       } else {
@@ -219,18 +203,14 @@ export default function BillingDashboard() {
       return;
     }
 
-    const billData = {
+    const billData: Omit<SavedBill, 'id'> = {
       filters: { ...searchFilters, date: searchFilters.date ? new Date(searchFilters.date).toISOString() : new Date().toISOString() },
-      billingItems,
+      billingItems: billingItems.filter(item => item.itemName && item.quantity),
       manualPrices
     };
-
-    const newSavedBills = {
-        ...savedBills,
-        [searchFilters.slipNo]: billData
-    };
     
-    setSavedBills(newSavedBills);
+    const docRef = doc(firestore, 'billingRecords', searchFilters.slipNo);
+    setDocumentNonBlocking(docRef, billData, {});
 
     toast({
         title: "Bill Saved!",
@@ -254,7 +234,8 @@ export default function BillingDashboard() {
         });
         return;
     }
-    const billData = savedBills[slipNo];
+    const billData = savedBills?.find(b => b.filters.slipNo === slipNo);
+
     if (billData) {
       const loadedFilters = {
         ...billData.filters,
@@ -280,6 +261,12 @@ export default function BillingDashboard() {
     return <div>Loading...</div>;
   }
 
+  const savedBillsAsRecord: Record<string, WithId<SavedBill>> = (savedBills || []).reduce((acc, bill) => {
+    acc[bill.filters.slipNo] = bill;
+    return acc;
+  }, {} as Record<string, WithId<SavedBill>>);
+
+
   return (
     <div className="flex flex-col min-h-screen">
        <BillPreviewDialog 
@@ -287,32 +274,33 @@ export default function BillingDashboard() {
           onClose={() => setIsBillPreviewOpen(false)}
           filters={searchFilters}
           billingItems={billingItems}
-          items={items}
+          items={items || []}
           manualPrices={manualPrices}
        />
        <AllBillsDialog
           isOpen={isAllBillsOpen}
           onClose={() => setIsAllBillsOpen(false)}
-          savedBills={savedBills}
+          savedBills={savedBillsAsRecord}
           onLoadBill={(slipNo) => {
             handleLoadBill(slipNo);
             setIsAllBillsOpen(false);
           }}
           onDeleteBill={(slipNo) => {
-            const newSavedBills = { ...savedBills };
-            delete newSavedBills[slipNo];
-            setSavedBills(newSavedBills);
-            toast({
-                title: "Bill Deleted",
-                description: `Bill with Slip No. ${slipNo} has been deleted.`,
-            });
+            const billToDelete = savedBills?.find(b => b.filters.slipNo === slipNo);
+            if (billToDelete) {
+              deleteDocumentNonBlocking(doc(firestore, 'billingRecords', billToDelete.id));
+              toast({
+                  title: "Bill Deleted",
+                  description: `Bill with Slip No. ${slipNo} has been deleted.`,
+              });
+            }
           }}
-          items={items}
+          items={items || []}
        />
         <BackupDialog
           isOpen={isBackupOpen}
           onClose={() => setIsBackupOpen(false)}
-          data={{ parties, items, savedBills }}
+          data={{ parties: parties || [], items: items || [], savedBills: savedBillsAsRecord }}
         />
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
         <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
@@ -328,8 +316,8 @@ export default function BillingDashboard() {
             All Bills
           </Button>
           <NewItemGroupDialog onSave={addItemGroup} />
-          <BulkAddItemDialog onSave={addBulkItems} itemGroups={itemGroups} />
-          <NewItemDialog onSave={addItem} itemGroups={itemGroups} />
+          <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} />
+          <NewItemDialog onSave={addItem} itemGroups={(itemGroups || []).map(g => g.name)} />
           <NewPartyDialog onSave={addParty} />
           <Button variant="outline" onClick={handleSaveBill}>
             <Save className="mr-2 h-4 w-4" />
@@ -343,7 +331,7 @@ export default function BillingDashboard() {
       </header>
       <main className="flex-1 p-4 md:p-6 space-y-4">
         <SearchFilters 
-          parties={parties}
+          parties={parties || []}
           filters={searchFilters}
           onFiltersChange={setSearchFilters}
           onLoadBill={() => handleLoadBill()}
@@ -352,7 +340,7 @@ export default function BillingDashboard() {
           <div className="lg:col-span-3">
             <MainBillingTable 
               billingItems={billingItems}
-              items={items}
+              items={items || []}
               onAddRow={addBillingItem}
               onItemChange={handleBillingItemChange}
               onRemoveRow={removeBillingItem}
@@ -361,7 +349,7 @@ export default function BillingDashboard() {
           <div className="lg:col-span-2">
             <TotalsSummary 
               billingItems={billingItems} 
-              items={items}
+              items={items || []}
               manualPrices={manualPrices}
               onManualPriceChange={handleManualPriceChange}
              />

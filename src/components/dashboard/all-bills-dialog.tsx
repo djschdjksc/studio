@@ -23,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Item, SavedBill } from "@/lib/types";
+import { Item, SavedBill, WithId } from "@/lib/types";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { Trash2, FileText } from "lucide-react";
@@ -31,7 +31,7 @@ import { Trash2, FileText } from "lucide-react";
 interface AllBillsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  savedBills: Record<string, SavedBill>;
+  savedBills: Record<string, WithId<SavedBill>>;
   onLoadBill: (slipNo: string) => void;
   onDeleteBill: (slipNo: string) => void;
   items: Item[];
@@ -87,16 +87,14 @@ export function AllBillsDialog({
   onDeleteBill,
   items,
 }: AllBillsDialogProps) {
-  const [billToDelete, setBillToDelete] = useState<string | null>(null);
 
   const billsArray = useMemo(() => {
-    return Object.entries(savedBills)
-      .map(([slipNo, bill]) => ({
-        slipNo,
+    return Object.values(savedBills)
+      .map((bill) => ({
         ...bill,
         grandTotal: calculateGrandTotal(bill, items),
       }))
-      .sort((a, b) => Number(b.slipNo) - Number(a.slipNo));
+      .sort((a, b) => Number(b.filters.slipNo) - Number(a.filters.slipNo));
   }, [savedBills, items]);
 
   return (
@@ -128,8 +126,8 @@ export function AllBillsDialog({
                 </TableRow>
               ) : (
                 billsArray.map((bill) => (
-                  <TableRow key={bill.slipNo}>
-                    <TableCell className="font-medium">{bill.slipNo}</TableCell>
+                  <TableRow key={bill.id}>
+                    <TableCell className="font-medium">{bill.filters.slipNo}</TableCell>
                     <TableCell>
                       {bill.filters.date
                         ? format(new Date(bill.filters.date), "PPP")
@@ -143,7 +141,7 @@ export function AllBillsDialog({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onLoadBill(bill.slipNo)}
+                          onClick={() => onLoadBill(bill.filters.slipNo)}
                           className="mr-2"
                         >
                           <FileText className="h-4 w-4 mr-1" />
@@ -160,12 +158,12 @@ export function AllBillsDialog({
                             <AlertDialogHeader>
                               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the bill with Slip No. <span className="font-bold">{bill.slipNo}</span>.
+                                This action cannot be undone. This will permanently delete the bill with Slip No. <span className="font-bold">{bill.filters.slipNo}</span>.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteBill(bill.slipNo)}>
+                              <AlertDialogAction onClick={() => onDeleteBill(bill.filters.slipNo)}>
                                 Continue
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -188,4 +186,3 @@ export function AllBillsDialog({
     </Dialog>
   );
 }
-

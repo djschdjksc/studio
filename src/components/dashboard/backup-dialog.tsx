@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Item, Party, SavedBill } from "@/lib/types";
+import { Item, Party, SavedBill, WithId } from "@/lib/types";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Download } from "lucide-react";
@@ -24,7 +24,7 @@ interface BackupDialogProps {
   data: {
     parties: Party[];
     items: Item[];
-    savedBills: Record<string, SavedBill>;
+    savedBills: Record<string, WithId<SavedBill>>;
   }
 }
 
@@ -44,7 +44,7 @@ export function BackupDialog({ isOpen, onClose, data }: BackupDialogProps) {
         backupData.items = data.items;
     }
     if (includeSavedBills) {
-        backupData.savedBills = data.savedBills;
+        backupData.savedBills = Object.values(data.savedBills);
     }
 
     if (Object.keys(backupData).length === 0) {

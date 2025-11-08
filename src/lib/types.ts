@@ -6,6 +6,11 @@ export interface Party {
     phone: string;
 }
 
+export interface ItemGroup {
+    id: string;
+    name: string;
+}
+
 export interface Item {
     id: string;
     name: string;
@@ -43,7 +48,10 @@ export interface SummaryItem {
 }
 
 export interface SavedBill {
+    id: string;
     filters: SearchFiltersState;
     billingItems: BillingItem[];
     manualPrices: Record<string, number>;
 }
+
+export type WithId<T> = T & { id: string };
