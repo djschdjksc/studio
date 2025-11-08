@@ -71,17 +71,63 @@
         "manualPrices": { "type": "object", "additionalProperties": { "type": "number" } }
       },
       "required": ["id", "filters"]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Stores user profile information and their role.",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["viewer", "editor", "manager", "admin", "owner"] },
+        "displayName": { "type": "string" }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "AccessRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AccessRequest",
+      "type": "object",
+      "description": "Represents a user's request for a specific role.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "requestedRole": { "type": "string", "enum": ["viewer", "editor", "manager", "admin"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "denied"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "email", "requestedRole", "status", "createdAt"]
+    },
+    "AuditLog": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "AuditLog",
+        "type": "object",
+        "description": "Logs important actions performed by users.",
+        "properties": {
+            "id": { "type": "string" },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "userId": { "type": "string" },
+            "userEmail": { "type": "string", "format": "email" },
+            "action": { "type": "string" },
+            "details": { "type": "object" }
+        },
+        "required": ["id", "timestamp", "userId", "userEmail", "action"]
     }
   },
   "auth": {
-    "providers": []
+    "providers": ["password"]
   },
   "firestore": {
     "structure": [
       { "path": "/parties/{partyId}", "definition": { "entityName": "Party", "schema": { "$ref": "#/backend/entities/Party" }, "description": "Stores party information." } },
       { "path": "/itemGroups/{itemGroupId}", "definition": { "entityName": "ItemGroup", "schema": { "$ref": "#/backend/entities/ItemGroup" }, "description": "Stores item group information." } },
       { "path": "/items/{itemId}", "definition": { "entityName": "Item", "schema": { "$ref": "#/backend/entities/Item" }, "description": "Stores items." } },
-      { "path": "/billingRecords/{billingRecordId}", "definition": { "entityName": "BillingRecord", "schema": { "$ref": "#/backend/entities/BillingRecord" }, "description": "Stores billing records." } }
+      { "path": "/billingRecords/{billingRecordId}", "definition": { "entityName": "BillingRecord", "schema": { "$ref": "#/backend/entities/BillingRecord" }, "description": "Stores billing records." } },
+      { "path": "/users/{userId}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/backend/entities/UserProfile" }, "description": "Stores user profiles." } },
+      { "path": "/access_requests/{requestId}", "definition": { "entityName": "AccessRequest", "schema": { "$ref": "#/backend/entities/AccessRequest" }, "description": "Stores user access requests." } },
+      { "path": "/logs/{logId}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/backend/entities/AuditLog" }, "description": "Stores audit logs." } }
     ]
   }
 }

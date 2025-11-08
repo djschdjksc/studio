@@ -64,4 +64,22 @@ export interface UserProfile {
     displayName?: string;
 }
 
+export interface AccessRequest {
+    id: string;
+    userId: string;
+    email: string;
+    requestedRole: UserRole;
+    status: 'pending' | 'approved' | 'denied';
+    createdAt: string;
+}
+
+export interface AuditLog {
+    id: string;
+    timestamp: string;
+    userId: string;
+    userEmail: string;
+    action: string;
+    details: Record<string, any>;
+}
+
 export type WithId<T> = T & { id: string };

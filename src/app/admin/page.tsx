@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth, useCollection, useFirestore, useUser } from "@/firebase";
@@ -23,15 +24,16 @@ export default function AdminPage() {
     const { toast } = useToast();
     const router = useRouter();
 
-    const usersQuery = collection(firestore, 'users');
+    const usersQuery = firestore ? collection(firestore, 'users') : null;
     const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersQuery);
 
-    const requestsQuery = collection(firestore, 'access_requests');
+    const requestsQuery = firestore ? collection(firestore, 'access_requests') : null;
     const { data: accessRequests, isLoading: requestsLoading } = useCollection<AccessRequest>(requestsQuery);
     
     const pendingRequests = accessRequests?.filter(req => req.status === 'pending') || [];
 
     const handleRoleChange = (userId: string, newRole: UserRole) => {
+        if (!firestore) return;
         if (user?.uid === userId) {
             toast({ variant: 'destructive', title: 'Error', description: "You cannot change your own role." });
             return;
@@ -42,13 +44,12 @@ export default function AdminPage() {
     };
 
     const handleRequest = async (request: WithId<AccessRequest>, newStatus: 'approved' | 'denied') => {
+        if (!firestore) return;
         const batch = writeBatch(firestore);
         const requestRef = doc(firestore, 'access_requests', request.id);
 
         if (newStatus === 'approved') {
             const userRef = doc(firestore, 'users', request.userId);
-            // Check if user already exists
-            const userExists = users?.some(u => u.id === request.userId);
             
             batch.set(userRef, {
                 id: request.userId,

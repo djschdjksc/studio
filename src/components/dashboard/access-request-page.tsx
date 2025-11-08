@@ -22,11 +22,11 @@ export default function AccessRequestPage() {
   const [requestedRole, setRequestedRole] = useState<UserRole>('viewer');
   const [loading, setLoading] = useState(false);
 
-  const requestRef = user ? doc(collection(firestore, 'access_requests'), user.uid) : null;
+  const requestRef = user && firestore ? doc(collection(firestore, 'access_requests'), user.uid) : null;
   const { data: existingRequest, isLoading } = useDoc<AccessRequest>(requestRef);
 
   const handleRequestAccess = async () => {
-    if (!user || !user.email) {
+    if (!user || !user.email || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -52,11 +52,13 @@ export default function AccessRequestPage() {
     };
 
     try {
-      await setDoc(requestRef!, newRequest);
-      toast({
-        title: 'Request Sent',
-        description: `Your request for ${requestedRole} access has been sent for approval.`,
-      });
+      if (requestRef) {
+        await setDoc(requestRef, newRequest);
+        toast({
+          title: 'Request Sent',
+          description: `Your request for ${requestedRole} access has been sent for approval.`,
+        });
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -77,7 +79,7 @@ export default function AccessRequestPage() {
           case 'approved':
               return 'Your access has been approved! The page will reload shortly.';
           case 'denied':
-              return 'Your access request has been denied. Please contact the administrator for more information.';
+              return 'Your access request has been denied. Please contact an administrator for more information.';
           default:
               return 'Request access to the application by choosing a role and submitting your request.'
       }
@@ -113,7 +115,7 @@ export default function AccessRequestPage() {
                 </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
-                    <Button variant="ghost" onClick={() => auth.signOut()}>
+                    <Button variant="ghost" onClick={() => auth?.signOut()}>
                         <LogOut className="mr-2 h-4 w-4" /> Log Out
                     </Button>
                     <Button onClick={handleRequestAccess} disabled={loading}>
@@ -124,7 +126,7 @@ export default function AccessRequestPage() {
         )}
          {existingRequest && existingRequest.status === 'pending' && (
              <CardFooter className="flex justify-end">
-                <Button variant="ghost" onClick={() => auth.signOut()}>
+                <Button variant="ghost" onClick={() => auth?.signOut()}>
                     <LogOut className="mr-2 h-4 w-4" /> Log Out
                 </Button>
              </CardFooter>

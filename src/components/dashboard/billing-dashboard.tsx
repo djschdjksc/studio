@@ -9,13 +9,15 @@ import TotalsSummary from "@/components/dashboard/totals-summary";
 import React, { useState, useEffect, useCallback } from "react";
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileUp, PackagePlus, Save, Import, LogOut } from "lucide-react";
+import { BookOpen, FileUp, PackagePlus, Save, Import, LogOut, Shield } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
 import { BillPreviewDialog } from "./bill-preview-dialog";
 import { AllBillsDialog } from "./all-bills-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { BulkAddItemDialog } from "./bulk-add-item-dialog";
 import { ImportExportDialog } from "./import-export-dialog";
+import { useAuth } from "@/firebase";
+import Link from "next/link";
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -59,10 +61,12 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
   const [isAllBillsOpen, setIsAllBillsOpen] = useState(false);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
 
+  const auth = useAuth();
   const { toast } = useToast();
   
   const canEdit = userProfile.role === 'editor' || userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
   const canDelete = userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
+  const isAdmin = userProfile.role === 'admin' || userProfile.role === 'owner';
 
 
   useEffect(() => {
@@ -283,13 +287,16 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
             <span className="text-sm text-muted-foreground capitalize">({userProfile.role})</span>
         </div>
         <div className="flex items-center gap-2">
+            {isAdmin && (
+                <Button variant="secondary" asChild>
+                    <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
+                </Button>
+            )}
           {canEdit && (
-            <>
             <Button variant="outline" onClick={() => setIsImportExportOpen(true)}>
                 <Import className="mr-2 h-4 w-4" />
                 Import/Export
             </Button>
-            </>
           )}
           <Button variant="outline" onClick={() => setIsAllBillsOpen(true)}>
             <BookOpen className="mr-2 h-4 w-4" />
@@ -310,6 +317,9 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
           <Button onClick={() => setIsBillPreviewOpen(true)}>
             <FileUp className="mr-2 h-4 w-4" />
             Preview Bill
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => auth?.signOut()}>
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>

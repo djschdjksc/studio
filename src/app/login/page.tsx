@@ -21,6 +21,14 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   const handleAuthAction = async (action: 'login' | 'signup') => {
+    if (!auth) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication not ready',
+            description: 'Please wait a moment and try again.'
+        });
+        return;
+    }
     setLoading(true);
     try {
       if (action === 'login') {
