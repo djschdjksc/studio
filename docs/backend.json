@@ -71,63 +71,17 @@
         "manualPrices": { "type": "object", "additionalProperties": { "type": "number" } }
       },
       "required": ["id", "filters"]
-    },
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
-      "type": "object",
-      "description": "Stores user profile information, including their role.",
-      "properties": {
-        "id": { "type": "string", "description": "User ID, same as Firebase Auth UID." },
-        "email": { "type": "string", "format": "email", "description": "User's email address." },
-        "role": { "type": "string", "enum": ["viewer", "editor", "manager", "admin", "owner"], "description": "The user's role in the application." },
-        "displayName": { "type": "string", "description": "The user's display name." }
-      },
-      "required": ["id", "email", "role"]
-    },
-    "AccessRequest": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AccessRequest",
-      "type": "object",
-      "description": "Represents a user's request for a specific role.",
-      "properties": {
-        "id": { "type": "string", "description": "Unique ID for the access request." },
-        "userId": { "type": "string", "description": "The ID of the user requesting access." },
-        "email": { "type": "string", "format": "email", "description": "The email of the user requesting access." },
-        "requestedRole": { "type": "string", "enum": ["viewer", "editor", "manager", "admin"], "description": "The role the user is requesting." },
-        "status": { "type": "string", "enum": ["pending", "approved", "denied"], "description": "The status of the request." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the request was created." }
-      },
-      "required": ["id", "userId", "email", "requestedRole", "status", "createdAt"]
-    },
-    "AuditLog": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "title": "AuditLog",
-        "type": "object",
-        "description": "Logs important actions performed by users.",
-        "properties": {
-            "id": { "type": "string" },
-            "timestamp": { "type": "string", "format": "date-time" },
-            "userId": { "type": "string" },
-            "userEmail": { "type": "string" },
-            "action": { "type": "string" },
-            "details": { "type": "object", "additionalProperties": true }
-        },
-        "required": ["id", "timestamp", "userId", "userEmail", "action"]
     }
   },
   "auth": {
-    "providers": ["password", "anonymous"]
+    "providers": []
   },
   "firestore": {
     "structure": [
       { "path": "/parties/{partyId}", "definition": { "entityName": "Party", "schema": { "$ref": "#/backend/entities/Party" }, "description": "Stores party information." } },
       { "path": "/itemGroups/{itemGroupId}", "definition": { "entityName": "ItemGroup", "schema": { "$ref": "#/backend/entities/ItemGroup" }, "description": "Stores item group information." } },
       { "path": "/items/{itemId}", "definition": { "entityName": "Item", "schema": { "$ref": "#/backend/entities/Item" }, "description": "Stores items." } },
-      { "path": "/billingRecords/{billingRecordId}", "definition": { "entityName": "BillingRecord", "schema": { "$ref": "#/backend/entities/BillingRecord" }, "description": "Stores billing records." } },
-      { "path": "/users/{userId}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/backend/entities/UserProfile" }, "description": "Stores user profiles and roles." } },
-      { "path": "/access_requests/{requestId}", "definition": { "entityName": "AccessRequest", "schema": { "$ref": "#/backend/entities/AccessRequest" }, "description": "Stores user access requests." } },
-      { "path": "/logs/{logId}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/backend/entities/AuditLog" }, "description": "Stores audit logs for important actions." } }
+      { "path": "/billingRecords/{billingRecordId}", "definition": { "entityName": "BillingRecord", "schema": { "$ref": "#/backend/entities/BillingRecord" }, "description": "Stores billing records." } }
     ]
   }
 }
