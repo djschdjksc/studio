@@ -49,7 +49,7 @@ export default function Home() {
         } 
         // If there's no userProfile, they will see the AccessRequestPage.
 
-    }, [isUserLoading, user, isProfileLoading, userProfile, router]);
+    }, [isUserLoading, user, isProfileLoading, userProfile]);
 
 
     // Show a global loading indicator while checking auth or profile
