@@ -17,48 +17,61 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
-        // Redirect to login if auth check is done and there's no user.
-        if (!isUserLoading && !user) {
+        // Wait until the initial authentication check is complete.
+        if (isUserLoading) {
+            return; // Do nothing while we check for a user.
+        }
+
+        // If auth is done and there's NO user, redirect to login.
+        if (!user) {
             router.push('/login');
+            return;
         }
         
-        // Redirect to admin if profile is loaded and role is admin/owner.
-        if (!isProfileLoading && userProfile && (userProfile.role === 'owner' || userProfile.role === 'admin')) {
-            router.push('/admin');
+        // If there IS a user, but we are still loading their profile, do nothing yet.
+        if (isProfileLoading) {
+            return;
         }
-    }, [isUserLoading, user, userProfile, isProfileLoading, router]);
 
-    // Show loading spinner while either auth state or profile is loading.
+        // If the profile is loaded, check their role.
+        if (userProfile) {
+            if (userProfile.role === 'owner' || userProfile.role === 'admin') {
+                router.push('/admin');
+            }
+            // Otherwise, they are a regular user, so they stay on the main page
+            // which will render the BillingDashboard below.
+        } 
+        // If there's a user but no profile document after loading, they need to request access.
+        // The component will render the AccessRequestPage below.
+
+    }, [isUserLoading, user, isProfileLoading, userProfile, router]);
+
+    // This is the primary loading state for the entire page.
+    // It shows while we're checking for a user OR while we're fetching their profile.
     if (isUserLoading || (user && isProfileLoading)) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
     
-    // If auth is done but there is no user, useEffect will redirect.
-    // Show a message in the meantime.
+    // After loading, if there's no user, the useEffect has already started the redirect.
     if (!user) {
         return <div className="flex items-center justify-center min-h-screen">Redirecting to login...</div>;
     }
 
-    // If profile is loaded and the user is an admin, useEffect will redirect.
-    // Show a message in the meantime.
-    if (userProfile && (userProfile.role === 'owner' || userProfile.role === 'admin')) {
-        return <div className="flex items-center justify-center min-h-screen">Redirecting to admin panel...</div>
-    }
-
-    // If profile is loaded but doesn't exist, show the access request page.
-    if (user && !userProfile) {
+    // If we have a user but no profile, show the access request page.
+    if (!userProfile) {
         return <AccessRequestPage />;
     }
 
-    // If all checks pass and the user has a valid profile, show the dashboard.
-    if (userProfile) {
-        return (
-            <div className="min-h-screen w-full bg-background">
-                <BillingDashboard userProfile={userProfile} />
-            </div>
-        );
+    // If the user has a profile with a role, but it's an admin/owner role,
+    // the useEffect has already started the redirect.
+    if (userProfile.role === 'owner' || userProfile.role === 'admin') {
+        return <div className="flex items-center justify-center min-h-screen">Redirecting to admin panel...</div>
     }
 
-    // Fallback case, should not be reached in normal flow.
-    return <div className="flex items-center justify-center min-h-screen">An unexpected error occurred.</div>;
+    // Finally, if all checks pass, show the main dashboard.
+    return (
+        <div className="min-h-screen w-full bg-background">
+            <BillingDashboard userProfile={userProfile} />
+        </div>
+    );
 }
