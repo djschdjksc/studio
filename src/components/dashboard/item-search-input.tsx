@@ -31,10 +31,13 @@ export function ItemSearchInput({ id, items, value, onValueChange, onKeyDown }: 
     onValueChange(query);
 
     if (query.length > 0) {
+      const lowerCaseQuery = query.toLowerCase();
       const filteredSuggestions = items.filter(
-        item =>
-          item.name.toLowerCase().includes(query.toLowerCase()) ||
-          (item.alias && String(item.alias).toLowerCase().includes(query.toLowerCase()))
+        item => {
+          const nameMatch = item.name.toLowerCase().includes(lowerCaseQuery);
+          const aliasMatch = item.alias && item.alias.toLowerCase().includes(lowerCaseQuery);
+          return nameMatch || aliasMatch;
+        }
       );
       setSuggestions(filteredSuggestions);
       setShowSuggestions(true);
@@ -89,7 +92,7 @@ export function ItemSearchInput({ id, items, value, onValueChange, onKeyDown }: 
         return;
       } else if (e.key === 'Escape') {
         setShowSuggestions(false);
-        setActiveIndex(--1);
+        setActiveIndex(-1);
         return;
       }
     }
