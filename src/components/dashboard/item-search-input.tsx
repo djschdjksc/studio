@@ -35,7 +35,7 @@ export function ItemSearchInput({ id, items, value, onValueChange, onKeyDown }: 
       const filteredSuggestions = items.filter(
         item => {
           const nameMatch = item.name.toLowerCase().includes(lowerCaseQuery);
-          const aliasMatch = item.alias && item.alias.toLowerCase().includes(lowerCaseQuery);
+          const aliasMatch = typeof item.alias === 'string' && item.alias.toLowerCase().includes(lowerCaseQuery);
           return nameMatch || aliasMatch;
         }
       );
