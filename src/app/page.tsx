@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useDoc, useFirestore } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 
@@ -15,24 +15,40 @@ export default function Home() {
     const firestore = useFirestore();
     const router = useRouter();
 
-    // Create a stable reference to the user profile document
-    const userProfileRef = user ? doc(firestore, 'users', user.uid) : null;
+    const userProfileRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
+    
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
-        // If auth state is not loading and there's no user, redirect to login
-        if (!isUserLoading && !user) {
+        // While initial user auth is happening, we don't do anything.
+        if (isUserLoading) {
+            return;
+        }
+
+        // When auth is resolved, if there's no user, redirect to login.
+        if (!user) {
             router.push('/login');
             return;
         }
 
-        // If auth is done, user exists, profile is loaded, and profile exists...
-        if (!isUserLoading && user && !isProfileLoading && userProfile) {
-            // Redirect admins/owners to the admin panel
+        // If we have a user, but the profile is still loading, we also wait.
+        if (isProfileLoading) {
+            return;
+        }
+
+        // At this point, we have a user and their profile loading is complete.
+        if (userProfile) {
+            // If profile exists, check role and redirect if admin/owner.
             if (userProfile.role === 'admin' || userProfile.role === 'owner') {
                 router.push('/admin');
             }
-        }
+            // Otherwise, they stay on this page to see the dashboard.
+        } 
+        // If there's no userProfile, they will see the AccessRequestPage.
+
     }, [isUserLoading, user, isProfileLoading, userProfile, router]);
 
 
@@ -47,7 +63,7 @@ export default function Home() {
     }
 
     // If user has a profile and is not an admin/owner, show the main dashboard
-    if (userProfile) {
+    if (userProfile && (userProfile.role === 'viewer' || userProfile.role === 'editor' || userProfile.role === 'manager')) {
         return (
             <div className="min-h-screen w-full bg-background">
                 <BillingDashboard userProfile={userProfile} />
@@ -55,6 +71,7 @@ export default function Home() {
         );
     }
     
-    // Fallback, typically renders loading or redirects. Can be a blank page.
+    // Fallback case: e.g. for an admin who is being redirected.
+    // Showing "Loading..." here prevents a flash of other content during redirection.
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
 }
