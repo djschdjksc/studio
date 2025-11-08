@@ -1,0 +1,277 @@
+{
+  "entities": {
+    "Party": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Party",
+      "type": "object",
+      "description": "Represents a party involved in billing.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Party entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the party."
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the party."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Phone number of the party."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Item": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Item",
+      "type": "object",
+      "description": "Represents an item that can be billed.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Item entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the item."
+        },
+        "itemGroupId": {
+          "type": "string",
+          "description": "Reference to ItemGroup. (Relationship: ItemGroup 1:N Item)"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement for the item."
+        },
+        "aliasCode": {
+          "type": "string",
+          "description": "Alias code for the item."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "unit"
+      ]
+    },
+    "ItemGroup": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ItemGroup",
+      "type": "object",
+      "description": "Represents a group of items.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ItemGroup entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the item group."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "BillingRecord": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BillingRecord",
+      "type": "object",
+      "description": "Represents a billing record.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the BillingRecord entity."
+        },
+        "partyId": {
+          "type": "string",
+          "description": "Reference to Party. (Relationship: Party 1:N BillingRecord)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the billing record.",
+          "format": "date-time"
+        },
+        "slipNumber": {
+          "type": "string",
+          "description": "Slip number associated with the billing record."
+        },
+        "vehicleNumber": {
+          "type": "string",
+          "description": "Vehicle number associated with the billing record."
+        },
+        "vehicleName": {
+          "type": "string",
+          "description": "Vehicle name associated with the billing record."
+        },
+        "billType": {
+          "type": "string",
+          "description": "Type of bill (sale, sale return)."
+        },
+        "billingRecordItems": {
+          "type": "array",
+          "description": "A list of billing record items.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "partyId",
+        "date",
+        "billType"
+      ]
+    },
+    "BillingRecordItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BillingRecordItem",
+      "type": "object",
+      "description": "Represents a single item within a billing record.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the BillingRecordItem entity."
+        },
+        "billingRecordId": {
+          "type": "string",
+          "description": "Reference to BillingRecord. (Relationship: BillingRecord 1:N BillingRecordItem)"
+        },
+        "itemId": {
+          "type": "string",
+          "description": "Reference to Item. (Relationship: Item 1:N BillingRecordItem)"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the item."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement for the item in this record."
+        },
+        "uCap": {
+          "type": "number",
+          "description": "Upper Cap value."
+        },
+        "lCap": {
+          "type": "number",
+          "description": "Lower Cap value."
+        }
+      },
+      "required": [
+        "id",
+        "billingRecordId",
+        "itemId",
+        "quantity",
+        "unit"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/parties/{partyId}",
+        "definition": {
+          "entityName": "Party",
+          "schema": {
+            "$ref": "#/backend/entities/Party"
+          },
+          "description": "Stores party information. Parties are the top-level entity so ownership is not applicable.",
+          "params": [
+            {
+              "name": "partyId",
+              "description": "Unique identifier for the party."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/itemGroups/{itemGroupId}",
+        "definition": {
+          "entityName": "ItemGroup",
+          "schema": {
+            "$ref": "#/backend/entities/ItemGroup"
+          },
+          "description": "Stores item group information. Item Groups are the top-level entity so ownership is not applicable.",
+          "params": [
+            {
+              "name": "itemGroupId",
+              "description": "Unique identifier for the item group."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/itemGroups/{itemGroupId}/items/{itemId}",
+        "definition": {
+          "entityName": "Item",
+          "schema": {
+            "$ref": "#/backend/entities/Item"
+          },
+          "description": "Stores items associated with an item group.",
+          "params": [
+            {
+              "name": "itemGroupId",
+              "description": "Unique identifier for the item group."
+            },
+            {
+              "name": "itemId",
+              "description": "Unique identifier for the item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/billingRecords/{billingRecordId}",
+        "definition": {
+          "entityName": "BillingRecord",
+          "schema": {
+            "$ref": "#/backend/entities/BillingRecord"
+          },
+          "description": "Stores billing records. Billing Records are the top-level entity so ownership is not applicable.",
+          "params": [
+            {
+              "name": "billingRecordId",
+              "description": "Unique identifier for the billing record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/billingRecords/{billingRecordId}/billingRecordItems/{billingRecordItemId}",
+        "definition": {
+          "entityName": "BillingRecordItem",
+          "schema": {
+            "$ref": "#/backend/entities/BillingRecordItem"
+          },
+          "description": "Stores individual items associated with a billing record.",
+          "params": [
+            {
+              "name": "billingRecordId",
+              "description": "Unique identifier for the billing record."
+            },
+            {
+              "name": "billingRecordItemId",
+              "description": "Unique identifier for the billing record item."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the BillTrack Pro application, emphasizing secure and scalable data management.  A key requirement is to ensure data consistency and prevent unauthorized access, thus each top-level collection is segregated by entity type.  Hierarchical data relationships (e.g., a Party having multiple BillingRecords) are represented using subcollections to efficiently query related data and maintain data integrity. To enable simple, robust, and debuggable security rules and **Authorization Independence**, denormalization is used to copy authorization-relevant data to subcollections, eliminating the need for `get()` calls in security rules.  This approach supports atomic operations (transactions/batches) and simplifies debugging.  The structure is also designed to facilitate secure `list` operations (QAPs) by ensuring that all documents within a collection share the same security requirements (Structural Segregation).  Standard access patterns like path-based ownership are employed where applicable.\n\nSpecifically:\n\n*   **Parties:** Stores information about parties involved in billing. \n*   **Items & ItemGroups:** Stores information related to items and item groups. ItemGroups use a top-level collection and the Items are stored as a subcollection. This is to limit the scope and enforce the collection to be only items.\n*   **BillingRecords:** Stores billing records, with subcollections for BillingRecordItems.\n\nThe denormalization strategy ensures that authorization checks within subcollections (e.g., BillingRecordItems) do not rely on retrieving parent document data. This prevents potential security vulnerabilities and performance bottlenecks.\n\nTo support secure `list` operations (QAPs), each collection is designed to contain documents with homogeneous security requirements. This means, for example, that public and private data are not mixed within the same collection."
+  }
+}
