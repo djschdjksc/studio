@@ -1,14 +1,12 @@
-
 'use client';
 
-import { useAuth, useDoc, useFirestore, useUser } from "@/firebase";
+import { useDoc, useFirestore, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { UserProfile } from "@/lib/types";
 import BillingDashboard from "@/components/dashboard/billing-dashboard";
 import AccessRequestPage from "@/components/dashboard/access-request-page";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-
 
 export default function Home() {
     const firestore = useFirestore();
@@ -19,40 +17,48 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
+        // Redirect to login if auth check is done and there's no user.
         if (!isUserLoading && !user) {
             router.push('/login');
         }
-    }, [isUserLoading, user, router]);
-
-    useEffect(() => {
+        
+        // Redirect to admin if profile is loaded and role is admin/owner.
         if (!isProfileLoading && userProfile && (userProfile.role === 'owner' || userProfile.role === 'admin')) {
             router.push('/admin');
         }
-    }, [isProfileLoading, userProfile, router]);
-    
+    }, [isUserLoading, user, userProfile, isProfileLoading, router]);
 
+    // Show loading spinner while either auth state or profile is loading.
     if (isUserLoading || (user && isProfileLoading)) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
     
+    // If auth is done but there is no user, useEffect will redirect.
+    // Show a message in the meantime.
     if (!user) {
-        // This state is brief, as the useEffect above will redirect.
         return <div className="flex items-center justify-center min-h-screen">Redirecting to login...</div>;
     }
-    
+
+    // If profile is loaded and the user is an admin, useEffect will redirect.
+    // Show a message in the meantime.
     if (userProfile && (userProfile.role === 'owner' || userProfile.role === 'admin')) {
-        // This state is brief, as the useEffect above will redirect.
         return <div className="flex items-center justify-center min-h-screen">Redirecting to admin panel...</div>
     }
 
-    if (!userProfile) {
-        // User is logged in but has no profile, show access request page.
+    // If profile is loaded but doesn't exist, show the access request page.
+    if (user && !userProfile) {
         return <AccessRequestPage />;
     }
 
-    return (
-        <div className="min-h-screen w-full bg-background">
-            <BillingDashboard userProfile={userProfile} />
-        </div>
-    );
+    // If all checks pass and the user has a valid profile, show the dashboard.
+    if (userProfile) {
+        return (
+            <div className="min-h-screen w-full bg-background">
+                <BillingDashboard userProfile={userProfile} />
+            </div>
+        );
+    }
+
+    // Fallback case, should not be reached in normal flow.
+    return <div className="flex items-center justify-center min-h-screen">An unexpected error occurred.</div>;
 }
