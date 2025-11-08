@@ -34,7 +34,7 @@ export function ItemSearchInput({ id, items, value, onValueChange, onKeyDown }: 
       const filteredSuggestions = items.filter(
         item =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
-          (item.alias && item.alias.toLowerCase().includes(query.toLowerCase()))
+          (item.alias && String(item.alias).toLowerCase().includes(query.toLowerCase()))
       );
       setSuggestions(filteredSuggestions);
       setShowSuggestions(true);
@@ -89,7 +89,7 @@ export function ItemSearchInput({ id, items, value, onValueChange, onKeyDown }: 
         return;
       } else if (e.key === 'Escape') {
         setShowSuggestions(false);
-        setActiveIndex(-1);
+        setActiveIndex(--1);
         return;
       }
     }
