@@ -35,6 +35,7 @@ interface AllBillsDialogProps {
   onLoadBill: (slipNo: string) => void;
   onDeleteBill: (slipNo: string) => void;
   items: Item[];
+  canDelete: boolean;
 }
 
 const calculateGrandTotal = (bill: SavedBill, items: Item[]): number => {
@@ -86,6 +87,7 @@ export function AllBillsDialog({
   onLoadBill,
   onDeleteBill,
   items,
+  canDelete,
 }: AllBillsDialogProps) {
 
   const billsArray = useMemo(() => {
@@ -114,7 +116,7 @@ export function AllBillsDialog({
                 <TableHead>Date</TableHead>
                 <TableHead>Party Name</TableHead>
                 <TableHead className="text-right">Grand Total</TableHead>
-                <TableHead className="text-center w-[150px]">Actions</TableHead>
+                <TableHead className="text-center w-[200px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -147,29 +149,30 @@ export function AllBillsDialog({
                           <FileText className="h-4 w-4 mr-1" />
                           Load
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                             <Button variant="destructive" size="sm">
-                                <Trash2 className="h-4 w-4 mr-1"/>
-                                Delete
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the bill with Slip No. <span className="font-bold">{bill.filters.slipNo}</span>.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteBill(bill.filters.slipNo)}>
-                                Continue
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-
+                        {canDelete && (
+                            <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                    <Trash2 className="h-4 w-4 mr-1"/>
+                                    Delete
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the bill with Slip No. <span className="font-bold">{bill.filters.slipNo}</span>.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDeleteBill(bill.filters.slipNo)}>
+                                    Continue
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                        )}
                     </TableCell>
                   </TableRow>
                 ))

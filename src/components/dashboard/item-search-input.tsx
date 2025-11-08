@@ -12,9 +12,10 @@ interface ItemSearchInputProps {
     value: string;
     onValueChange: (value: string) => void;
     onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+    disabled?: boolean;
 }
 
-export function ItemSearchInput({ id, items, value, onValueChange, onKeyDown }: ItemSearchInputProps) {
+export function ItemSearchInput({ id, items, value, onValueChange, onKeyDown, disabled }: ItemSearchInputProps) {
   const [inputValue, setInputValue] = React.useState(value);
   const [suggestions, setSuggestions] = React.useState<Item[]>([]);
   const [showSuggestions, setShowSuggestions] = React.useState(false);
@@ -125,6 +126,7 @@ export function ItemSearchInput({ id, items, value, onValueChange, onKeyDown }: 
         placeholder="Type to search..."
         autoComplete="off"
         className="w-full"
+        disabled={disabled}
       />
       {showSuggestions && suggestions.length > 0 && (
         <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">

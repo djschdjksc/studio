@@ -7,9 +7,9 @@ import SearchFilters from "@/components/dashboard/search-filters";
 import MainBillingTable from "@/components/dashboard/main-billing-table";
 import TotalsSummary from "@/components/dashboard/totals-summary";
 import React, { useState, useEffect, useCallback } from "react";
-import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup } from "@/lib/types";
+import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileUp, PackagePlus, Save, Import } from "lucide-react";
+import { BookOpen, FileUp, PackagePlus, Save, Import, LogOut } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
 import { BillPreviewDialog } from "./bill-preview-dialog";
 import { AllBillsDialog } from "./all-bills-dialog";
@@ -18,7 +18,6 @@ import { BulkAddItemDialog } from "./bulk-add-item-dialog";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, doc, writeBatch, setDoc, deleteDoc } from "firebase/firestore";
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { ImportExportDialog } from "./import-export-dialog";
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
@@ -42,11 +41,15 @@ const initialFilters: Omit<SearchFiltersState, 'date'> = {
     notes: "",
 };
 
+interface BillingDashboardProps {
+  userProfile: UserProfile;
+}
 
-export default function BillingDashboard() {
+
+export default function BillingDashboard({ userProfile }: BillingDashboardProps) {
   const firestore = useFirestore();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser();
 
   const partiesQuery = useMemoFirebase(() => user ? collection(firestore, 'parties') : null, [firestore, user]);
   const { data: parties, isLoading: partiesLoading } = useCollection<Party>(partiesQuery);
@@ -59,12 +62,6 @@ export default function BillingDashboard() {
 
   const savedBillsQuery = useMemoFirebase(() => user ? collection(firestore, 'billingRecords') : null, [firestore, user]);
   const { data: savedBills, isLoading: billsLoading } = useCollection<SavedBill>(savedBillsQuery);
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth);
-    }
-  }, [isUserLoading, user, auth]);
 
 
   const [billingItems, setBillingItems] = useState<BillingItem[]>(generateInitialBillingItems(5));
@@ -79,7 +76,11 @@ export default function BillingDashboard() {
 
   const { toast } = useToast();
 
-  const isLoaded = !partiesLoading && !itemsLoading && !itemGroupsLoading && !billsLoading && !isUserLoading && user;
+  const isLoaded = !partiesLoading && !itemsLoading && !itemGroupsLoading && !billsLoading && user;
+  
+  const canEdit = userProfile.role === 'editor' || userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
+  const canDelete = userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
+
 
   useEffect(() => {
     if (savedBills) {
@@ -101,12 +102,13 @@ export default function BillingDashboard() {
 
 
   const addParty = (party: Omit<Party, 'id'>) => {
+    if (!canEdit) return;
     const partyRef = doc(collection(firestore, 'parties'));
     addDocumentNonBlocking(collection(firestore, 'parties'), { ...party, id: partyRef.id });
   };
   
   const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
-    if (!user) return;
+    if (!canEdit) return;
     const batch = writeBatch(firestore);
     parties?.forEach(party => {
         const docRef = doc(firestore, 'parties', party.id);
@@ -124,13 +126,13 @@ export default function BillingDashboard() {
   }
 
   const addItem = (item: Omit<Item, 'id' | 'price'>) => {
-    if (!user) return;
+    if (!canEdit) return;
     const itemRef = doc(collection(firestore, 'items'));
     addDocumentNonBlocking(collection(firestore, 'items'), { ...item, id: itemRef.id, price: 0 });
   };
   
   const addBulkItems = async (newItems: Omit<Item, 'id' | 'price'>[]) => {
-    if (!user) return;
+    if (!canEdit) return;
     const batch = writeBatch(firestore);
     newItems.forEach(item => {
         const docRef = doc(collection(firestore, 'items'));
@@ -144,7 +146,7 @@ export default function BillingDashboard() {
   };
 
   const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
-    if (!user) return;
+    if (!canEdit) return;
     const batch = writeBatch(firestore);
     items?.forEach(item => {
         const docRef = doc(firestore, 'items', item.id);
@@ -162,6 +164,7 @@ export default function BillingDashboard() {
   };
 
   const addItemGroup = (groupName: string) => {
+    if (!canEdit) return;
     if (groupName && user && !itemGroups?.some(g => g.name.toLowerCase() === groupName.toLowerCase())) {
        const groupRef = doc(collection(firestore, 'itemGroups'));
        setDocumentNonBlocking(groupRef, { name: groupName, id: groupRef.id }, {});
@@ -205,7 +208,7 @@ export default function BillingDashboard() {
   }
 
   const handleSaveBill = () => {
-    if (!user) return;
+    if (!canEdit) return;
     if (!searchFilters.slipNo) {
       toast({
         variant: "destructive",
@@ -298,7 +301,7 @@ export default function BillingDashboard() {
             setIsAllBillsOpen(false);
           }}
           onDeleteBill={(slipNo) => {
-            if (!user) return;
+            if (!canDelete) return;
             const billToDelete = savedBills?.find(b => b.filters.slipNo === slipNo);
             if (billToDelete) {
               deleteDocumentNonBlocking(doc(firestore, 'billingRecords', billToDelete.id));
@@ -309,6 +312,7 @@ export default function BillingDashboard() {
             }
           }}
           items={items || []}
+          canDelete={canDelete}
        />
         <ImportExportDialog
           isOpen={isImportExportOpen}
@@ -316,29 +320,44 @@ export default function BillingDashboard() {
           data={{ parties: parties || [], items: items || [], savedBills: savedBills || [] }}
           onImportParties={handlePartyUpload}
           onImportItems={handleItemUpload}
+          canEdit={canEdit}
         />
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
-        <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
+        <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
+            <span className="text-sm text-muted-foreground capitalize">({userProfile.role})</span>
+        </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setIsImportExportOpen(true)}>
-            <Import className="mr-2 h-4 w-4" />
-            Import/Export
-          </Button>
+          {canEdit && (
+            <>
+            <Button variant="outline" onClick={() => setIsImportExportOpen(true)}>
+                <Import className="mr-2 h-4 w-4" />
+                Import/Export
+            </Button>
+            </>
+          )}
           <Button variant="outline" onClick={() => setIsAllBillsOpen(true)}>
             <BookOpen className="mr-2 h-4 w-4" />
             All Bills
           </Button>
-          <NewItemGroupDialog onSave={addItemGroup} />
-          <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} />
-          <NewItemDialog onSave={addItem} itemGroups={(itemGroups || []).map(g => g.name)} />
-          <NewPartyDialog onSave={addParty} />
-          <Button variant="outline" onClick={handleSaveBill}>
-            <Save className="mr-2 h-4 w-4" />
-            Save Bill
-          </Button>
+          {canEdit && (
+            <>
+              <NewItemGroupDialog onSave={addItemGroup} />
+              <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} />
+              <NewItemDialog onSave={addItem} itemGroups={(itemGroups || []).map(g => g.name)} />
+              <NewPartyDialog onSave={addParty} />
+              <Button variant="outline" onClick={handleSaveBill}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Bill
+              </Button>
+            </>
+          )}
           <Button onClick={() => setIsBillPreviewOpen(true)}>
             <FileUp className="mr-2 h-4 w-4" />
             Preview Bill
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => auth.signOut()}>
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>
@@ -348,6 +367,7 @@ export default function BillingDashboard() {
           filters={searchFilters}
           onFiltersChange={setSearchFilters}
           onLoadBill={() => handleLoadBill()}
+          canEdit={canEdit}
          />
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3">
@@ -357,6 +377,7 @@ export default function BillingDashboard() {
               onAddRow={addBillingItem}
               onItemChange={handleBillingItemChange}
               onRemoveRow={removeBillingItem}
+              canEdit={canEdit}
             />
           </div>
           <div className="lg:col-span-2">
@@ -365,6 +386,7 @@ export default function BillingDashboard() {
               items={items || []}
               manualPrices={manualPrices}
               onManualPriceChange={handleManualPriceChange}
+              canEdit={canEdit}
              />
           </div>
         </div>

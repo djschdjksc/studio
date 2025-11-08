@@ -1,4 +1,5 @@
 
+
 export interface Party {
     id: string;
     name: string;
@@ -53,5 +54,33 @@ export interface SavedBill {
     billingItems: BillingItem[];
     manualPrices: Record<string, number>;
 }
+
+export type UserRole = 'viewer' | 'editor' | 'manager' | 'admin' | 'owner';
+
+export interface UserProfile {
+    id: string;
+    email: string;
+    role: UserRole;
+    displayName?: string;
+}
+
+export interface AccessRequest {
+    id: string;
+    userId: string;
+    email: string;
+    requestedRole: UserRole;
+    status: 'pending' | 'approved' | 'denied';
+    createdAt: string;
+}
+
+export interface AuditLog {
+    id: string;
+    timestamp: string;
+    userId: string;
+    userEmail: string;
+    action: string;
+    details: Record<string, any>;
+}
+
 
 export type WithId<T> = T & { id: string };

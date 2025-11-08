@@ -17,9 +17,10 @@ interface SearchFiltersProps {
   filters: SearchFiltersState;
   onFiltersChange: (filters: SearchFiltersState) => void;
   onLoadBill: () => void;
+  canEdit: boolean;
 }
 
-export default function SearchFilters({ parties, filters, onFiltersChange, onLoadBill }: SearchFiltersProps) {
+export default function SearchFilters({ parties, filters, onFiltersChange, onLoadBill, canEdit }: SearchFiltersProps) {
 
   const handleFieldChange = (field: keyof SearchFiltersState, value: any) => {
     const newFilters = { ...filters, [field]: value };
@@ -49,20 +50,21 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
                 parties={parties}
                 value={filters.partyName}
                 onChange={(value) => handleFieldChange('partyName', value)}
+                disabled={!canEdit}
             />
           </div>
           <div className="space-y-2 col-span-2 xl:col-span-2">
             <Label htmlFor="address">Address</Label>
-            <Input id="address" placeholder="Enter address..." value={filters.address} onChange={e => handleFieldChange('address', e.target.value)} />
+            <Input id="address" placeholder="Enter address..." value={filters.address} onChange={e => handleFieldChange('address', e.target.value)} disabled={!canEdit} />
           </div>
           <div className="space-y-2 col-span-2 md:col-span-1">
             <Label htmlFor="date">Date</Label>
-            <DatePicker date={filters.date ? new Date(filters.date) : undefined} onDateChange={(date) => handleFieldChange('date', date)} />
+            <DatePicker date={filters.date ? new Date(filters.date) : undefined} onDateChange={(date) => handleFieldChange('date', date)} disabled={!canEdit} />
           </div>
           <div className="space-y-2 col-span-2 md:col-span-1">
             <Label htmlFor="slipNo">Slip No</Label>
             <div className="flex items-center gap-2">
-              <Input id="slipNo" placeholder="Enter slip no..." value={filters.slipNo} onChange={e => handleFieldChange('slipNo', e.target.value)} />
+              <Input id="slipNo" placeholder="Enter slip no..." value={filters.slipNo} onChange={e => handleFieldChange('slipNo', e.target.value)} disabled={!canEdit} />
               <Button size="icon" variant="outline" onClick={onLoadBill} aria-label="Load Bill">
                 <Download className="h-4 w-4" />
               </Button>
@@ -70,11 +72,11 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
           </div>
           <div className="space-y-2">
             <Label htmlFor="vehicleNo">Vehicle No</Label>
-            <Input id="vehicleNo" placeholder="Enter vehicle no..." value={filters.vehicleNo} onChange={e => handleFieldChange('vehicleNo', e.target.value)}/>
+            <Input id="vehicleNo" placeholder="Enter vehicle no..." value={filters.vehicleNo} onChange={e => handleFieldChange('vehicleNo', e.target.value)} disabled={!canEdit} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="vehicleType">Vehicle Type</Label>
-            <Select onValueChange={(val) => handleFieldChange('vehicleType', val)} value={filters.vehicleType}>
+            <Select onValueChange={(val) => handleFieldChange('vehicleType', val)} value={filters.vehicleType} disabled={!canEdit}>
               <SelectTrigger id="vehicleType">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
@@ -92,7 +94,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
           </div>
           <div className="space-y-2">
             <Label htmlFor="billType">Bill Type</Label>
-            <Select onValueChange={(val) => handleFieldChange('billType', val)} value={filters.billType}>
+            <Select onValueChange={(val) => handleFieldChange('billType', val)} value={filters.billType} disabled={!canEdit}>
               <SelectTrigger id="billType">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
@@ -104,7 +106,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
           </div>
           <div className="space-y-2 col-span-full xl:col-span-2">
             <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" placeholder="Enter any notes for the bill..." value={filters.notes || ''} onChange={e => handleFieldChange('notes', e.target.value)} className="h-10 resize-none" />
+            <Textarea id="notes" placeholder="Enter any notes for the bill..." value={filters.notes || ''} onChange={e => handleFieldChange('notes', e.target.value)} className="h-10 resize-none" disabled={!canEdit} />
           </div>
         </div>
       </CardContent>

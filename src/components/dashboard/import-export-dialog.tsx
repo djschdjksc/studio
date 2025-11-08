@@ -30,9 +30,10 @@ interface ImportExportDialogProps {
   },
   onImportParties: (parties: Omit<Party, 'id'>[]) => void;
   onImportItems: (items: Omit<Item, 'id' | 'price'>[]) => void;
+  canEdit: boolean;
 }
 
-export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onImportItems }: ImportExportDialogProps) {
+export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onImportItems, canEdit }: ImportExportDialogProps) {
   const [includeParties, setIncludeParties] = useState(true);
   const [includeItems, setIncludeItems] = useState(true);
   const [includeSavedBills, setIncludeSavedBills] = useState(true);
@@ -89,6 +90,10 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>, type: 'parties' | 'items') => {
+    if (!canEdit) {
+        toast({ variant: "destructive", title: "Permission Denied", description: "You do not have permission to import data." });
+        return;
+    }
      const file = event.target.files?.[0];
     if (!file) return;
 
@@ -164,7 +169,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
         <Tabs defaultValue="export">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="export">Export</TabsTrigger>
-                <TabsTrigger value="import">Import</TabsTrigger>
+                <TabsTrigger value="import" disabled={!canEdit}>Import</TabsTrigger>
             </TabsList>
             <TabsContent value="export" className="pt-4">
                 <div className="flex flex-col gap-4 py-4">

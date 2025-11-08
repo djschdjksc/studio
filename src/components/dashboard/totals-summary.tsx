@@ -13,6 +13,7 @@ interface TotalsSummaryProps {
     items: Item[];
     manualPrices: Record<string, number>;
     onManualPriceChange: (group: string, price: number) => void;
+    canEdit: boolean;
 }
 
 interface SummaryItem {
@@ -22,7 +23,7 @@ interface SummaryItem {
     totalPrice: number;
 }
 
-export default function TotalsSummary({ billingItems, items, manualPrices, onManualPriceChange }: TotalsSummaryProps) {
+export default function TotalsSummary({ billingItems, items, manualPrices, onManualPriceChange, canEdit }: TotalsSummaryProps) {
 
     const { summaryItems, grandTotal } = useMemo(() => {
         const summaryMap = new Map<string, { totalQty: number, totalPrice: number }>();
@@ -140,6 +141,7 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
                         onKeyDown={(e) => handleKeyDown(e, index)}
                         className="text-right h-8"
                         placeholder="0.00"
+                        disabled={!canEdit}
                     />
                   </TableCell>
                   <TableCell className="text-right font-semibold">₹{item.totalPrice.toFixed(2)}</TableCell>

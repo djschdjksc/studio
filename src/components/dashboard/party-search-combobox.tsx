@@ -25,9 +25,10 @@ interface PartySearchComboboxProps {
     parties: Party[];
     value: string;
     onChange: (value: string) => void;
+    disabled?: boolean;
 }
 
-export function PartySearchCombobox({ parties, value, onChange }: PartySearchComboboxProps) {
+export function PartySearchCombobox({ parties, value, onChange, disabled }: PartySearchComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
   return (
@@ -38,6 +39,7 @@ export function PartySearchCombobox({ parties, value, onChange }: PartySearchCom
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between font-normal"
+          disabled={disabled}
         >
           {value
             ? parties.find((party) => party.name.toLowerCase() === value.toLowerCase())?.name

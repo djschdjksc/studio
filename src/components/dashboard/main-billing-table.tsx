@@ -16,9 +16,10 @@ interface MainBillingTableProps {
   onAddRow: () => void;
   onItemChange: (index: number, field: keyof BillingItem, value: string | number) => void;
   onRemoveRow: (srNo: number) => void;
+  canEdit: boolean;
 }
 
-export default function MainBillingTable({ billingItems, items, onAddRow, onItemChange, onRemoveRow }: MainBillingTableProps) {
+export default function MainBillingTable({ billingItems, items, onAddRow, onItemChange, onRemoveRow, canEdit }: MainBillingTableProps) {
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLButtonElement>, rowIndex: number, fieldName: keyof BillingItem | 'itemName-input') => {
     const fieldIdMap: (keyof BillingItem | 'itemName-input')[] = ['itemName-input', 'quantity', 'uCap', 'lCap'];
@@ -81,9 +82,11 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                 <CardTitle>Billing Details</CardTitle>
                 <CardDescription>All items for the current bill.</CardDescription>
             </div>
-            <Button variant="outline" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={onAddRow}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Row
-            </Button>
+            {canEdit && (
+                <Button variant="outline" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={onAddRow}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Row
+                </Button>
+            )}
         </div>
       </CardHeader>
       <CardContent className="flex-grow p-0">
@@ -111,6 +114,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                             value={item.itemName}
                             onValueChange={(value) => onItemChange(index, 'itemName', value)}
                             onKeyDown={(e) => handleKeyDown(e, index, 'itemName-input')}
+                            disabled={!canEdit}
                         />
                     </TableCell>
                     <TableCell>
@@ -122,6 +126,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                             onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
                             className="text-right"
                             placeholder="0"
+                            disabled={!canEdit}
                         />
                     </TableCell>
                     <TableCell>{item.unit}</TableCell>
@@ -134,6 +139,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                             onKeyDown={(e) => handleKeyDown(e, index, 'uCap')}
                              className="text-right"
                              placeholder="0.00"
+                             disabled={!canEdit}
                         />
                     </TableCell>
                     <TableCell>
@@ -145,12 +151,15 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                             onKeyDown={(e) => handleKeyDown(e, index, 'lCap')}
                              className="text-right"
                              placeholder="0.00"
+                             disabled={!canEdit}
                         />
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => onRemoveRow(item.srNo)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                        {canEdit && (
+                            <Button variant="ghost" size="icon" onClick={() => onRemoveRow(item.srNo)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        )}
                     </TableCell>
                 </TableRow>
                 ))}
