@@ -17,58 +17,69 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
-        // Wait until the initial authentication check is complete.
+        // Primary Gate: Wait for authentication to be determined.
+        // If we don't know if a user exists yet, don't do anything.
         if (isUserLoading) {
-            return; // Do nothing while we check for a user.
+            return;
         }
 
-        // If auth is done and there's NO user, redirect to login.
+        // State 1: No user is logged in. Redirect to the login page.
         if (!user) {
             router.push('/login');
             return;
         }
+
+        // From here on, we know a user is logged in. Now we need their profile.
         
-        // If there IS a user, but we are still loading their profile, do nothing yet.
+        // Secondary Gate: Wait for the user's profile to load.
+        // If we have a user but are still fetching their profile, do nothing.
         if (isProfileLoading) {
             return;
         }
 
-        // If the profile is loaded, check their role.
+        // State 2: User is logged in, and we have their profile data.
         if (userProfile) {
+            // State 2a: User is an admin or owner. Redirect to the admin panel.
             if (userProfile.role === 'owner' || userProfile.role === 'admin') {
                 router.push('/admin');
             }
-            // Otherwise, they are a regular user, so they stay on the main page
-            // which will render the BillingDashboard below.
-        } 
-        // If there's a user but no profile document after loading, they need to request access.
-        // The component will render the AccessRequestPage below.
+            // State 2b: User has a different role. They should see the main dashboard.
+            // No action needed, the component will render the BillingDashboard below.
+            return;
+        }
+
+        // State 3: User is logged in, profile loading is finished, but no profile exists.
+        // They need to request access.
+        // No action needed, the component will render the AccessRequestPage below.
 
     }, [isUserLoading, user, isProfileLoading, userProfile, router]);
 
-    // This is the primary loading state for the entire page.
-    // It shows while we're checking for a user OR while we're fetching their profile.
+    // Render Logic: This part decides what to show based on the current state.
+
+    // Show a global loading indicator ONLY during the initial user and profile fetch.
     if (isUserLoading || (user && isProfileLoading)) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
     
-    // After loading, if there's no user, the useEffect has already started the redirect.
+    // If auth is done and there's no user, the useEffect has already initiated the redirect.
+    // Show a message while redirecting.
     if (!user) {
         return <div className="flex items-center justify-center min-h-screen">Redirecting to login...</div>;
     }
 
-    // If we have a user but no profile, show the access request page.
+    // If the user is logged in, but has no profile document after loading.
     if (!userProfile) {
         return <AccessRequestPage />;
     }
 
-    // If the user has a profile with a role, but it's an admin/owner role,
-    // the useEffect has already started the redirect.
+    // If the user has an admin/owner role, the useEffect has already initiated the redirect.
+    // Show a message while redirecting.
     if (userProfile.role === 'owner' || userProfile.role === 'admin') {
         return <div className="flex items-center justify-center min-h-screen">Redirecting to admin panel...</div>
     }
 
-    // Finally, if all checks pass, show the main dashboard.
+    // If all checks pass, the user is authenticated and has a valid, non-admin role.
+    // Show the main application dashboard.
     return (
         <div className="min-h-screen w-full bg-background">
             <BillingDashboard userProfile={userProfile} />
