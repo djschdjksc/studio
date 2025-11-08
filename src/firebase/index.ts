@@ -48,3 +48,8 @@ export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
+export { useUser } from './provider';
+export { useFirebaseApp } from './provider';
+export { useFirestore } from './provider';
+export { useAuth } from './provider';
+export { FirebaseProvider } from './provider';
