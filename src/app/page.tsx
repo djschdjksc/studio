@@ -5,16 +5,13 @@ import { useAuth, useDoc, useFirestore, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { UserProfile } from "@/lib/types";
 import BillingDashboard from "@/components/dashboard/billing-dashboard";
-import OwnerDashboard from "@/components/dashboard/owner-dashboard";
 import AccessRequestPage from "@/components/dashboard/access-request-page";
 import { useEffect } from "react";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { useRouter } from "next/navigation";
 
 
 export default function Home() {
     const firestore = useFirestore();
-    const auth = useAuth();
     const { user, isUserLoading } = useUser();
     const router = useRouter();
 
@@ -23,28 +20,34 @@ export default function Home() {
 
     useEffect(() => {
         if (!isUserLoading && !user) {
-            // If you want to allow anonymous access requests,
-            // you might sign them in anonymously here.
-            // For now, we'll redirect to a login page.
             router.push('/login');
         }
     }, [isUserLoading, user, router]);
+
+    useEffect(() => {
+        if (!isProfileLoading && userProfile && (userProfile.role === 'owner' || userProfile.role === 'admin')) {
+            router.push('/admin');
+        }
+    }, [isProfileLoading, userProfile, router]);
+    
 
     if (isUserLoading || (user && isProfileLoading)) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
     
     if (!user) {
+        // This state is brief, as the useEffect above will redirect.
         return <div className="flex items-center justify-center min-h-screen">Redirecting to login...</div>;
+    }
+    
+    if (userProfile && (userProfile.role === 'owner' || userProfile.role === 'admin')) {
+        // This state is brief, as the useEffect above will redirect.
+        return <div className="flex items-center justify-center min-h-screen">Redirecting to admin panel...</div>
     }
 
     if (!userProfile) {
         // User is logged in but has no profile, show access request page.
         return <AccessRequestPage />;
-    }
-
-    if (userProfile.role === 'owner') {
-        return <OwnerDashboard />;
     }
 
     return (

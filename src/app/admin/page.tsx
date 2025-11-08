@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth, useCollection, useFirestore, useUser } from "@/firebase";
@@ -10,16 +9,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut } from "lucide-react";
+import { LogOut, Shield } from "lucide-react";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const roleHierarchy: UserRole[] = ['viewer', 'editor', 'manager', 'admin', 'owner'];
 
-export default function OwnerDashboard() {
+export default function AdminPage() {
     const firestore = useFirestore();
     const auth = useAuth();
     const { user } = useUser();
     const { toast } = useToast();
+    const router = useRouter();
 
     const usersQuery = collection(firestore, 'users');
     const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersQuery);
@@ -30,6 +32,10 @@ export default function OwnerDashboard() {
     const pendingRequests = accessRequests?.filter(req => req.status === 'pending') || [];
 
     const handleRoleChange = (userId: string, newRole: UserRole) => {
+        if (user?.uid === userId) {
+            toast({ variant: 'destructive', title: 'Error', description: "You cannot change your own role." });
+            return;
+        }
         const userDocRef = doc(firestore, 'users', userId);
         setDocumentNonBlocking(userDocRef, { role: newRole }, { merge: true });
         toast({ title: 'Role Updated', description: `User role has been changed to ${newRole}.` });
@@ -41,10 +47,14 @@ export default function OwnerDashboard() {
 
         if (newStatus === 'approved') {
             const userRef = doc(firestore, 'users', request.userId);
+            // Check if user already exists
+            const userExists = users?.some(u => u.id === request.userId);
+            
             batch.set(userRef, {
                 id: request.userId,
                 email: request.email,
-                role: request.requestedRole
+                role: request.requestedRole,
+                displayName: request.email.split('@')[0], // Basic display name
             }, { merge: true });
         }
         
@@ -63,20 +73,28 @@ export default function OwnerDashboard() {
 
 
     if (usersLoading || requestsLoading) {
-        return <div className="flex items-center justify-center min-h-screen">Loading Owner Dashboard...</div>;
+        return <div className="flex items-center justify-center min-h-screen">Loading Admin Dashboard...</div>;
     }
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen bg-background">
             <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
-                <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">Owner Dashboard</h1>
-                 <Button variant="ghost" size="icon" onClick={() => auth.signOut()}>
-                    <LogOut className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Shield className="h-6 w-6 text-primary" />
+                    <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">Admin Control Panel</h1>
+                </div>
+                 <div className="flex items-center gap-4">
+                    <Button variant="outline" asChild>
+                        <Link href="/">Return to App</Link>
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => auth.signOut()}>
+                        <LogOut className="h-4 w-4" />
+                    </Button>
+                 </div>
             </header>
 
-            <main className="flex-1 p-4 md:p-6 grid gap-6 md:grid-cols-2">
-                <Card>
+            <main className="flex-1 p-4 md:p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>User Management</CardTitle>
                         <CardDescription>View and manage roles for all users in the system.</CardDescription>
@@ -95,12 +113,12 @@ export default function OwnerDashboard() {
                                     <TableRow key={u.id}>
                                         <TableCell className="font-medium">{u.email}</TableCell>
                                         <TableCell>
-                                            <Badge variant={u.role === 'owner' ? 'destructive' : 'secondary'}>{u.role}</Badge>
+                                            <Badge variant={u.role === 'owner' ? 'destructive' : 'secondary'} className="capitalize">{u.role}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {u.id !== user?.uid && (
                                                 <Select onValueChange={(value: UserRole) => handleRoleChange(u.id, value)} defaultValue={u.role}>
-                                                    <SelectTrigger className="w-[120px]">
+                                                    <SelectTrigger className="w-[120px] ml-auto">
                                                         <SelectValue placeholder="Change Role"/>
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -119,7 +137,7 @@ export default function OwnerDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="lg:col-span-1">
                     <CardHeader>
                         <CardTitle>Access Requests</CardTitle>
                         <CardDescription>Approve or deny pending access requests.</CardDescription>
@@ -129,16 +147,16 @@ export default function OwnerDashboard() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Email</TableHead>
-                                    <TableHead>Requested Role</TableHead>
+                                    <TableHead>Requested</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {pendingRequests.length > 0 ? pendingRequests.map(req => (
                                     <TableRow key={req.id}>
-                                        <TableCell>{req.email}</TableCell>
+                                        <TableCell className="text-sm">{req.email}</TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{req.requestedRole}</Badge>
+                                            <Badge variant="outline" className="capitalize">{req.requestedRole}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right space-x-2">
                                             <Button size="sm" onClick={() => handleRequest(req, 'approved')}>Approve</Button>
