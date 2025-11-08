@@ -9,19 +9,17 @@ import TotalsSummary from "@/components/dashboard/totals-summary";
 import React, { useState, useEffect, useCallback } from "react";
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileUp, PackagePlus, Save, DatabaseBackup } from "lucide-react";
+import { BookOpen, FileUp, PackagePlus, Save, Import } from "lucide-react";
 import { NewItemGroupDialog } from "./new-item-group-dialog";
 import { BillPreviewDialog } from "./bill-preview-dialog";
 import { AllBillsDialog } from "./all-bills-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { BulkAddItemDialog } from "./bulk-add-item-dialog";
-import { UploadPartyJson } from "./upload-party-json";
-import { UploadItemJson } from "./upload-item-json";
-import { BackupDialog } from "./backup-dialog";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, doc, writeBatch, setDoc, deleteDoc } from "firebase/firestore";
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
+import { ImportExportDialog } from "./import-export-dialog";
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -77,7 +75,7 @@ export default function BillingDashboard() {
   });
   const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
   const [isAllBillsOpen, setIsAllBillsOpen] = useState(false);
-  const [isBackupOpen, setIsBackupOpen] = useState(false);
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -312,19 +310,19 @@ export default function BillingDashboard() {
           }}
           items={items || []}
        />
-        <BackupDialog
-          isOpen={isBackupOpen}
-          onClose={() => setIsBackupOpen(false)}
-          data={{ parties: parties || [], items: items || [], savedBills: savedBillsAsRecord }}
+        <ImportExportDialog
+          isOpen={isImportExportOpen}
+          onClose={() => setIsImportExportOpen(false)}
+          data={{ parties: parties || [], items: items || [], savedBills: savedBills || [] }}
+          onImportParties={handlePartyUpload}
+          onImportItems={handleItemUpload}
         />
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
         <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
         <div className="flex items-center gap-2">
-          <UploadPartyJson onUpload={handlePartyUpload} />
-          <UploadItemJson onUpload={handleItemUpload} />
-          <Button variant="outline" onClick={() => setIsBackupOpen(true)}>
-            <DatabaseBackup className="mr-2 h-4 w-4" />
-            Backup Data
+          <Button variant="outline" onClick={() => setIsImportExportOpen(true)}>
+            <Import className="mr-2 h-4 w-4" />
+            Import/Export
           </Button>
           <Button variant="outline" onClick={() => setIsAllBillsOpen(true)}>
             <BookOpen className="mr-2 h-4 w-4" />
