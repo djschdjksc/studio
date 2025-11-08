@@ -18,9 +18,10 @@ import { BulkAddItemDialog } from "./bulk-add-item-dialog";
 import { UploadPartyJson } from "./upload-party-json";
 import { UploadItemJson } from "./upload-item-json";
 import { BackupDialog } from "./backup-dialog";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, doc, writeBatch, setDoc, deleteDoc } from "firebase/firestore";
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -46,18 +47,26 @@ const initialFilters: Omit<SearchFiltersState, 'date'> = {
 
 export default function BillingDashboard() {
   const firestore = useFirestore();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
 
-  const partiesQuery = useMemoFirebase(() => collection(firestore, 'parties'), [firestore]);
+  const partiesQuery = useMemoFirebase(() => user ? collection(firestore, 'parties') : null, [firestore, user]);
   const { data: parties, isLoading: partiesLoading } = useCollection<Party>(partiesQuery);
 
-  const itemsQuery = useMemoFirebase(() => collection(firestore, 'items'), [firestore]);
+  const itemsQuery = useMemoFirebase(() => user ? collection(firestore, 'items') : null, [firestore, user]);
   const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
 
-  const itemGroupsQuery = useMemoFirebase(() => collection(firestore, 'itemGroups'), [firestore]);
+  const itemGroupsQuery = useMemoFirebase(() => user ? collection(firestore, 'itemGroups') : null, [firestore, user]);
   const { data: itemGroups, isLoading: itemGroupsLoading } = useCollection<ItemGroup>(itemGroupsQuery);
 
-  const savedBillsQuery = useMemoFirebase(() => collection(firestore, 'billingRecords'), [firestore]);
+  const savedBillsQuery = useMemoFirebase(() => user ? collection(firestore, 'billingRecords') : null, [firestore, user]);
   const { data: savedBills, isLoading: billsLoading } = useCollection<SavedBill>(savedBillsQuery);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [isUserLoading, user, auth]);
 
 
   const [billingItems, setBillingItems] = useState<BillingItem[]>(generateInitialBillingItems(5));
@@ -72,7 +81,7 @@ export default function BillingDashboard() {
 
   const { toast } = useToast();
 
-  const isLoaded = !partiesLoading && !itemsLoading && !itemGroupsLoading && !billsLoading;
+  const isLoaded = !partiesLoading && !itemsLoading && !itemGroupsLoading && !billsLoading && !isUserLoading && user;
 
   useEffect(() => {
     if (savedBills) {
@@ -99,6 +108,7 @@ export default function BillingDashboard() {
   };
   
   const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
+    if (!user) return;
     const batch = writeBatch(firestore);
     parties?.forEach(party => {
         const docRef = doc(firestore, 'parties', party.id);
@@ -116,11 +126,13 @@ export default function BillingDashboard() {
   }
 
   const addItem = (item: Omit<Item, 'id' | 'price'>) => {
+    if (!user) return;
     const itemRef = doc(collection(firestore, 'items'));
     addDocumentNonBlocking(collection(firestore, 'items'), { ...item, id: itemRef.id, price: 0 });
   };
   
   const addBulkItems = async (newItems: Omit<Item, 'id' | 'price'>[]) => {
+    if (!user) return;
     const batch = writeBatch(firestore);
     newItems.forEach(item => {
         const docRef = doc(collection(firestore, 'items'));
@@ -134,6 +146,7 @@ export default function BillingDashboard() {
   };
 
   const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
+    if (!user) return;
     const batch = writeBatch(firestore);
     items?.forEach(item => {
         const docRef = doc(firestore, 'items', item.id);
@@ -151,7 +164,7 @@ export default function BillingDashboard() {
   };
 
   const addItemGroup = (groupName: string) => {
-    if (groupName && !itemGroups?.some(g => g.name.toLowerCase() === groupName.toLowerCase())) {
+    if (groupName && user && !itemGroups?.some(g => g.name.toLowerCase() === groupName.toLowerCase())) {
        const groupRef = doc(collection(firestore, 'itemGroups'));
        setDocumentNonBlocking(groupRef, { name: groupName, id: groupRef.id }, {});
     }
@@ -194,6 +207,7 @@ export default function BillingDashboard() {
   }
 
   const handleSaveBill = () => {
+    if (!user) return;
     if (!searchFilters.slipNo) {
       toast({
         variant: "destructive",
@@ -258,7 +272,7 @@ export default function BillingDashboard() {
   };
   
   if (!isLoaded) {
-    return <div>Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   const savedBillsAsRecord: Record<string, WithId<SavedBill>> = (savedBills || []).reduce((acc, bill) => {
@@ -286,6 +300,7 @@ export default function BillingDashboard() {
             setIsAllBillsOpen(false);
           }}
           onDeleteBill={(slipNo) => {
+            if (!user) return;
             const billToDelete = savedBills?.find(b => b.filters.slipNo === slipNo);
             if (billToDelete) {
               deleteDocumentNonBlocking(doc(firestore, 'billingRecords', billToDelete.id));

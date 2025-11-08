@@ -3,12 +3,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow public read access and authenticated write access to all collections
-    // This is a permissive rule for rapid prototyping.
-    // Consider adding more granular security rules for production.
+    // Default deny all access
     match /{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
   }
 }
