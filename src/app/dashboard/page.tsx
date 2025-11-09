@@ -4,7 +4,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare } from "lucide-react";
+import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare, Banknote } from "lucide-react";
 import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useState, useMemo } from "react";
@@ -26,13 +26,13 @@ export default function DashboardPage() {
     const isAdmin = user?.email === 'rohitvetma101010@gmail.com';
 
     // Data fetching for Import/Export dialog
-    const partiesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'parties') : null, [firestore]);
+    const partiesQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'parties') : null, [firestore, user]);
     const { data: parties } = useCollection<Party>(partiesQuery);
 
-    const itemsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'items') : null, [firestore]);
+    const itemsQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'items') : null, [firestore, user]);
     const { data: items } = useCollection<Item>(itemsQuery);
     
-    const billingRecordsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'billingRecords') : null, [firestore]);
+    const billingRecordsQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'billingRecords') : null, [firestore, user]);
     const { data: savedBillsData } = useCollection<SavedBill>(billingRecordsQuery);
 
     const savedBills = useMemo(() => {
@@ -117,6 +117,12 @@ export default function DashboardPage() {
             description: "View opening and closing stock.",
             icon: <CheckSquare className="h-8 w-8 text-blue-600" />,
             href: "/stock-check",
+        },
+        {
+            title: "Party Balances",
+            description: "View and manage party balances.",
+            icon: <Banknote className="h-8 w-8 text-teal-600" />,
+            href: "/party-balances",
         },
         {
             title: "New Party",
