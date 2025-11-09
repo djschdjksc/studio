@@ -120,10 +120,11 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                 onImportItems(itemsToUpload);
             }
 
-            toast({
-                title: "Import Successful",
-                description: `Successfully imported ${json.length} records. Old data has been replaced.`
-            })
+            // The parent component now shows a more detailed toast.
+            // toast({
+            //     title: "Import Successful",
+            //     description: `Successfully imported ${json.length} records. Old data has been replaced.`
+            // })
 
         } catch (error) {
              toast({
@@ -205,7 +206,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                 <div className="space-y-6">
                     <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">Import Parties</h4>
-                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to replace all existing party data. Required columns: 'name', 'station'.</p>
+                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file with new parties. Duplicates based on name and station will be skipped.</p>
                         <div className="flex gap-2">
                             <input type="file" ref={partyFileInputRef} onChange={(e) => handleFileImport(e, 'parties')} className="hidden" accept=".xlsx, .xls, .csv" />
                             <Button className="flex-1" onClick={() => partyFileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4"/>Upload Party File</Button>
@@ -214,7 +215,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                     </div>
                     <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">Import Items</h4>
-                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to replace all existing item data. Required columns: 'name', 'group', 'unit'.</p>
+                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to add new items. Existing items will not be affected.</p>
                         <div className="flex gap-2">
                             <input type="file" ref={itemFileInputRef} onChange={(e) => handleFileImport(e, 'items')} className="hidden" accept=".xlsx, .xls, .csv" />
                             <Button className="flex-1" onClick={() => itemFileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4"/>Upload Item File</Button>

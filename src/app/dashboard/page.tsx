@@ -7,10 +7,10 @@ import { useRouter } from "next/navigation";
 import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ImportExportDialog } from "@/components/dashboard/import-export-dialog";
 import { Party, Item, SavedBill, WithId } from "@/lib/types";
-import { deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc } from "firebase/firestore";
 
@@ -35,7 +35,7 @@ export default function DashboardPage() {
     const billingRecordsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'billingRecords') : null, [firestore]);
     const { data: savedBillsData } = useCollection<SavedBill>(billingRecordsQuery);
 
-    const savedBills = useState(() => {
+    const savedBills = useMemo(() => {
         if (!savedBillsData) return [];
         return Object.values(savedBillsData.reduce((acc, bill) => {
             if(bill.filters.slipNo) {
@@ -43,35 +43,47 @@ export default function DashboardPage() {
             }
             return acc;
         }, {} as Record<string, WithId<SavedBill>>))
-    }, [savedBillsData])[0];
+    }, [savedBillsData]);
 
     const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
         if (!firestore || !parties) return;
-        for (const p of parties) {
-            deleteDocumentNonBlocking(doc(firestore, 'parties', p.id));
-        }
+    
+        const existingParties = new Set(
+            parties.map(p => `${p.name.toLowerCase().trim()}|${p.station.toLowerCase().trim()}`)
+        );
+    
+        let importedCount = 0;
+        let skippedCount = 0;
+    
         for (const p of uploadedParties) {
-            const newDocRef = doc(collection(firestore, 'parties'));
-            setDocumentNonBlocking(newDocRef, p, {});
+            const key = `${p.name.toLowerCase().trim()}|${p.station.toLowerCase().trim()}`;
+            if (existingParties.has(key)) {
+                skippedCount++;
+            } else {
+                const newDocRef = doc(collection(firestore, 'parties'));
+                setDocumentNonBlocking(newDocRef, p, {});
+                existingParties.add(key); // Add to set to avoid duplicates within the same file
+                importedCount++;
+            }
         }
+    
         toast({
-            title: "Parties Restored!",
-            description: `Restored ${uploadedParties.length} parties. Old data has been replaced.`,
+            title: "Party Import Complete!",
+            description: `Imported ${importedCount} new parties. Skipped ${skippedCount} duplicates.`,
         });
     }
 
     const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price' | 'balance'>[]) => {
         if (!firestore || !items) return;
-        for (const i of items) {
-            deleteDocumentNonBlocking(doc(firestore, 'items', i.id));
-        }
+        // This simple replacement logic is kept for items as duplicates are less critical.
+        // A more advanced implementation could check for duplicates here as well.
         for (const item of uploadedItems) {
             const newDocRef = doc(collection(firestore, 'items'));
             setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
         }
         toast({
-            title: "Items Restored!",
-            description: `Restored ${uploadedItems.length} items. Old data has been replaced.`,
+            title: "Items Imported!",
+            description: `Imported ${uploadedItems.length} items.`,
         });
     };
 
