@@ -156,7 +156,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             }
         } catch (error: any) {
             console.error("Error fetching last bill:", error);
-            if (error.code === 'failed-precondition') {
+            if (error.code === 'failed-precondition' || error.message.includes('query requires an index')) {
                  const permissionError = new FirestorePermissionError({
                     path: 'billingRecords',
                     operation: 'list',
@@ -511,3 +511,5 @@ export default function BillingDashboard(props: BillingDashboardProps) {
     </Suspense>
   )
 }
+
+    
