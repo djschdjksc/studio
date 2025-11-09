@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, LogOut, Save, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -127,7 +127,7 @@ export default function PartyPricesPage() {
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
-            <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-white/80 backdrop-blur-sm md:px-6 shrink-0">
+            <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 border-b bg-white/80 backdrop-blur-sm md:px-6 shrink-0">
                 <div className="flex items-center gap-4">
                     <Button variant="outline" size="icon" asChild>
                         <Link href="/dashboard"><ArrowLeft /></Link>
@@ -158,8 +158,8 @@ export default function PartyPricesPage() {
                     </CardHeader>
                     <CardContent className="flex-grow p-0 overflow-hidden">
                         <ScrollArea className="h-full w-full">
-                            <Table>
-                                <TableHeader className="sticky top-0 bg-background z-10">
+                            <Table className="relative border-collapse">
+                                <TableHeader className="sticky top-0 bg-background z-20">
                                     <TableRow>
                                         <TableHead className="min-w-[200px] sticky left-0 bg-background z-20">Party Name</TableHead>
                                         {allGroupNames.map(group => (
@@ -195,6 +195,7 @@ export default function PartyPricesPage() {
                                     ))}
                                 </TableBody>
                             </Table>
+                            <ScrollBar orientation="horizontal" />
                         </ScrollArea>
                     </CardContent>
                 </Card>
