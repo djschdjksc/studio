@@ -53,7 +53,7 @@ service cloud.firestore {
     // - Admins/Owners can read/update all requests.
     match /access_requests/{requestId} {
       allow get: if isSignedIn() && (isOwner(requestId) || isOwnerOrAdmin());
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow list, update: if isSignedIn() && isOwnerOrAdmin();
     }
     
