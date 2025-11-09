@@ -22,41 +22,44 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
-        // Wait until authentication state is resolved
+        // Wait until authentication state is resolved before doing anything
         if (isUserLoading) {
             return;
         }
 
-        // If no user, redirect to login
+        // If there's no authenticated user, redirect to the login page
         if (!user) {
             router.push('/login');
             return;
         }
 
-        // Wait until profile is loaded for the logged-in user
+        // If the user is logged in, but we are still loading their profile, do nothing yet
         if (isProfileLoading) {
             return;
         }
 
-        // Once user and profile status are known, handle redirection
-        if (userProfile && (userProfile.role === 'admin' || userProfile.role === 'owner')) {
+        // Once user and profile are loaded, handle role-based redirection
+        if (user && userProfile && (userProfile.role === 'admin' || userProfile.role === 'owner')) {
             router.push('/admin');
         }
-        
-        // For other cases (user with non-admin role, or no profile yet),
-        // the component will render the correct page below.
+
+        // The logic for rendering the correct component based on profile status is handled in the return statement.
+        // This useEffect is now only responsible for redirection.
 
     }, [isUserLoading, user, isProfileLoading, userProfile]);
 
 
+    // Show a global loading indicator while we check auth or profile
     if (isUserLoading || (user && isProfileLoading)) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
+    // If a user is logged in but has no profile document, they need to request access
     if (user && !userProfile) {
         return <AccessRequestPage />;
     }
 
+    // If the user has a profile with a valid role for the dashboard, show it
     if (userProfile && (userProfile.role === 'viewer' || userProfile.role === 'editor' || userProfile.role === 'manager')) {
         return (
             <div className="min-h-screen w-full bg-background">
@@ -66,5 +69,6 @@ export default function Home() {
     }
     
     // This is a fallback state, useful while the initial checks and redirects are happening.
+    // It also catches the case where an admin/owner is briefly visible before being redirected.
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
 }
