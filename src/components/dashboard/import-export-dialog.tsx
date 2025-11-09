@@ -107,10 +107,10 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
             const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
             if (type === 'parties') {
-                if (!json.every(row => typeof row.name === 'string')) {
-                    throw new Error("Invalid party data. Each row must have a 'name' column.");
+                if (!json.every(row => typeof row.name === 'string' && typeof row.station === 'string')) {
+                    throw new Error("Invalid party data. Each row must have a 'name' and 'station' column.");
                 }
-                const partiesToUpload = json.map(p => ({ name: p.name, address: p.address || '', phone: p.phone || '' }));
+                const partiesToUpload = json.map(p => ({ name: p.name, address: p.address || '', district: p.district || '', state: p.state || '', pincode: p.pincode || '', station: p.station || '', phone: p.phone || '' }));
                 onImportParties(partiesToUpload);
             } else if (type === 'items') {
                 if (!json.every(row => typeof row.name === 'string' && typeof row.group === 'string' && typeof row.unit === 'string')) {
@@ -143,7 +143,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
     let data, sheetName, fileName;
 
     if (type === 'parties') {
-        data = [{ name: 'Example Party', address: '123 Example St', phone: '555-1234' }];
+        data = [{ name: 'Example Party', address: '123 Example St', district: 'Anytown', state: 'State', pincode: '123456', station: 'Central', phone: '555-1234' }];
         sheetName = 'Parties';
         fileName = 'party-template.xlsx';
     } else {
@@ -205,7 +205,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                 <div className="space-y-6">
                     <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">Import Parties</h4>
-                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to replace all existing party data. The first sheet should contain columns for 'name', 'address', and 'phone'.</p>
+                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to replace all existing party data. Required columns: 'name', 'station'.</p>
                         <div className="flex gap-2">
                             <input type="file" ref={partyFileInputRef} onChange={(e) => handleFileImport(e, 'parties')} className="hidden" accept=".xlsx, .xls, .csv" />
                             <Button className="flex-1" onClick={() => partyFileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4"/>Upload Party File</Button>
@@ -214,7 +214,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                     </div>
                     <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">Import Items</h4>
-                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to replace all existing item data. The first sheet should contain columns for 'name', 'group', 'unit', 'alias', and 'balance'.</p>
+                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to replace all existing item data. Required columns: 'name', 'group', 'unit'.</p>
                         <div className="flex gap-2">
                             <input type="file" ref={itemFileInputRef} onChange={(e) => handleFileImport(e, 'items')} className="hidden" accept=".xlsx, .xls, .csv" />
                             <Button className="flex-1" onClick={() => itemFileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4"/>Upload Item File</Button>

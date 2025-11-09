@@ -4,6 +4,10 @@ export interface Party {
     id: string;
     name: string;
     address: string;
+    district: string;
+    state: string;
+    pincode: string;
+    station: string;
     phone: string;
 }
 

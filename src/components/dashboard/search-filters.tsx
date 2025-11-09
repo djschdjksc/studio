@@ -28,7 +28,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
     if (field === 'partyName') {
       const party = parties.find(p => p.name.toLowerCase() === String(value).toLowerCase());
       if (party) {
-        newFilters.address = party.address;
+        newFilters.address = `${party.address}, ${party.district}, ${party.state} - ${party.pincode}`;
       } else {
         newFilters.address = "";
       }

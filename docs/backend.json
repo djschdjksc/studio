@@ -10,9 +10,13 @@
         "id": { "type": "string", "description": "Unique identifier for the Party entity." },
         "name": { "type": "string", "description": "Name of the party." },
         "address": { "type": "string", "description": "Address of the party." },
+        "district": { "type": "string", "description": "District of the party." },
+        "state": { "type": "string", "description": "State of the party." },
+        "pincode": { "type": "string", "description": "Pin code of the party's address." },
+        "station": { "type": "string", "description": "Nearest station to the party." },
         "phone": { "type": "string", "description": "Phone number of the party." }
       },
-      "required": ["id", "name"]
+      "required": ["id", "name", "station"]
     },
     "Item": {
       "$schema": "http://json-schema.org/draft-07/schema#",

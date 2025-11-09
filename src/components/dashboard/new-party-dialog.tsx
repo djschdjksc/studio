@@ -9,14 +9,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef, KeyboardEvent } from "react";
 import { Party } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewPartyDialogProps {
   onSave: (party: Omit<Party, 'id'>) => void;
@@ -27,18 +26,38 @@ interface NewPartyDialogProps {
 export function NewPartyDialog({ onSave, isOpen, onOpenChange }: NewPartyDialogProps) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [district, setDistrict] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [station, setStation] = useState("");
   const [phone, setPhone] = useState("");
+  const { toast } = useToast();
 
   const nameRef = useRef<HTMLInputElement>(null);
   const addressRef = useRef<HTMLTextAreaElement>(null);
+  const districtRef = useRef<HTMLInputElement>(null);
+  const stateRef = useRef<HTMLInputElement>(null);
+  const pincodeRef = useRef<HTMLInputElement>(null);
+  const stationRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const saveBtnRef = useRef<HTMLButtonElement>(null);
 
   const handleSave = () => {
-    if(!name.trim()) return;
-    onSave({ name, address, phone });
+    if(!name.trim() || !station.trim()) {
+        toast({
+            variant: "destructive",
+            title: "Validation Error",
+            description: "Party Name and Station are required fields.",
+        });
+        return;
+    }
+    onSave({ name, address, district, state, pincode, station, phone });
     setName("");
     setAddress("");
+    setDistrict("");
+    setState("");
+    setPincode("");
+    setStation("");
     setPhone("");
     onOpenChange(false);
   }
@@ -59,7 +78,7 @@ export function NewPartyDialog({ onSave, isOpen, onOpenChange }: NewPartyDialogP
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={() => nameRef.current?.focus()}>
+      <DialogContent className="sm:max-w-lg" onOpenAutoFocus={() => nameRef.current?.focus()}>
         <DialogHeader>
           <DialogTitle>Add New Party</DialogTitle>
           <DialogDescription>
@@ -77,7 +96,31 @@ export function NewPartyDialog({ onSave, isOpen, onOpenChange }: NewPartyDialogP
             <Label htmlFor="address" className="text-right">
               Address
             </Label>
-            <Textarea ref={addressRef} id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St, Anytown" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, phoneRef)} />
+            <Textarea ref={addressRef} id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, districtRef)} />
+          </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="district" className="text-right">
+              District
+            </Label>
+            <Input ref={districtRef} id="district" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Anytown" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, stateRef)} />
+          </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="state" className="text-right">
+              State
+            </Label>
+            <Input ref={stateRef} id="state" value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, pincodeRef)} />
+          </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="pincode" className="text-right">
+              Pin Code
+            </Label>
+            <Input ref={pincodeRef} id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} placeholder="123456" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, stationRef)} />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="station" className="text-right">
+              Station
+            </Label>
+            <Input ref={stationRef} id="station" value={station} onChange={(e) => setStation(e.target.value)} placeholder="Central Station" className="col-span-3" onKeyDown={(e) => handleKeyDown(e, phoneRef)} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="phone" className="text-right">
@@ -93,5 +136,3 @@ export function NewPartyDialog({ onSave, isOpen, onOpenChange }: NewPartyDialogP
     </Dialog>
   );
 }
-
-    
