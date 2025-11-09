@@ -4,7 +4,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import } from "lucide-react";
+import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory } from "lucide-react";
 import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useState } from "react";
@@ -87,6 +87,12 @@ export default function DashboardPage() {
             description: "Add inventory and view item balances.",
             icon: <Boxes className="h-8 w-8 text-green-600" />,
             href: "/stock",
+        },
+        {
+            title: "Production",
+            description: "Log daily production from machines.",
+            icon: <Factory className="h-8 w-8 text-purple-600" />,
+            href: "/production",
         },
         {
             title: "All Bills",
