@@ -66,12 +66,6 @@ export function NewItemDialog({ onSave, itemGroups, isOpen, onOpenChange }: NewI
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Item
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={() => nameRef.current?.focus()}>
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
@@ -130,3 +124,5 @@ export function NewItemDialog({ onSave, itemGroups, isOpen, onOpenChange }: NewI
     </Dialog>
   );
 }
+
+    

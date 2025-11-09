@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -34,12 +35,6 @@ export function NewItemGroupDialog({ onSave, isOpen, onOpenChange }: NewItemGrou
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Layers className="mr-2 h-4 w-4" />
-          New Group
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Item Group</DialogTitle>
@@ -69,3 +64,5 @@ export function NewItemGroupDialog({ onSave, isOpen, onOpenChange }: NewItemGrou
     </Dialog>
   );
 }
+
+    

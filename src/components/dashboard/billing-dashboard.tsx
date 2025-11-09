@@ -1,3 +1,4 @@
+
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -8,7 +9,7 @@ import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, Shield } from 'lucide-react';
+import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { BillPreviewDialog } from './bill-preview-dialog';
 import { AllBillsDialog } from './all-bills-dialog';
@@ -350,10 +351,10 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
           </Button>
           {canEdit && (
             <>
-              <NewItemGroupDialog onSave={addItemGroup} />
-              <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} />
-              <NewItemDialog onSave={addItem} itemGroups={(itemGroups || []).map(g => g.name)} />
-              <NewPartyDialog onSave={addParty} />
+              <Button onClick={() => setIsNewGroupOpen(true)} variant="outline"><Layers className="mr-2 h-4 w-4" />New Group</Button>
+              <Button onClick={() => setIsBulkAddOpen(true)}><PackagePlus className="mr-2 h-4 w-4" />Bulk Add Items</Button>
+              <Button onClick={() => setIsNewItemOpen(true)} variant="outline"><UserPlus className="mr-2 h-4 w-4" />New Item</Button>
+              <Button onClick={() => setIsNewPartyOpen(true)} variant="outline"><UserPlus className="mr-2 h-4 w-4" />New Party</Button>
               <Button variant="outline" onClick={handleSaveBill}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Bill
@@ -402,3 +403,5 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
     </div>
   );
 }
+
+    

@@ -122,12 +122,6 @@ export function BulkAddItemDialog({ onSave, itemGroups, isOpen, onOpenChange }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button>
-          <PackagePlus className="mr-2 h-4 w-4" />
-          Bulk Add Items
-        </Button>
-      </DialogTrigger>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Bulk Add New Items</DialogTitle>
@@ -213,3 +207,5 @@ export function BulkAddItemDialog({ onSave, itemGroups, isOpen, onOpenChange }: 
     </Dialog>
   );
 }
+
+    

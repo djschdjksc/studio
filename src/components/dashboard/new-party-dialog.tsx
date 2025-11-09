@@ -59,12 +59,6 @@ export function NewPartyDialog({ onSave, isOpen, onOpenChange }: NewPartyDialogP
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <UserPlus className="mr-2 h-4 w-4" />
-          New Party
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={() => nameRef.current?.focus()}>
         <DialogHeader>
           <DialogTitle>Add New Party</DialogTitle>
@@ -99,3 +93,5 @@ export function NewPartyDialog({ onSave, isOpen, onOpenChange }: NewPartyDialogP
     </Dialog>
   );
 }
+
+    
