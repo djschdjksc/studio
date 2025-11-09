@@ -1,18 +1,79 @@
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield } from "lucide-react";
+import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import } from "lucide-react";
 import Link from "next/link";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useState } from "react";
+import { ImportExportDialog } from "@/components/dashboard/import-export-dialog";
+import { Party, Item, SavedBill, WithId } from "@/lib/types";
+import { deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { useToast } from "@/hooks/use-toast";
+import { collection, doc } from "firebase/firestore";
 
 export default function DashboardPage() {
     const router = useRouter();
     const { user } = useUser();
     const auth = useAuth();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    
+    const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+    
     const isAdmin = user?.email === 'rohitvetma101010@gmail.com';
 
+    // Data fetching for Import/Export dialog
+    const partiesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'parties') : null, [firestore]);
+    const { data: parties } = useCollection<Party>(partiesQuery);
+
+    const itemsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'items') : null, [firestore]);
+    const { data: items } = useCollection<Item>(itemsQuery);
+    
+    const billingRecordsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'billingRecords') : null, [firestore]);
+    const { data: savedBillsData } = useCollection<SavedBill>(billingRecordsQuery);
+
+    const savedBills = useState(() => {
+        if (!savedBillsData) return [];
+        return Object.values(savedBillsData.reduce((acc, bill) => {
+            if(bill.filters.slipNo) {
+                acc[bill.filters.slipNo] = bill;
+            }
+            return acc;
+        }, {} as Record<string, WithId<SavedBill>>))
+    }, [savedBillsData])[0];
+
+    const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
+        if (!firestore || !parties) return;
+        for (const p of parties) {
+            deleteDocumentNonBlocking(doc(firestore, 'parties', p.id));
+        }
+        for (const p of uploadedParties) {
+            const newDocRef = doc(collection(firestore, 'parties'));
+            setDocumentNonBlocking(newDocRef, p, {});
+        }
+        toast({
+            title: "Parties Restored!",
+            description: `Restored ${uploadedParties.length} parties. Old data has been replaced.`,
+        });
+    }
+
+    const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price' | 'balance'>[]) => {
+        if (!firestore || !items) return;
+        for (const i of items) {
+            deleteDocumentNonBlocking(doc(firestore, 'items', i.id));
+        }
+        for (const item of uploadedItems) {
+            const newDocRef = doc(collection(firestore, 'items'));
+            setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
+        }
+        toast({
+            title: "Items Restored!",
+            description: `Restored ${uploadedItems.length} items. Old data has been replaced.`,
+        });
+    };
 
     const actions = [
         {
@@ -20,40 +81,49 @@ export default function DashboardPage() {
             description: "Create a new bill for a customer.",
             icon: <FilePlus className="h-8 w-8 text-primary" />,
             href: "/billing",
-            color: "primary"
         },
         {
             title: "Manage Stock",
             description: "Add inventory and view item balances.",
             icon: <Boxes className="h-8 w-8 text-green-600" />,
             href: "/stock",
-             color: "green"
         },
         {
             title: "All Bills",
             description: "View, edit, or delete all saved bills.",
             icon: <Library className="h-8 w-8 text-yellow-600" />,
             href: "/bills",
-            color: "yellow"
         },
         {
             title: "New Party",
             description: "Add a new customer or supplier.",
             icon: <Users className="h-8 w-8 text-indigo-600" />,
             href: "/masters/party",
-            color: "indigo"
         },
         {
             title: "New Item",
             description: "Add a new product to your inventory.",
             icon: <Package className="h-8 w-8 text-rose-600" />,
             href: "/masters/item",
-            color: "rose"
         },
+        {
+            title: "Import/Export",
+            description: "Backup or restore your data.",
+            icon: <Import className="h-8 w-8 text-cyan-600" />,
+            action: () => setIsImportExportOpen(true)
+        }
     ];
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
+             <ImportExportDialog
+                isOpen={isImportExportOpen}
+                onClose={() => setIsImportExportOpen(false)}
+                data={{ parties: parties || [], items: items || [], savedBills: savedBills || [] }}
+                onImportParties={handlePartyUpload}
+                onImportItems={handleItemUpload}
+                canEdit={isAdmin}
+            />
             <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-white/80 backdrop-blur-sm md:px-6">
                 <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro Dashboard</h1>
                 <div className="flex items-center gap-4">
@@ -80,7 +150,7 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <p className="text-sm text-muted-foreground mb-4">{action.description}</p>
-                                <Button className="w-full" onClick={() => router.push(action.href)}>Go</Button>
+                                <Button className="w-full" onClick={() => action.href ? router.push(action.href) : action.action?.()}>Go</Button>
                             </CardContent>
                         </Card>
                     ))}
