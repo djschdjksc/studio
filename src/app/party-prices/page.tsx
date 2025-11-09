@@ -267,12 +267,10 @@ export default function PartyPricesPage() {
                                                 </TableCell>
                                             ))}
                                             <TableCell className="sticky right-0 bg-white dark:bg-card z-10 text-center">
-                                                {dirtyRows.has(party.id) && (
-                                                    <Button size="sm" onClick={() => handleSave(party.id)}>
-                                                        <Save className="mr-2 h-4 w-4"/>
-                                                        Save
-                                                    </Button>
-                                                )}
+                                                <Button size="sm" onClick={() => handleSave(party.id)} disabled={!dirtyRows.has(party.id)}>
+                                                    <Save className="mr-2 h-4 w-4"/>
+                                                    Save
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}
