@@ -27,7 +27,7 @@ service cloud.firestore {
       if (isOwnerEmail()) {
         return true;
       }
-      // Check for role only if the user document exists.
+      // Check for role only if the user document exists. This prevents circular dependencies.
       if (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))) {
           let userRole = getUserRole(request.auth.uid);
           return userRole == 'admin' || userRole == 'owner';
