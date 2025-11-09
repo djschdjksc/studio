@@ -19,17 +19,18 @@ service cloud.firestore {
 
     function getUserRole(userId) {
       // Use exists() to avoid errors on non-existent documents.
-      return exists(/databases/$(database)/documents/users/$(userId)) ? get(/databases/$(database)/documents/users/$(userId)).data.role : '';
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
     }
     
     function isOwnerOrAdmin() {
-      // Short-circuit if it's the owner email, otherwise check role.
+      // Short-circuit if it's the owner email, otherwise check role from the user's document.
       if (isOwnerEmail()) {
         return true;
       }
-      if (isSignedIn()) {
-        let userRole = getUserRole(request.auth.uid);
-        return userRole == 'admin' || userRole == 'owner';
+      // Check for role only if the user document exists.
+      if (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))) {
+          let userRole = getUserRole(request.auth.uid);
+          return userRole == 'admin' || userRole == 'owner';
       }
       return false;
     }
