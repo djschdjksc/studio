@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -75,7 +74,7 @@ export default function AccessRequestPage() {
       if(!existingRequest) return 'Request access to the application by choosing a role and submitting your request.'
       switch(existingRequest.status) {
           case 'pending':
-              return 'Your access request is pending approval. Please check back later.';
+              return `Your request for ${existingRequest.requestedRole} access is pending approval. Please check back later.`;
           case 'approved':
               return 'Your access has been approved! The page will reload shortly.';
           case 'denied':
@@ -124,7 +123,7 @@ export default function AccessRequestPage() {
                 </CardFooter>
             </>
         )}
-         {existingRequest && existingRequest.status === 'pending' && (
+         {(existingRequest && existingRequest.status === 'pending' || isLoading) && (
              <CardFooter className="flex justify-end">
                 <Button variant="ghost" onClick={() => auth?.signOut()}>
                     <LogOut className="mr-2 h-4 w-4" /> Log Out

@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useAuth, useCollection, useFirestore, useUser } from "@/firebase";
 import { UserProfile, AccessRequest, WithId, UserRole } from "@/lib/types";
-import { collection, doc, writeBatch } from "firebase/firestore";
+import { collection, doc, writeBatch, setDoc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Shield } from "lucide-react";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useEffect } from "react";
 
 const roleHierarchy: UserRole[] = ['viewer', 'editor', 'manager', 'admin', 'owner'];
 
@@ -30,17 +29,30 @@ export default function AdminPage() {
     const requestsQuery = firestore ? collection(firestore, 'access_requests') : null;
     const { data: accessRequests, isLoading: requestsLoading } = useCollection<AccessRequest>(requestsQuery);
     
+    // Ensure the admin user has the 'owner' role in Firestore.
+    useEffect(() => {
+        if (user && user.email === 'rohitvetma101010@gmail.com' && firestore) {
+            const userDocRef = doc(firestore, 'users', user.uid);
+            setDoc(userDocRef, { role: 'owner', email: user.email }, { merge: true });
+        }
+    }, [user, firestore]);
+
     const pendingRequests = accessRequests?.filter(req => req.status === 'pending') || [];
 
-    const handleRoleChange = (userId: string, newRole: UserRole) => {
+    const handleRoleChange = async (userId: string, newRole: UserRole) => {
         if (!firestore) return;
         if (user?.uid === userId) {
             toast({ variant: 'destructive', title: 'Error', description: "You cannot change your own role." });
             return;
         }
         const userDocRef = doc(firestore, 'users', userId);
-        setDocumentNonBlocking(userDocRef, { role: newRole }, { merge: true });
-        toast({ title: 'Role Updated', description: `User role has been changed to ${newRole}.` });
+        
+        try {
+            await setDoc(userDocRef, { role: newRole }, { merge: true });
+            toast({ title: 'Role Updated', description: `User role has been changed to ${newRole}.` });
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        }
     };
 
     const handleRequest = async (request: WithId<AccessRequest>, newStatus: 'approved' | 'denied') => {
@@ -55,7 +67,7 @@ export default function AdminPage() {
                 id: request.userId,
                 email: request.email,
                 role: request.requestedRole,
-                displayName: request.email.split('@')[0], // Basic display name
+                displayName: request.email.split('@')[0],
             }, { merge: true });
         }
         

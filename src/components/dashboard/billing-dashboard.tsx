@@ -55,7 +55,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
   const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
   const [searchFilters, setSearchFilters] = useState<SearchFiltersState>({
     ...initialFilters,
-    date: undefined,
+    date: new Date(),
   });
   const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
   const [isAllBillsOpen, setIsAllBillsOpen] = useState(false);
@@ -68,11 +68,6 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
   const canDelete = userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
   const isAdmin = userProfile.role === 'admin' || userProfile.role === 'owner';
 
-
-  useEffect(() => {
-    // Set initial date on client to avoid hydration mismatch
-    setSearchFilters(prev => ({...prev, date: new Date()}));
-  }, []);
 
   useEffect(() => {
     const slipNumbers = Object.values(savedBills).map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));

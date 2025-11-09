@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -30,10 +29,46 @@ export default function LoginPage() {
         return;
     }
     setLoading(true);
+
+    // Special case for the admin user
+    if (action === 'login' && email === 'rohitvetma101010@gmail.com' && password === 'verma@99') {
+         try {
+            await signInWithEmailAndPassword(auth, email, password);
+            toast({ title: 'Admin Login Successful', description: 'Redirecting to your dashboard...' });
+            router.push('/admin'); // Redirect admin directly
+        } catch (error: any) {
+             // If admin doesn't exist, we might need to create it. For now, we'll just show an error.
+             // A more robust solution would be a setup script.
+             if (error.code === 'auth/user-not-found') {
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    toast({ title: 'Admin Account Created', description: 'Please log in again to access the dashboard.' });
+                    // We don't automatically log in, to ensure Firestore rules for user creation can be set.
+                } catch (creationError: any) {
+                     toast({
+                        variant: 'destructive',
+                        title: 'Admin Creation Failed',
+                        description: creationError.message,
+                    });
+                }
+             } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Authentication Failed',
+                    description: error.message,
+                });
+             }
+        } finally {
+            setLoading(false);
+        }
+        return;
+    }
+
+
     try {
       if (action === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: 'Login Successful', description: 'Redirecting to your dashboard...' });
+        toast({ title: 'Login Successful', description: 'Redirecting...' });
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
         toast({ title: 'Signup Successful', description: 'Please request access to continue.' });
