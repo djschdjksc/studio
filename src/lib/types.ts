@@ -83,3 +83,4 @@ export interface AuditLog {
 }
 
 export type WithId<T> = T & { id: string };
+

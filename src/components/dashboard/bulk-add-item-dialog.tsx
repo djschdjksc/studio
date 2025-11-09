@@ -25,6 +25,8 @@ type BulkItem = Omit<Item, 'id' | 'price'> & { tempId: string };
 interface BulkAddItemDialogProps {
     onSave: (items: Omit<Item, 'id' | 'price'>[]) => void;
     itemGroups: string[];
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
 }
 
 const createNewBulkItem = (tempId: string): BulkItem => ({
@@ -37,9 +39,8 @@ const createNewBulkItem = (tempId: string): BulkItem => ({
 
 const unitOptions = ["PCS", "BOXE", "BUNDLE", "SQM", "MTR", "PKT"];
 
-export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps) {
+export function BulkAddItemDialog({ onSave, itemGroups, isOpen, onOpenChange }: BulkAddItemDialogProps) {
   const [items, setItems] = useState<BulkItem[]>([createNewBulkItem(crypto.randomUUID())]);
-  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const dialogId = useId();
 
@@ -80,13 +81,8 @@ export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps
 
     onSave(itemsToSave);
     
-    toast({
-        title: "Items Added!",
-        description: `${itemsToSave.length} new items have been added.`,
-    });
-
     setItems([createNewBulkItem(crypto.randomUUID())]);
-    setIsOpen(false);
+    onOpenChange(false);
   }
 
   const handleKeyDown = (e: React.KeyboardEvent, tempId: string, fieldName: 'name' | 'group' | 'unit' | 'alias') => {
@@ -110,10 +106,11 @@ export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps
         if(currentItemIndex === items.length - 1) {
             handleAddRow();
             setTimeout(() => {
-                const nextItem = items[items.length - 1];
-                const nextInput = document.getElementById(`name-${nextItem.tempId}`);
-                nextInput?.focus();
-            }, 0)
+                const nextItem = items[items.length - 1]; // This is tricky, need to wait for state update
+                 const allRows = document.querySelectorAll('[id^="name-"]');
+                 const lastRowInput = allRows[allRows.length -1];
+                 if(lastRowInput) (lastRowInput as HTMLInputElement).focus();
+            }, 50)
         } else {
             const nextItem = items[currentItemIndex + 1];
             const nextInput = document.getElementById(`name-${nextItem.tempId}`);
@@ -124,7 +121,7 @@ export function BulkAddItemDialog({ onSave, itemGroups }: BulkAddItemDialogProps
 
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <PackagePlus className="mr-2 h-4 w-4" />

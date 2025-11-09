@@ -20,13 +20,14 @@ import { Party } from "@/lib/types";
 
 interface NewPartyDialogProps {
   onSave: (party: Omit<Party, 'id'>) => void;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
 }
 
-export function NewPartyDialog({ onSave }: NewPartyDialogProps) {
+export function NewPartyDialog({ onSave, isOpen, onOpenChange }: NewPartyDialogProps) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const addressRef = useRef<HTMLTextAreaElement>(null);
@@ -39,13 +40,12 @@ export function NewPartyDialog({ onSave }: NewPartyDialogProps) {
     setName("");
     setAddress("");
     setPhone("");
-    setIsOpen(false);
+    onOpenChange(false);
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>, nextFieldRef?: React.RefObject<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement>) => {
     if (e.key === 'Enter') {
         if (e.currentTarget.tagName === 'TEXTAREA' && e.shiftKey) {
-            // Allow shift+enter for newlines in textarea
             return;
         }
         e.preventDefault();
@@ -58,7 +58,7 @@ export function NewPartyDialog({ onSave }: NewPartyDialogProps) {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <UserPlus className="mr-2 h-4 w-4" />

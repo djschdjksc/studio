@@ -12,35 +12,52 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function getUserRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    // Check if the signed-in user's email is the designated owner's email.
+    function isOwnerEmail() {
+      return request.auth.token.email == 'rohitvetma101010@gmail.com';
     }
 
-    function isOwnerOrAdmin() {
-      let userRole = getUserRole(request.auth.uid);
-      return userRole == 'admin' || userRole == 'owner';
+    function getUserRole(userId) {
+      // Use exists() to avoid errors on non-existent documents.
+      return exists(/databases/$(database)/documents/users/$(userId)) ? get(/databases/$(database)/documents/users/$(userId)).data.role : '';
     }
     
+    function isOwnerOrAdmin() {
+      // Short-circuit if it's the owner email, otherwise check role.
+      if (isOwnerEmail()) {
+        return true;
+      }
+      if (isSignedIn()) {
+        let userRole = getUserRole(request.auth.uid);
+        return userRole == 'admin' || userRole == 'owner';
+      }
+      return false;
+    }
+
     // User Profiles:
-    // - Users can read their own profile.
+    // - The owner can create/update their own 'owner' profile.
+    // - Any user can read their own profile.
     // - Admins/Owners can read/write any profile.
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isOwnerOrAdmin());
       allow list: if isSignedIn() && isOwnerOrAdmin();
-      allow create, update: if isSignedIn() && isOwnerOrAdmin();
+      // Allow owner email to create their initial record. Also allow admins to create users.
+      allow create: if (isOwner(userId) && isOwnerEmail()) || (isSignedIn() && isOwnerOrAdmin());
+      // Allow owner to update their own record, and admins to update any.
+      allow update: if (isOwner(userId) && isOwnerEmail()) || (isSignedIn() && isOwnerOrAdmin());
     }
     
     // Access Requests:
-    // - Any signed-in user can create a request for themselves.
+    // - Any signed-in user can create/read a request for themselves.
     // - Admins/Owners can read/update all requests.
-    match /access_requests/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow list, update: if isSignedIn() && isOwnerOrAdmin();
+    match /access_requests/{requestId} {
+      allow get: if isSignedIn() && (isOwner(requestId) || isOwnerOrAdmin());
+      allow list: if isSignedIn() && isOwnerOrAdmin();
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update: if isSignedIn() && isOwnerOrAdmin();
     }
     
-    // Allow admins/owners to read and write to all other collections for app functionality.
-    // These are placeholders and should be refined for production.
+    // Data collections can be managed by authorized roles.
     match /parties/{partyId} {
        allow read, write: if isSignedIn() && (getUserRole(request.auth.uid) in ['editor', 'manager', 'admin', 'owner']);
        allow delete: if isSignedIn() && (getUserRole(request.auth.uid) in ['manager', 'admin', 'owner']);
@@ -63,7 +80,7 @@ service cloud.firestore {
 
     // Audit Logs:
     // - Only Admins/Owners can read logs.
-    // - (For now, let's assume writes happen from a trusted environment like a Cloud Function)
+    // - (Writes should happen from a trusted server environment)
     match /logs/{logId} {
       allow read, write: if isSignedIn() && isOwnerOrAdmin();
     }

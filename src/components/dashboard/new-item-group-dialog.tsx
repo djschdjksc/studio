@@ -17,22 +17,23 @@ import { useState } from "react";
 
 interface NewItemGroupDialogProps {
   onSave: (groupName: string) => void;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
 }
 
-export function NewItemGroupDialog({ onSave }: NewItemGroupDialogProps) {
+export function NewItemGroupDialog({ onSave, isOpen, onOpenChange }: NewItemGroupDialogProps) {
   const [name, setName] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleSave = () => {
     if (name.trim()) {
       onSave(name.trim());
       setName("");
-      setIsOpen(false);
+      onOpenChange(false);
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <Layers className="mr-2 h-4 w-4" />
@@ -56,7 +57,8 @@ export function NewItemGroupDialog({ onSave }: NewItemGroupDialogProps) {
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
                 placeholder="e.g., Plumbing" 
-                className="col-span-3" 
+                className="col-span-3"
+                onKeyDown={(e) => { if(e.key === 'Enter') handleSave() }}
             />
           </div>
         </div>

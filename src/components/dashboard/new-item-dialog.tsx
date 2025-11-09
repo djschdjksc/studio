@@ -21,16 +21,17 @@ import { useState, useRef, KeyboardEvent } from "react";
 interface NewItemDialogProps {
     onSave: (item: Omit<Item, 'id' | 'price'>) => void;
     itemGroups: string[];
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
 }
 
 const unitOptions = ["PCS", "BOXE", "BUNDLE", "SQM", "MTR", "PKT"];
 
-export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
+export function NewItemDialog({ onSave, itemGroups, isOpen, onOpenChange }: NewItemDialogProps) {
   const [name, setName] = useState("");
   const [group, setGroup] = useState("");
   const [unit, setUnit] = useState("");
   const [alias, setAlias] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const groupTriggerRef = useRef<HTMLButtonElement>(null);
@@ -45,7 +46,7 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
     setGroup("");
     setUnit("");
     setAlias("");
-    setIsOpen(false);
+    onOpenChange(false);
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, nextFieldRef: React.RefObject<HTMLInputElement | HTMLButtonElement>) => {
@@ -64,7 +65,7 @@ export function NewItemDialog({ onSave, itemGroups }: NewItemDialogProps) {
 
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <PlusCircle className="mr-2 h-4 w-4" />
