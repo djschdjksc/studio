@@ -3,22 +3,34 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser } from '@/firebase';
-import { Item, Party, SavedBill, WithId } from '@/lib/types';
-import { collection } from 'firebase/firestore';
+import { Item, Party, SavedBill, Payment, WithId } from '@/lib/types';
+import { collection, query, where, doc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, LogOut, Search } from 'lucide-react';
+import { ArrowLeft, LogOut, Search, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AddPaymentDialog } from '@/components/dashboard/add-payment-dialog';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useToast } from '@/hooks/use-toast';
+import { format, parseISO } from 'date-fns';
 
 interface PartyBalance {
   id: string;
   name: string;
   station: string;
   balance: number;
+}
+
+interface Transaction {
+  id: string;
+  date: Date;
+  particulars: string;
+  debit: number;
+  credit: number;
 }
 
 const calculateGrandTotal = (bill: SavedBill, items: Item[]): number => {
@@ -67,9 +79,11 @@ export default function PartyBalancesPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedParty, setSelectedParty] = useState<PartyBalance | null>(null);
+  const [selectedParty, setSelectedParty] = useState<Party | null>(null);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -85,9 +99,13 @@ export default function PartyBalancesPage() {
   
   const billingRecordsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'billingRecords') : null, [firestore, user]);
   const { data: savedBillsData, isLoading: billsLoading } = useCollection<SavedBill>(billingRecordsQuery);
+  
+  const paymentsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'payments') : null, [firestore, user]);
+  const { data: paymentsData, isLoading: paymentsLoading } = useCollection<Payment>(paymentsQuery);
+
 
   const partyBalances = useMemo(() => {
-    if (!parties || !savedBillsData || !items) return [];
+    if (!parties || !savedBillsData || !items || !paymentsData) return [];
 
     const balances: Record<string, number> = {};
 
@@ -99,14 +117,50 @@ export default function PartyBalancesPage() {
         }
     });
 
+    paymentsData.forEach(payment => {
+        const partyName = payment.partyName;
+        if(partyName) {
+            balances[partyName] = (balances[partyName] || 0) - payment.amount;
+        }
+    })
+
     return parties.map(party => ({
         id: party.id,
         name: party.name,
         station: party.station,
         balance: balances[party.name] || 0
-    })).sort((a,b) => b.balance - a.balance);
+    })).sort((a,b) => a.name.localeCompare(b.name));
 
-  }, [parties, savedBillsData, items]);
+  }, [parties, savedBillsData, items, paymentsData]);
+
+  const transactionLedger = useMemo((): Transaction[] => {
+    if (!selectedParty || !savedBillsData || !paymentsData || !items) return [];
+
+    const bills: Transaction[] = savedBillsData
+        .filter(bill => bill.filters.partyName === selectedParty.name)
+        .map(bill => ({
+            id: `bill-${bill.id}`,
+            date: bill.filters.date ? parseISO(String(bill.filters.date)) : new Date(),
+            particulars: `Bill - Slip No: ${bill.filters.slipNo}`,
+            debit: calculateGrandTotal(bill, items),
+            credit: 0
+        }));
+    
+    const payments: Transaction[] = paymentsData
+        .filter(payment => payment.partyName === selectedParty.name)
+        .map(payment => ({
+            id: `payment-${payment.id}`,
+            date: parseISO(payment.date),
+            particulars: `Payment Received ${payment.notes ? `(${payment.notes})` : ''}`,
+            debit: 0,
+            credit: payment.amount
+        }));
+
+    return [...bills, ...payments].sort((a,b) => a.date.getTime() - b.date.getTime());
+
+  }, [selectedParty, savedBillsData, paymentsData, items]);
+
+  const finalBalance = transactionLedger.reduce((acc, tx) => acc + tx.debit - tx.credit, 0);
 
 
   const filteredPartyBalances = useMemo(() => {
@@ -120,18 +174,47 @@ export default function PartyBalancesPage() {
     );
   }, [partyBalances, searchQuery]);
 
-  const handleRowClick = (party: PartyBalance) => {
-    setSelectedParty(party);
+  const handleRowClick = (partySummary: PartyBalance) => {
+    const fullParty = parties?.find(p => p.id === partySummary.id);
+    if (fullParty) {
+        setSelectedParty(fullParty);
+    }
   };
+  
+  const handleAddPayment = async (paymentData: Omit<Payment, 'id' | 'createdAt' | 'partyName' | 'partyId'>) => {
+    if (!firestore || !selectedParty) return;
 
+    const newDocRef = doc(collection(firestore, 'payments'));
+    const newPayment: Omit<Payment, 'id'> = {
+        ...paymentData,
+        partyId: selectedParty.id,
+        partyName: selectedParty.name,
+        createdAt: new Date().toISOString()
+    };
+    
+    setDocumentNonBlocking(newDocRef, newPayment, {});
 
-  if (isUserLoading || itemsLoading || partiesLoading || billsLoading) {
+    toast({
+        title: "Payment Saved",
+        description: `Payment of ₹${paymentData.amount} for ${selectedParty.name} has been recorded.`,
+    });
+    setIsPaymentDialogOpen(false);
+  }
+
+  if (isUserLoading || itemsLoading || partiesLoading || billsLoading || paymentsLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading Party Balances...</div>;
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-        <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-white/80 backdrop-blur-sm md:px-6">
+    <>
+    <AddPaymentDialog 
+        isOpen={isPaymentDialogOpen}
+        onClose={() => setIsPaymentDialogOpen(false)}
+        onSave={handleAddPayment}
+        partyName={selectedParty?.name || ''}
+    />
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
+        <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-white/80 backdrop-blur-sm md:px-6 shrink-0">
             <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" asChild>
                     <Link href="/dashboard"><ArrowLeft /></Link>
@@ -154,50 +237,34 @@ export default function PartyBalancesPage() {
                 </Button>
             </div>
         </header>
-        <main className="flex-1 p-6">
-            {selectedParty && (
-                <Card className="mb-6 bg-primary/10 border-primary/50">
-                    <CardHeader>
-                        <CardTitle className="text-primary">{selectedParty.name}</CardTitle>
-                        <CardDescription>{selectedParty.station}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm font-medium text-muted-foreground">Total Outstanding Balance</p>
-                        <p className="text-3xl font-bold text-primary">
-                            ₹{selectedParty.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
-            <Card>
+        <main className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 overflow-hidden">
+            <Card className="md:col-span-1 flex flex-col">
                 <CardHeader>
                     <CardTitle>All Parties</CardTitle>
-                    <CardDescription>Click on a party to view their total balance.</CardDescription>
+                    <CardDescription>Select a party to view their ledger.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <ScrollArea className="h-[65vh]">
+                <CardContent className="flex-grow p-0 overflow-hidden">
+                    <ScrollArea className="h-full">
                         <Table>
                             <TableHeader className="sticky top-0 bg-background">
                                 <TableRow>
                                     <TableHead>Party Name</TableHead>
-                                    <TableHead>Station</TableHead>
                                     <TableHead className="text-right">Balance</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredPartyBalances.length === 0 ? (
-                                    <TableRow><TableCell colSpan={3} className="text-center h-24">{searchQuery ? 'No parties match your search.' : 'No parties found.'}</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={2} className="text-center h-24">{searchQuery ? 'No parties match your search.' : 'No parties found.'}</TableCell></TableRow>
                                 ) : (
                                     filteredPartyBalances.map(party => (
                                         <TableRow 
                                             key={party.id} 
                                             onClick={() => handleRowClick(party)} 
-                                            className={`cursor-pointer ${selectedParty?.id === party.id ? 'bg-accent/50 hover:bg-accent/60' : ''}`}
+                                            className={`cursor-pointer ${selectedParty?.id === party.id ? 'bg-accent/50 hover:bg-accent/60' : 'hover:bg-muted/50'}`}
                                         >
                                             <TableCell className="font-medium">{party.name}</TableCell>
-                                            <TableCell>{party.station}</TableCell>
-                                            <TableCell className="text-right font-semibold">
-                                                 ₹{party.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            <TableCell className={`text-right font-semibold ${party.balance < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                 ₹{Math.abs(party.balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -207,7 +274,74 @@ export default function PartyBalancesPage() {
                     </ScrollArea>
                 </CardContent>
             </Card>
+
+            <div className="md:col-span-2 flex flex-col gap-6">
+                {selectedParty ? (
+                    <Card className="flex-grow flex flex-col">
+                        <CardHeader className="flex flex-row items-start justify-between">
+                            <div>
+                                <CardTitle className="text-primary">{selectedParty.name}</CardTitle>
+                                <CardDescription>{selectedParty.station}</CardDescription>
+                            </div>
+                            <Button onClick={() => setIsPaymentDialogOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4"/> Add Payment
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="flex-grow overflow-hidden p-0">
+                           <ScrollArea className="h-full">
+                                <Table>
+                                    <TableHeader className="sticky top-0 bg-background">
+                                        <TableRow>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Particulars</TableHead>
+                                            <TableHead className="text-right">Debit</TableHead>
+                                            <TableHead className="text-right">Credit</TableHead>
+                                            <TableHead className="text-right">Balance</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {transactionLedger.length > 0 ? transactionLedger.reduce((acc, tx) => {
+                                            const runningBalance = acc.balance + tx.debit - tx.credit;
+                                            acc.rows.push(
+                                                <TableRow key={tx.id}>
+                                                    <TableCell>{format(tx.date, 'dd-MMM-yy')}</TableCell>
+                                                    <TableCell>{tx.particulars}</TableCell>
+                                                    <TableCell className="text-right">{tx.debit > 0 ? `₹${tx.debit.toLocaleString('en-IN')}` : ''}</TableCell>
+                                                    <TableCell className="text-right text-green-600">{tx.credit > 0 ? `₹${tx.credit.toLocaleString('en-IN')}` : ''}</TableCell>
+                                                    <TableCell className={`text-right font-semibold ${runningBalance < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        ₹{Math.abs(runningBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                            acc.balance = runningBalance;
+                                            return acc;
+                                        }, { rows: [] as JSX.Element[], balance: 0 }).rows : (
+                                            <TableRow><TableCell colSpan={5} className="text-center h-24">No transactions found for this party.</TableCell></TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </ScrollArea>
+                        </CardContent>
+                         <CardFooter className="bg-muted/50 p-4 border-t flex justify-end">
+                             <div className="text-right">
+                                <p className="text-sm font-medium text-muted-foreground">Final Balance</p>
+                                <p className={`text-2xl font-bold ${finalBalance < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    ₹{Math.abs(finalBalance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                ) : (
+                     <Card className="flex-grow flex items-center justify-center">
+                        <div className="text-center text-muted-foreground">
+                            <p className="text-lg font-semibold">Select a party</p>
+                            <p>Choose a party from the list to see their transaction ledger.</p>
+                        </div>
+                    </Card>
+                )}
+            </div>
         </main>
     </div>
+    </>
   );
 }

@@ -60,6 +60,16 @@ export interface SavedBill {
     manualPrices: Record<string, number>;
 }
 
+export interface Payment {
+    id: string;
+    partyId: string;
+    partyName: string;
+    amount: number;
+    date: string; // ISO String
+    notes?: string;
+    createdAt: any; // serverTimestamp
+}
+
 export type UserRole = 'viewer' | 'editor' | 'manager' | 'admin' | 'owner';
 
 export interface UserProfile {
