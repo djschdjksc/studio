@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { Party, SearchFiltersState } from "@/lib/types";
 import { Textarea } from "../ui/textarea";
-import { PartySearchCombobox } from "./party-search-combobox";
+import { PartySearchInput } from "./party-search-input";
 import { format, parseISO } from "date-fns";
 
 interface SearchFiltersProps {
@@ -61,10 +60,11 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 items-end">
           <div className="space-y-2 col-span-2 xl:col-span-1">
             <Label htmlFor="partyName">Party Name</Label>
-            <PartySearchCombobox
+            <PartySearchInput
+                id="partyName"
                 parties={parties}
                 value={filters.partyName}
-                onChange={(value) => handleFieldChange('partyName', value)}
+                onValueChange={(value) => handleFieldChange('partyName', value)}
                 disabled={!canEdit}
             />
           </div>
