@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useAuth } from '@/firebase';
 import { WithId, Item, UserProfile } from '@/lib/types';
 import StockManagement from '@/components/dashboard/stock-management';
-import { doc, updateDoc, increment } from 'firebase/firestore';
+import { doc, updateDoc, increment, collection } from 'firebase/firestore';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
