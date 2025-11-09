@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -8,14 +9,16 @@ service cloud.firestore {
     }
 
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      // Check for existence before accessing data to prevent errors on non-existent docs
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : 'none';
     }
 
     function isAdmin() {
       return getUserRole() == "admin";
     }
-
-    // Combined owner or admin rule (non-recursive)
+    
     function isOwnerOrAdmin() {
       return isOwner() || isAdmin();
     }
@@ -32,8 +35,12 @@ service cloud.firestore {
     
     // Access Requests:
     match /access_requests/{requestId} {
-      allow create: if request.auth != null;
-      allow read, list, update, delete: if isOwnerOrAdmin();
+      // Allow users to create requests for themselves
+      allow create: if request.auth.uid == requestId;
+      // Admins can manage all requests
+      allow list, update, delete: if isOwnerOrAdmin();
+      // Users can read their own request
+      allow get: if request.auth.uid == requestId;
     }
     
     // Data collections can be managed by authorized roles.
@@ -60,11 +67,6 @@ service cloud.firestore {
     // Audit Logs:
     match /logs/{logId} {
       allow read, write: if isOwnerOrAdmin();
-    }
-
-    // Default deny all other reads/writes
-    match /{document=**} {
-      allow read, write: if false;
     }
 
     function isSignedIn() {
