@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { UserProfile } from '@/lib/types';
@@ -14,7 +14,7 @@ export default function Home() {
     const firestore = useFirestore();
     const router = useRouter();
 
-    const userProfileRef = useMemoFirebase(() => {
+    const userProfileRef = useMemo(() => {
         if (!user || !firestore) return null;
         return doc(firestore, 'users', user.uid);
     }, [user, firestore]);
@@ -23,7 +23,7 @@ export default function Home() {
 
     useEffect(() => {
         // Don't do anything until all loading is complete
-        if (isUserLoading || isProfileLoading) {
+        if (isUserLoading || (user && isProfileLoading)) {
             return; 
         }
 
@@ -43,7 +43,7 @@ export default function Home() {
         
         // If there's a user but no profile, the AccessRequestPage will render, so no redirect needed.
 
-    }, [isUserLoading, isProfileLoading, user, router]);
+    }, [isUserLoading, isProfileLoading, user, userProfile]);
 
 
     if (isUserLoading || (user && isProfileLoading)) {
