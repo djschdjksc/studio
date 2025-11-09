@@ -18,8 +18,9 @@ import { BulkAddItemDialog } from './bulk-add-item-dialog';
 import { ImportExportDialog } from './import-export-dialog';
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import Link from 'next/link';
-import { collection, doc, deleteDoc, setDoc } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc, deleteDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import StockManagement from './stock-management';
 
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
@@ -138,7 +139,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
   const addItem = async (item: Omit<Item, 'id' | 'price'>) => {
     if (!canEdit || !firestore) return;
     const newDocRef = doc(collection(firestore, 'items'));
-    setDocumentNonBlocking(newDocRef, {...item, price: 0}, {});
+    setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
     toast({ title: 'Item Added', description: `Added ${item.name}.` });
   };
   
@@ -146,11 +147,23 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
     if (!canEdit || !firestore) return;
     for (const item of newItems) {
         const newDocRef = doc(collection(firestore, 'items'));
-        setDocumentNonBlocking(newDocRef, {...item, price: 0}, {});
+        setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
     }
     toast({
       title: "Items Added!",
       description: `${newItems.length} new items have been added.`,
+    });
+  };
+  
+  const handleAddStock = async (itemId: string, quantity: number) => {
+    if (!canEdit || !firestore) return;
+    const itemRef = doc(firestore, 'items', itemId);
+    updateDocumentNonBlocking(itemRef, {
+        balance: increment(quantity)
+    });
+    toast({
+        title: 'Stock Added',
+        description: `Added ${quantity} to the item's balance.`,
     });
   };
 
@@ -161,7 +174,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
     }
     for (const item of uploadedItems) {
         const newDocRef = doc(collection(firestore, 'items'));
-        setDocumentNonBlocking(newDocRef, {...item, price: 0}, {});
+        setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
     }
     toast({
         title: "Items Restored!",
@@ -231,6 +244,17 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
       manualPrices
     };
     
+    // Decrease stock for each item in the bill
+    billData.billingItems.forEach(billedItem => {
+        const item = items?.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
+        if (item && billedItem.quantity > 0) {
+            const itemRef = doc(firestore, 'items', item.id);
+            updateDocumentNonBlocking(itemRef, {
+                balance: increment(-billedItem.quantity)
+            });
+        }
+    });
+
     const docRef = doc(firestore, 'billingRecords', searchFilters.slipNo);
     setDocumentNonBlocking(docRef, billData, {});
 
@@ -284,11 +308,26 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
   
   const handleDeleteBill = async (slipNo: string) => {
     if (!canDelete || !firestore) return;
+
+    // Restore stock before deleting bill
+    const billToDelete = savedBills[slipNo];
+    if (billToDelete) {
+        billToDelete.billingItems.forEach(billedItem => {
+            const item = items?.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
+            if (item && billedItem.quantity > 0) {
+                const itemRef = doc(firestore, 'items', item.id);
+                updateDocumentNonBlocking(itemRef, {
+                    balance: increment(billedItem.quantity)
+                });
+            }
+        });
+    }
+
     const docRef = doc(firestore, 'billingRecords', slipNo);
     deleteDocumentNonBlocking(docRef);
     toast({
         title: "Bill Deleted",
-        description: `Bill with Slip No. ${slipNo} has been deleted.`,
+        description: `Bill with Slip No. ${slipNo} has been deleted and stock has been restored.`,
     });
   }
 
@@ -353,7 +392,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
             <>
               <Button onClick={() => setIsNewGroupOpen(true)} variant="outline"><Layers className="mr-2 h-4 w-4" />New Group</Button>
               <Button onClick={() => setIsBulkAddOpen(true)}><PackagePlus className="mr-2 h-4 w-4" />Bulk Add Items</Button>
-              <Button onClick={() => setIsNewItemOpen(true)} variant="outline"><UserPlus className="mr-2 h-4 w-4" />New Item</Button>
+              <Button onClick={() => setIsNewItemOpen(true)} variant="outline"><PackagePlus className="mr-2 h-4 w-4" />New Item</Button>
               <Button onClick={() => setIsNewPartyOpen(true)} variant="outline"><UserPlus className="mr-2 h-4 w-4" />New Party</Button>
               <Button variant="outline" onClick={handleSaveBill}>
                 <Save className="mr-2 h-4 w-4" />
@@ -389,7 +428,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
               canEdit={canEdit}
             />
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-4">
             <TotalsSummary 
               billingItems={billingItems} 
               items={items || []}
@@ -397,6 +436,11 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
               onManualPriceChange={handleManualPriceChange}
               canEdit={canEdit}
              />
+             <StockManagement
+                items={items || []}
+                onAddStock={handleAddStock}
+                canEdit={canEdit}
+              />
           </div>
         </div>
       </main>

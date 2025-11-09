@@ -29,7 +29,7 @@ interface ImportExportDialogProps {
     savedBills: SavedBill[];
   },
   onImportParties: (parties: Omit<Party, 'id'>[]) => void;
-  onImportItems: (items: Omit<Item, 'id' | 'price'>[]) => void;
+  onImportItems: (items: Omit<Item, 'id' | 'price' | 'balance'>[]) => void;
   canEdit: boolean;
 }
 
@@ -116,7 +116,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                 if (!json.every(row => typeof row.name === 'string' && typeof row.group === 'string' && typeof row.unit === 'string')) {
                      throw new Error("Invalid item data. Each row must have 'name', 'group', and 'unit' columns.");
                 }
-                const itemsToUpload = json.map(i => ({ name: i.name, group: i.group, unit: i.unit, alias: i.alias || '' }));
+                const itemsToUpload = json.map(i => ({ name: i.name, group: i.group, unit: i.unit, alias: i.alias || '', balance: i.balance || 0 }));
                 onImportItems(itemsToUpload);
             }
 
@@ -147,7 +147,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
         sheetName = 'Parties';
         fileName = 'party-template.xlsx';
     } else {
-        data = [{ name: 'Example Item', group: 'Example Group', unit: 'PCS', alias: 'EX01' }];
+        data = [{ name: 'Example Item', group: 'Example Group', unit: 'PCS', alias: 'EX01', balance: 100 }];
         sheetName = 'Items';
         fileName = 'item-template.xlsx';
     }
@@ -214,7 +214,7 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                     </div>
                     <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">Import Items</h4>
-                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to replace all existing item data. The first sheet should contain columns for 'name', 'group', 'unit', and 'alias'.</p>
+                        <p className="text-sm text-muted-foreground mb-4">Upload an Excel file to replace all existing item data. The first sheet should contain columns for 'name', 'group', 'unit', 'alias', and 'balance'.</p>
                         <div className="flex gap-2">
                             <input type="file" ref={itemFileInputRef} onChange={(e) => handleFileImport(e, 'items')} className="hidden" accept=".xlsx, .xls, .csv" />
                             <Button className="flex-1" onClick={() => itemFileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4"/>Upload Item File</Button>

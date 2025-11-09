@@ -25,7 +25,8 @@
         "group": { "type": "string", "description": "The item group name." },
         "unit": { "type": "string", "description": "Unit of measurement for the item." },
         "alias": { "type": "string", "description": "Alias code for the item." },
-        "price": { "type": "number", "description": "Price of the item." }
+        "price": { "type": "number", "description": "Price of the item." },
+        "balance": { "type": "number", "description": "Current stock balance of the item." }
       },
       "required": ["id", "name", "unit", "group"]
     },

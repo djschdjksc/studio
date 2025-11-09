@@ -115,7 +115,7 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
         <CardDescription>Grouped totals for all items.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow p-0">
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[250px]">
           <Table>
             <TableHeader className="sticky top-0 bg-card">
               <TableRow>
