@@ -35,6 +35,10 @@ service cloud.firestore {
     match /billingRecords/{billingRecordId} {
        allow read, write: if isSignedIn();
     }
+    
+    match /productionLogs/{logId} {
+      allow read, write: if isSignedIn();
+    }
 
     // Audit Logs: Only the owner should be able to read or write logs.
     match /logs/{logId} {
