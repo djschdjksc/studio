@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { UserProfile, AccessRequest, WithId, UserRole } from "@/lib/types";
+import { UserProfile, WithId, UserRole } from "@/lib/types";
 import { collection, doc, writeBatch, setDoc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,6 +32,12 @@ export default function AdminPage() {
     const requestsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'access_requests') : null, [firestore, user]);
     const { data: accessRequests, isLoading: requestsLoading } = useCollection<AccessRequest>(requestsQuery);
     
+    useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.push('/login');
+        }
+    }, [isUserLoading, user, router]);
+
     // Ensure the admin user has the 'owner' role in Firestore.
     useEffect(() => {
         if (user && user.email === 'rohitvetma101010@gmail.com' && firestore) {
@@ -48,70 +54,15 @@ export default function AdminPage() {
         }
     }, [user, firestore]);
 
-    const pendingRequests = accessRequests?.filter(req => req.status === 'pending') || [];
-
-    const handleRoleChange = (userId: string, newRole: UserRole) => {
-        if (!firestore) return;
-        if (user?.uid === userId) {
-            toast({ variant: 'destructive', title: 'Error', description: "You cannot change your own role." });
-            return;
-        }
-        const userDocRef = doc(firestore, 'users', userId);
-        
-        setDoc(userDocRef, { role: newRole }, { merge: true })
-            .then(() => {
-                toast({ title: 'Role Updated', description: `User role has been changed to ${newRole}.` });
-            })
-            .catch(async (error: any) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: userDocRef.path,
-                    operation: 'update',
-                    requestResourceData: { role: newRole },
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
-    };
-
-    const handleRequest = (request: WithId<AccessRequest>, newStatus: 'approved' | 'denied') => {
-        if (!firestore) return;
-        const batch = writeBatch(firestore);
-        const requestRef = doc(firestore, 'access_requests', request.id);
-
-        let userData = {};
-        if (newStatus === 'approved') {
-            const userRef = doc(firestore, 'users', request.userId);
-            userData = {
-                id: request.userId,
-                email: request.email,
-                role: request.requestedRole,
-                displayName: request.email.split('@')[0],
-            };
-            batch.set(userRef, userData, { merge: true });
-        }
-        
-        batch.update(requestRef, { status: newStatus });
-
-        batch.commit()
-            .then(() => {
-                toast({
-                    title: `Request ${newStatus}`,
-                    description: `The access request from ${request.email} has been ${newStatus}.`
-                });
-            })
-            .catch(async (error: any) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: requestRef.path,
-                    operation: 'update',
-                    requestResourceData: { status: newStatus },
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
-    };
-
 
     if (isUserLoading || usersLoading || requestsLoading) {
         return <div className="flex items-center justify-center min-h-screen">Loading Admin Dashboard...</div>;
     }
+    
+    if(!user) {
+        return <div className="flex items-center justify-center min-h-screen">Redirecting to login...</div>;
+    }
+
 
     return (
         <div className="flex flex-col min-h-screen bg-background">
@@ -130,83 +81,14 @@ export default function AdminPage() {
                  </div>
             </header>
 
-            <main className="flex-1 p-4 md:p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="lg:col-span-2">
+            <main className="flex-1 p-4 md:p-6">
+                 <Card>
                     <CardHeader>
                         <CardTitle>User Management</CardTitle>
-                        <CardDescription>View and manage roles for all users in the system.</CardDescription>
+                        <CardDescription>No users to manage in this simplified version.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {users?.sort((a,b) => roleHierarchy.indexOf(b.role) - roleHierarchy.indexOf(a.role)).map(u => (
-                                    <TableRow key={u.id}>
-                                        <TableCell className="font-medium">{u.email}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={u.role === 'owner' ? 'destructive' : 'secondary'} className="capitalize">{u.role}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            {u.id !== user?.uid && (
-                                                <Select onValueChange={(value: UserRole) => handleRoleChange(u.id, value)} defaultValue={u.role}>
-                                                    <SelectTrigger className="w-[120px] ml-auto">
-                                                        <SelectValue placeholder="Change Role"/>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="viewer">Viewer</SelectItem>
-                                                        <SelectItem value="editor">Editor</SelectItem>
-                                                        <SelectItem value="manager">Manager</SelectItem>
-                                                        <SelectItem value="admin">Admin</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle>Access Requests</CardTitle>
-                        <CardDescription>Approve or deny pending access requests.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Requested</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {pendingRequests.length > 0 ? pendingRequests.map(req => (
-                                    <TableRow key={req.id}>
-                                        <TableCell className="text-sm">{req.email}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="capitalize">{req.requestedRole}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right space-x-2">
-                                            <Button size="sm" onClick={() => handleRequest(req, 'approved')}>Approve</Button>
-                                            <Button size="sm" variant="destructive" onClick={() => handleRequest(req, 'denied')}>Deny</Button>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24">No pending requests.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                        <p className="text-muted-foreground">The user role and access request system has been removed.</p>
                     </CardContent>
                 </Card>
             </main>

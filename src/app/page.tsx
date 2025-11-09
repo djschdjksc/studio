@@ -1,23 +1,14 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/firebase';
 import { UserProfile } from '@/lib/types';
-import { doc } from 'firebase/firestore';
 import BillingDashboard from '@/components/dashboard/billing-dashboard';
 
 export default function Home() {
     const { user, isUserLoading } = useUser();
-    const firestore = useFirestore();
     const router = useRouter();
-
-    const userProfileRef = useMemoFirebase(() => {
-        if (!user || !firestore) return null;
-        return doc(firestore, 'users', user.uid);
-    }, [user, firestore]);
-    
-    const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
         if (!isUserLoading && !user) {
@@ -26,23 +17,26 @@ export default function Home() {
     }, [isUserLoading, user, router]);
 
 
-    if (isUserLoading || (user && isProfileLoading)) {
+    if (isUserLoading) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
-    if (user && userProfile) {
+    if (user) {
+        // Since we removed the complex role system, we can create a default owner profile.
+        const ownerProfile: UserProfile = {
+            id: user.uid,
+            email: user.email || 'rohitvetma101010@gmail.com',
+            role: 'owner',
+            displayName: user.displayName || 'Owner',
+        };
+
          return (
             <div className="min-h-screen w-full bg-background">
-                <BillingDashboard userProfile={userProfile} />
+                <BillingDashboard userProfile={ownerProfile} />
             </div>
         );
     }
     
-    // This can happen briefly while the user profile is being created for the first time.
-    if (user && !userProfile) {
-        return <div className="flex items-center justify-center min-h-screen">Setting up account...</div>;
-    }
-
-    // Default return if no other condition is met
+    // Fallback while redirecting to login
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
 }
