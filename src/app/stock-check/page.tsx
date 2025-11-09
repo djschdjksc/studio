@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, LogOut } from 'lucide-react';
+import { ArrowLeft, LogOut, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format, startOfDay, endOfDay } from 'date-fns';
@@ -32,11 +32,21 @@ export default function StockCheckPage() {
     const router = useRouter();
 
     const [reportDate, setReportDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [searchQuery, setSearchQuery] = useState('');
     const [stockReport, setStockReport] = useState<StockReportItem[]>([]);
     const [loadingReport, setLoadingReport] = useState(false);
 
     const itemsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'items') : null, [firestore, user]);
     const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
+
+    const filteredStockReport = useMemo(() => {
+        if (!searchQuery) {
+            return stockReport;
+        }
+        return stockReport.filter(item =>
+            item.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [stockReport, searchQuery]);
 
     useEffect(() => {
         if (!isUserLoading && !user) {
@@ -134,6 +144,16 @@ export default function StockCheckPage() {
                     <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">Stock Check Report</h1>
                 </div>
                 <div className="flex items-center gap-4">
+                     <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search items..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-8 sm:w-[200px] md:w-[300px]"
+                        />
+                    </div>
                      <div className="flex items-center gap-2">
                         <label htmlFor="reportDate" className="text-sm font-medium">Report Date:</label>
                         <Input
@@ -172,10 +192,10 @@ export default function StockCheckPage() {
                                 <TableBody>
                                     {loadingReport ? (
                                          <TableRow><TableCell colSpan={5} className="text-center h-24">Generating report...</TableCell></TableRow>
-                                    ) : stockReport.length === 0 ? (
-                                        <TableRow><TableCell colSpan={5} className="text-center h-24">No items found.</TableCell></TableRow>
+                                    ) : filteredStockReport.length === 0 ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center h-24">{searchQuery ? 'No items match your search.' : 'No items found.'}</TableCell></TableRow>
                                     ) : (
-                                        stockReport.map(item => (
+                                        filteredStockReport.map(item => (
                                             <TableRow key={item.id}>
                                                 <TableCell className="font-medium">{item.name}</TableCell>
                                                 <TableCell className="text-right">{item.openingBalance}</TableCell>
