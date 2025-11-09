@@ -115,7 +115,9 @@ export default function PartyBalancesPage() {
         const partyName = bill.filters.partyName;
         if(partyName) {
             const billTotal = calculateGrandTotal(bill, items);
-            balances[partyName] = (balances[partyName] || 0) + billTotal;
+            // A "sale" increases the balance (debit), a "sale-return" decreases it (credit).
+            const amount = bill.filters.billType === 'sale-return' ? -billTotal : billTotal;
+            balances[partyName] = (balances[partyName] || 0) + amount;
         }
     });
 
@@ -140,15 +142,19 @@ export default function PartyBalancesPage() {
 
     const bills: Transaction[] = savedBillsData
         .filter(bill => bill.filters.partyName === selectedParty.name)
-        .map(bill => ({
-            id: `bill-${bill.id}`,
-            type: 'bill',
-            slipNo: bill.filters.slipNo,
-            date: bill.filters.date ? parseISO(String(bill.filters.date)) : new Date(),
-            particulars: `Bill - Slip No: ${bill.filters.slipNo}`,
-            debit: calculateGrandTotal(bill, items),
-            credit: 0
-        }));
+        .map(bill => {
+            const billTotal = calculateGrandTotal(bill, items);
+            const isReturn = bill.filters.billType === 'sale-return';
+            return {
+                id: `bill-${bill.id}`,
+                type: 'bill',
+                slipNo: bill.filters.slipNo,
+                date: bill.filters.date ? parseISO(String(bill.filters.date)) : new Date(),
+                particulars: isReturn ? `Sale Return - Slip No: ${bill.filters.slipNo}` : `Sale - Slip No: ${bill.filters.slipNo}`,
+                debit: isReturn ? 0 : billTotal,
+                credit: isReturn ? billTotal : 0
+            }
+        });
     
     const payments: Transaction[] = paymentsData
         .filter(payment => payment.partyName === selectedParty.name)
