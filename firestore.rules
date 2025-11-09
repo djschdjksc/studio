@@ -3,74 +3,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // Helper function to check if the user is the designated owner by email.
     function isOwner() {
       return request.auth != null && request.auth.token.email == "rohitvetma101010@gmail.com";
     }
 
-    function getUserRole() {
-      // Check for existence before accessing data to prevent errors on non-existent docs
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-        : 'none';
+    // Helper function to check if a user is signed in.
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    function isAdmin() {
-      return getUserRole() == "admin";
-    }
-    
-    function isOwnerOrAdmin() {
-      return isOwner() || isAdmin();
-    }
-    
-    // User Profiles:
+    // User Profiles: Only the owner can manage their own profile.
     match /users/{userId} {
-      allow read: if isOwnerOrAdmin() || request.auth.uid == userId;
-      // Allow user creation if the user is the owner, or if the user is creating their own document for the first time.
-      allow create: if isOwner() || (request.auth.uid == userId && !exists(/databases/$(database)/documents/users/$(userId)));
-      // Allow updates if user is owner, or if they are updating their own profile
-      allow update: if isOwner() || request.auth.uid == userId;
-      allow delete: if isOwnerOrAdmin();
+      allow read, write: if isOwner() && request.auth.uid == userId;
     }
-    
-    // Access Requests:
-    match /access_requests/{requestId} {
-      // Allow users to create requests for themselves
-      allow create: if request.auth.uid == requestId;
-      // Admins can manage all requests
-      allow list, update, delete: if isOwnerOrAdmin();
-      // Users can read their own request
-      allow get: if request.auth.uid == requestId;
-    }
-    
-    // Data collections can be managed by authorized roles.
+
+    // Since we only have a single owner user now, any signed-in user can manage the data.
+    // This is secure because only the owner can log in.
     match /parties/{partyId} {
-       allow read, write: if isSignedIn() && (getUserRole() in ['editor', 'manager', 'admin', 'owner']);
-       allow delete: if isSignedIn() && (getUserRole() in ['manager', 'admin', 'owner']);
+       allow read, write: if isSignedIn();
     }
 
     match /itemGroups/{itemGroupId} {
-       allow read, write: if isSignedIn() && (getUserRole() in ['editor', 'manager', 'admin', 'owner']);
-       allow delete: if isSignedIn() && (getUserRole() in ['manager', 'admin', 'owner']);
+       allow read, write: if isSignedIn();
     }
 
     match /items/{itemId} {
-       allow read, write: if isSignedIn() && (getUserRole() in ['editor', 'manager', 'admin', 'owner']);
-       allow delete: if isSignedIn() && (getUserRole() in ['manager', 'admin', 'owner']);
+       allow read, write: if isSignedIn();
     }
 
     match /billingRecords/{billingRecordId} {
-       allow read, write: if isSignedIn() && (getUserRole() in ['editor', 'manager', 'admin', 'owner']);
-       allow delete: if isSignedIn() && (getUserRole() in ['manager', 'admin', 'owner']);
+       allow read, write: if isSignedIn();
     }
 
-    // Audit Logs:
+    // Audit Logs: Only the owner should be able to read or write logs.
     match /logs/{logId} {
-      allow read, write: if isOwnerOrAdmin();
+      allow read, write: if isOwner();
     }
-
-    function isSignedIn() {
-      return request.auth != null;
+    
+    // The access request system has been removed.
+    match /access_requests/{requestId} {
+      allow read, write: if false;
     }
   }
 }
