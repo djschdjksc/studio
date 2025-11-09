@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase, useAuth } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { Item, SavedBill, WithId } from '@/lib/types';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AllBillsDialog } from '@/components/dashboard/all-bills-dialog';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -15,14 +16,21 @@ import Link from 'next/link';
 export default function AllBillsPage() {
   const firestore = useFirestore();
   const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
-  const itemsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'items') : null, [firestore]);
-  const { data: items } = useCollection<Item>(itemsQuery);
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  const itemsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'items') : null, [firestore, user]);
+  const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
   
-  const billingRecordsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'billingRecords') : null, [firestore]);
-  const { data: savedBillsData } = useCollection<SavedBill>(billingRecordsQuery);
+  const billingRecordsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'billingRecords') : null, [firestore, user]);
+  const { data: savedBillsData, isLoading: billsLoading } = useCollection<SavedBill>(billingRecordsQuery);
 
   const savedBills = React.useMemo(() => {
     if (!savedBillsData) return {};
@@ -61,6 +69,11 @@ export default function AllBillsPage() {
         description: `Bill with Slip No. ${slipNo} has been deleted and stock has been restored.`,
     });
   };
+
+  if (isUserLoading || itemsLoading || billsLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading Bills...</div>;
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">

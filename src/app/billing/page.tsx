@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -5,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { UserProfile } from '@/lib/types';
 import BillingDashboard from '@/components/dashboard/billing-dashboard';
+import { Suspense } from 'react';
 
-export default function BillingPage() {
+function BillingPageContent() {
     const { user, isUserLoading } = useUser();
     const router = useRouter();
 
@@ -17,26 +19,29 @@ export default function BillingPage() {
     }, [isUserLoading, user, router]);
 
 
-    if (isUserLoading) {
+    if (isUserLoading || !user) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
-    if (user) {
-        // Since we removed the complex role system, we can create a default owner profile.
-        const ownerProfile: UserProfile = {
-            id: user.uid,
-            email: user.email || 'rohitvetma101010@gmail.com',
-            role: 'owner',
-            displayName: user.displayName || 'Owner',
-        };
+    // Since we removed the complex role system, we can create a default owner profile.
+    const ownerProfile: UserProfile = {
+        id: user.uid,
+        email: user.email || 'rohitvetma101010@gmail.com',
+        role: 'owner',
+        displayName: user.displayName || 'Owner',
+    };
 
-         return (
-            <div className="min-h-screen w-full bg-background">
-                <BillingDashboard userProfile={ownerProfile} />
-            </div>
-        );
-    }
-    
-    // Fallback while redirecting to login
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+        <div className="min-h-screen w-full bg-background">
+            <BillingDashboard userProfile={ownerProfile} />
+        </div>
+    );
+}
+
+export default function BillingPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+            <BillingPageContent />
+        </Suspense>
+    );
 }

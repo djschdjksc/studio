@@ -1,7 +1,8 @@
+
 'use client';
 
-import React, { useState } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useAuth } from '@/firebase';
+import React, { useEffect, useState } from 'react';
+import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { WithId, Item, UserProfile } from '@/lib/types';
 import StockManagement from '@/components/dashboard/stock-management';
 import { doc, updateDoc, increment, collection } from 'firebase/firestore';
@@ -10,14 +11,23 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function StockPage() {
   const firestore = useFirestore();
   const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
   const { toast } = useToast();
   
-  const itemsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'items') : null, [firestore]);
-  const { data: items } = useCollection<Item>(itemsQuery);
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  const itemsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'items') : null, [firestore, user]);
+  const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
 
   const handleAddStock = async (itemId: string, quantity: number) => {
     if (!firestore) return;
@@ -30,6 +40,10 @@ export default function StockPage() {
         description: `Added ${quantity} to the item's balance.`,
     });
   };
+  
+  if (isUserLoading || itemsLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading Stock...</div>;
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
