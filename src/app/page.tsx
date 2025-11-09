@@ -22,7 +22,7 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
-        if (isUserLoading || (user && isProfileLoading)) {
+        if (isUserLoading) {
             return; 
         }
 
@@ -31,12 +31,7 @@ export default function Home() {
             return;
         }
 
-        if (userProfile) {
-            if (userProfile.role === 'admin' || userProfile.role === 'owner') {
-                router.push('/admin');
-            }
-        }
-    }, [isUserLoading, isProfileLoading, user, router]);
+    }, [isUserLoading, user, router]);
 
 
     if (isUserLoading || (user && isProfileLoading)) {
@@ -47,8 +42,8 @@ export default function Home() {
         return <AccessRequestPage />;
     }
 
-    if (userProfile && (userProfile.role === 'viewer' || userProfile.role === 'editor' || userProfile.role === 'manager')) {
-        return (
+    if (userProfile) {
+         return (
             <div className="min-h-screen w-full bg-background">
                 <BillingDashboard userProfile={userProfile} />
             </div>
