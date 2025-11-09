@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { Party, SearchFiltersState } from "@/lib/types";
 import { Textarea } from "../ui/textarea";
 import { PartySearchCombobox } from "./party-search-combobox";
+import { format, parseISO } from "date-fns";
 
 interface SearchFiltersProps {
   parties: Party[];
@@ -36,6 +36,21 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
 
     onFiltersChange(newFilters);
   };
+  
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const dateValue = e.target.value; // yyyy-mm-dd
+    onFiltersChange({ ...filters, date: dateValue ? new Date(dateValue) : undefined });
+  }
+  
+  const getDateValue = () => {
+    if (!filters.date) return "";
+    try {
+        const date = typeof filters.date === 'string' ? parseISO(filters.date) : filters.date;
+        return format(date, 'yyyy-MM-dd');
+    } catch {
+        return "";
+    }
+  }
 
   return (
     <Card>
@@ -59,7 +74,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
           </div>
           <div className="space-y-2 col-span-2 md:col-span-1">
             <Label htmlFor="date">Date</Label>
-            <DatePicker date={filters.date ? new Date(filters.date) : undefined} onDateChange={(date) => handleFieldChange('date', date)} disabled={!canEdit} />
+             <Input id="date" type="date" value={getDateValue()} onChange={handleDateChange} disabled={!canEdit} />
           </div>
           <div className="space-y-2 col-span-2 md:col-span-1">
             <Label htmlFor="slipNo">Slip No</Label>
