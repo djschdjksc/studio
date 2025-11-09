@@ -157,7 +157,7 @@ export default function PartyPricesPage() {
                         <CardDescription>Set and manage custom prices for each party and item group.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow p-0 overflow-hidden">
-                        <ScrollArea className="h-full">
+                        <ScrollArea className="h-full w-full">
                             <Table>
                                 <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
@@ -171,7 +171,7 @@ export default function PartyPricesPage() {
                                 <TableBody>
                                     {filteredParties.map(party => (
                                         <TableRow key={party.id}>
-                                            <TableCell className="font-medium sticky left-0 bg-background z-10">{party.name}</TableCell>
+                                            <TableCell className="font-medium sticky left-0 bg-white dark:bg-card z-10">{party.name}</TableCell>
                                             {allGroupNames.map(group => (
                                                 <TableCell key={group} className="text-right">
                                                     <Input
@@ -183,7 +183,7 @@ export default function PartyPricesPage() {
                                                     />
                                                 </TableCell>
                                             ))}
-                                            <TableCell className="sticky right-0 bg-background z-10 text-center">
+                                            <TableCell className="sticky right-0 bg-white dark:bg-card z-10 text-center">
                                                 {dirtyRows.has(party.id) && (
                                                     <Button size="sm" onClick={() => handleSave(party.id)}>
                                                         <Save className="mr-2 h-4 w-4"/>
@@ -202,4 +202,3 @@ export default function PartyPricesPage() {
         </div>
     );
 }
-
