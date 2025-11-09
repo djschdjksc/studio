@@ -4,7 +4,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory } from "lucide-react";
+import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useState } from "react";
@@ -99,6 +99,12 @@ export default function DashboardPage() {
             description: "View, edit, or delete all saved bills.",
             icon: <Library className="h-8 w-8 text-yellow-600" />,
             href: "/bills",
+        },
+        {
+            title: "Stock Check",
+            description: "View opening and closing stock.",
+            icon: <CheckSquare className="h-8 w-8 text-blue-600" />,
+            href: "/stock-check",
         },
         {
             title: "New Party",

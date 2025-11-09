@@ -83,5 +83,14 @@ export interface AuditLog {
     details: Record<string, any>;
 }
 
-export type WithId<T> = T & { id: string };
+export interface ProductionLog {
+    id: string;
+    machineName: string;
+    itemId: string;
+    itemName: string;
+    quantity: number;
+    date: string; // YYYY-MM-DD
+    createdAt: any; // serverTimestamp
+}
 
+export type WithId<T> = T & { id: string };

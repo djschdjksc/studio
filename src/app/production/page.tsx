@@ -86,7 +86,8 @@ export default function ProductionPage() {
                             <ProductionCard 
                                 key={machine.id} 
                                 machineName={machine.name} 
-                                items={items || []} 
+                                items={items || []}
+                                productionDate={productionDate}
                             />
                         ))}
                     </div>

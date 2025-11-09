@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Item } from '@/lib/types';
+import { Item, ProductionLog } from '@/lib/types';
 import { ItemSearchInput } from './item-search-input';
 import { PlusCircle, Save, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
+import { collection, doc, serverTimestamp, writeBatch, increment } from 'firebase/firestore';
 
 interface ProductionItem {
     id: string;
@@ -21,11 +23,13 @@ interface ProductionItem {
 interface ProductionCardProps {
     machineName: string;
     items: Item[];
+    productionDate: string;
 }
 
-export default function ProductionCard({ machineName, items }: ProductionCardProps) {
+export default function ProductionCard({ machineName, items, productionDate }: ProductionCardProps) {
     const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
     const { toast } = useToast();
+    const firestore = useFirestore();
     
     const addProductionRow = () => {
         setProductionItems([...productionItems, { id: crypto.randomUUID(), itemName: '', quantity: 0 }]);
@@ -49,13 +53,56 @@ export default function ProductionCard({ machineName, items }: ProductionCardPro
         setProductionItems(productionItems.filter(item => item.id !== id));
     };
     
-    const handleSave = () => {
-        // Here you would typically save the production data to Firestore
-        console.log(`Saving production for ${machineName}:`, productionItems);
-        toast({
-            title: "Production Saved",
-            description: `Saved ${productionItems.filter(i => i.itemName && i.quantity > 0).length} entries for ${machineName}.`,
-        });
+    const handleSave = async () => {
+        if (!firestore) {
+            toast({ variant: 'destructive', title: "Error", description: "Database not available." });
+            return;
+        }
+
+        const validItems = productionItems.filter(i => i.itemName && i.quantity > 0);
+        if (validItems.length === 0) {
+            toast({ variant: 'destructive', title: "No items to save", description: "Please add items and quantities." });
+            return;
+        }
+
+        const batch = writeBatch(firestore);
+
+        for (const prodItem of validItems) {
+            const itemInfo = items.find(i => i.name.toLowerCase() === prodItem.itemName.toLowerCase());
+            if (!itemInfo) continue;
+
+            // 1. Create a production log entry
+            const logRef = doc(collection(firestore, 'productionLogs'));
+            const logEntry: Omit<ProductionLog, 'id'> = {
+                machineName,
+                itemId: itemInfo.id,
+                itemName: itemInfo.name,
+                quantity: prodItem.quantity,
+                date: productionDate,
+                createdAt: serverTimestamp(),
+            };
+            batch.set(logRef, logEntry);
+
+            // 2. Update the item's balance
+            const itemRef = doc(firestore, 'items', itemInfo.id);
+            batch.update(itemRef, { balance: increment(prodItem.quantity) });
+        }
+        
+        try {
+            await batch.commit();
+            toast({
+                title: "Production Saved",
+                description: `Saved ${validItems.length} entries for ${machineName}. Stock balances updated.`,
+            });
+            setProductionItems([]); // Clear the card after saving
+        } catch (error) {
+            console.error("Error saving production:", error);
+            toast({
+                variant: 'destructive',
+                title: "Error Saving Production",
+                description: "Could not save production data. Please try again."
+            })
+        }
     }
 
     return (
