@@ -4,71 +4,76 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
+    function isOwner() {
+      return request.auth != null && request.auth.token.email == "rohitvetma101010@gmail.com";
     }
 
-    function isOwnerEmail() {
-      return request.auth.token.email == "rohitvetma101010@gmail.com";
-    }
-    
-    function getUserRole(userId) {
-        // Check if the user document exists before trying to access its data
-        return exists(/databases/$(database)/documents/users/$(userId))
-            ? get(/databases/$(database)/documents/users/$(userId)).data.role
-            : 'pending'; // Default to a non-privileged role if doc doesn't exist
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
+    function isAdmin() {
+      return getUserRole() == "admin";
+    }
+
+    // Combined owner or admin rule (non-recursive)
     function isOwnerOrAdmin() {
-        if (isOwnerEmail()) {
-            return true;
-        }
-        if (isSignedIn()) {
-            let userRole = getUserRole(request.auth.uid);
-            return userRole == 'admin' || userRole == 'owner';
-        }
-        return false;
+      return isOwner() || isAdmin();
     }
     
     // User Profiles:
     match /users/{userId} {
-      allow read: if isSignedIn() && (isOwnerOrAdmin() || request.auth.uid == userId);
-      allow list: if isSignedIn() && isOwnerOrAdmin();
-      allow create: if isSignedIn() && (isOwnerEmail() || request.auth.uid == userId);
-      allow update: if isSignedIn() && (isOwnerEmail() || isOwnerOrAdmin() || request.auth.uid == userId);
+      allow read: if isOwnerOrAdmin() || request.auth.uid == userId;
+      // Allow user creation if the user is the owner, or if the user is creating their own document for the first time.
+      allow create: if isOwner() || (request.auth.uid == userId && !exists(/databases/$(database)/documents/users/$(userId)));
+      // Allow updates if user is owner, or if they are updating their own profile
+      allow update: if isOwner() || request.auth.uid == userId;
       allow delete: if isOwnerOrAdmin();
     }
     
     // Access Requests:
     match /access_requests/{requestId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, list, update, delete: if isSignedIn() && isOwnerOrAdmin();
+      // Allow users to create requests for themselves
+      allow create: if request.auth.uid == requestId;
+      // Admins can manage all requests
+      allow list, update, delete: if isOwnerOrAdmin();
+      // Users can read their own request
+      allow get: if isOwnerOrAdmin() || request.auth.uid == requestId;
     }
     
     // Data collections can be managed by authorized roles.
     match /parties/{partyId} {
-       allow read, write: if isSignedIn() && (getUserRole(request.auth.uid) in ['editor', 'manager', 'admin', 'owner']);
-       allow delete: if isSignedIn() && (getUserRole(request.auth.uid) in ['manager', 'admin', 'owner']);
+       allow read, write: if isSignedIn() && (getUserRole() in ['editor', 'manager', 'admin', 'owner']);
+       allow delete: if isSignedIn() && (getUserRole() in ['manager', 'admin', 'owner']);
     }
 
     match /itemGroups/{itemGroupId} {
-       allow read, write: if isSignedIn() && (getUserRole(request.auth.uid) in ['editor', 'manager', 'admin', 'owner']);
-       allow delete: if isSignedIn() && (getUserRole(request.auth.uid) in ['manager', 'admin', 'owner']);
+       allow read, write: if isSignedIn() && (getUserRole() in ['editor', 'manager', 'admin', 'owner']);
+       allow delete: if isSignedIn() && (getUserRole() in ['manager', 'admin', 'owner']);
     }
 
     match /items/{itemId} {
-       allow read, write: if isSignedIn() && (getUserRole(request.auth.uid) in ['editor', 'manager', 'admin', 'owner']);
-       allow delete: if isSignedIn() && (getUserRole(request.auth.uid) in ['manager', 'admin', 'owner']);
+       allow read, write: if isSignedIn() && (getUserRole() in ['editor', 'manager', 'admin', 'owner']);
+       allow delete: if isSignedIn() && (getUserRole() in ['manager', 'admin', 'owner']);
     }
 
     match /billingRecords/{billingRecordId} {
-       allow read, write: if isSignedIn() && (getUserRole(request.auth.uid) in ['editor', 'manager', 'admin', 'owner']);
-       allow delete: if isSignedIn() && (getUserRole(request.auth.uid) in ['manager', 'admin', 'owner']);
+       allow read, write: if isSignedIn() && (getUserRole() in ['editor', 'manager', 'admin', 'owner']);
+       allow delete: if isSignedIn() && (getUserRole() in ['manager', 'admin', 'owner']);
     }
 
     // Audit Logs:
     match /logs/{logId} {
       allow read, write: if isOwnerOrAdmin();
+    }
+
+    // Default deny all other reads/writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
     }
   }
 }
