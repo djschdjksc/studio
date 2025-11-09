@@ -18,33 +18,23 @@ service cloud.firestore {
     }
 
     function getUserRole(userId) {
-      // Use exists() to avoid errors on non-existent documents.
       return get(/databases/$(database)/documents/users/$(userId)).data.role;
     }
     
     function isOwnerOrAdmin() {
-      // Short-circuit if it's the owner email, otherwise check role from the user's document.
-      if (isOwnerEmail()) {
-        return true;
-      }
-      // Check for role only if the user document exists. This prevents circular dependencies.
-      if (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))) {
-          let userRole = getUserRole(request.auth.uid);
-          return userRole == 'admin' || userRole == 'owner';
-      }
-      return false;
+      let userExists = exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      let userRole = userExists ? getUserRole(request.auth.uid) : '';
+      return isOwnerEmail() || userRole == 'admin' || userRole == 'owner';
     }
 
     // User Profiles:
-    // - The owner can create/update their own 'owner' profile.
     // - Any user can read their own profile.
     // - Admins/Owners can read/write any profile.
+    // - The owner can create/update their own 'owner' profile.
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isOwnerOrAdmin());
       allow list: if isSignedIn() && isOwnerOrAdmin();
-      // Allow owner email to create their initial record. Also allow admins to create users.
       allow create: if (isOwner(userId) && isOwnerEmail()) || (isSignedIn() && isOwnerOrAdmin());
-      // Allow owner to update their own record, and admins to update any.
       allow update: if (isOwner(userId) && isOwnerEmail()) || (isSignedIn() && isOwnerOrAdmin());
     }
     
