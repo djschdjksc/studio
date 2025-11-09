@@ -9,12 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, LogOut, Save, Search } from 'lucide-react';
+import { ArrowLeft, LogOut, Save, Search, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 
 type EditablePartyPrice = {
     partyId: string;
@@ -120,6 +122,82 @@ export default function PartyPricesPage() {
             return newSet;
         });
     };
+
+    const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, colIndex: number) => {
+        let nextRow = rowIndex;
+        let nextCol = colIndex;
+
+        switch (e.key) {
+            case 'ArrowUp':
+                if (rowIndex > 0) {
+                    nextRow = rowIndex - 1;
+                }
+                break;
+            case 'ArrowDown':
+                if (rowIndex < filteredParties.length - 1) {
+                    nextRow = rowIndex + 1;
+                }
+                break;
+            case 'ArrowLeft':
+                if (colIndex > 0) {
+                    nextCol = colIndex - 1;
+                }
+                break;
+            case 'ArrowRight':
+            case 'Enter':
+                 e.preventDefault();
+                if (colIndex < allGroupNames.length - 1) {
+                    nextCol = colIndex + 1;
+                }
+                break;
+            default:
+                return;
+        }
+
+        const nextPartyId = filteredParties[nextRow]?.id;
+        const nextGroupName = allGroupNames[nextCol];
+
+        if (nextPartyId && nextGroupName) {
+            const nextInput = document.getElementById(`price-input-${nextPartyId}-${nextGroupName}`);
+            if (nextInput) {
+                nextInput.focus();
+                (nextInput as HTMLInputElement).select();
+            }
+        }
+    }
+    
+    const handleExport = () => {
+        if (!filteredParties || filteredParties.length === 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No Data to Export',
+                description: 'There are no parties to export.',
+            });
+            return;
+        }
+
+        const dataToExport = filteredParties.map(party => {
+            const partyData = editablePrices[party.id];
+            const row: Record<string, any> = { 'Party Name': party.name };
+            allGroupNames.forEach(group => {
+                row[group.toUpperCase()] = partyData?.prices[group.toLowerCase()] ?? '';
+            });
+            return row;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Party Prices");
+        
+        const fileName = `PartyPrices_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+
+        toast({
+            title: 'Export Successful',
+            description: `Party prices exported to ${fileName}.`,
+        });
+    };
+
     
     if (isUserLoading || partiesLoading || groupsLoading) {
         return <div className="flex items-center justify-center min-h-screen">Loading Party Prices...</div>;
@@ -145,6 +223,9 @@ export default function PartyPricesPage() {
                             className="w-full pl-8 sm:w-[200px] md:w-[300px]"
                         />
                     </div>
+                    <Button variant="outline" onClick={handleExport}>
+                        <Download className="mr-2 h-4 w-4" /> Export to Excel
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => auth?.signOut()}>
                         <LogOut className="h-4 w-4" />
                     </Button>
@@ -169,17 +250,19 @@ export default function PartyPricesPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredParties.map(party => (
+                                    {filteredParties.map((party, rowIndex) => (
                                         <TableRow key={party.id}>
                                             <TableCell className="font-medium sticky left-0 bg-white dark:bg-card z-10">{party.name}</TableCell>
-                                            {allGroupNames.map(group => (
+                                            {allGroupNames.map((group, colIndex) => (
                                                 <TableCell key={group} className="text-right">
                                                     <Input
+                                                        id={`price-input-${party.id}-${group}`}
                                                         type="number"
                                                         placeholder="0.00"
                                                         className="text-right"
                                                         value={editablePrices[party.id]?.prices[group.toLowerCase()] ?? ''}
                                                         onChange={(e) => handlePriceChange(party.id, group, e.target.value)}
+                                                        onKeyDown={(e) => handleKeyDown(e, rowIndex, colIndex)}
                                                     />
                                                 </TableCell>
                                             ))}
@@ -203,3 +286,5 @@ export default function PartyPricesPage() {
         </div>
     );
 }
+
+    
