@@ -316,13 +316,15 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   }, [savedBills, searchFilters.slipNo, toast]);
   
   const handleDeleteBill = async (slipNo: string) => {
-    if (!canDelete || !firestore) return;
+    if (!canDelete || !firestore || !items) return;
 
     const billToDelete = savedBills[slipNo];
     if (billToDelete) {
+        // If deleting a "sale", items go back into stock (positive increment).
+        // If deleting a "sale-return", items that were returned now are removed from stock (negative increment).
         const stockChangeMultiplier = billToDelete.filters.billType === 'sale-return' ? -1 : 1;
         billToDelete.billingItems.forEach(billedItem => {
-            const item = items?.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
+            const item = items.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
             if (item && billedItem.quantity > 0) {
                 const itemRef = doc(firestore, 'items', item.id);
                 updateDocumentNonBlocking(itemRef, {

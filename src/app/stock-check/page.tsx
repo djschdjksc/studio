@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, LogOut, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import { format, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { errorEmitter, FirestorePermissionError } from '@/firebase';
 
@@ -22,6 +22,7 @@ interface StockReportItem {
     openingBalance: number;
     production: number;
     sale: number;
+    saleReturn: number;
     closingBalance: number;
 }
 
@@ -64,12 +65,12 @@ export default function StockCheckPage() {
         if (!firestore || !items || !user) return;
         setLoadingReport(true);
 
-        const date = new Date(reportDate);
-        const startOfReportDate = startOfDay(date);
-        const endOfReportDate = endOfDay(date);
-
         try {
-            // Fetch sales for the selected date
+            const date = parseISO(reportDate + 'T00:00:00');
+            const startOfReportDate = startOfDay(date);
+            const endOfReportDate = endOfDay(date);
+    
+            // Fetch bills for the selected date
             const salesQuery = query(
                 collection(firestore, 'billingRecords'),
                 where('filters.date', '>=', startOfReportDate.toISOString()),
@@ -83,7 +84,7 @@ export default function StockCheckPage() {
                 errorEmitter.emit('permission-error', permissionError);
                 throw permissionError;
             });
-            const dailySales = salesSnapshot.docs.flatMap(doc => (doc.data() as SavedBill).billingItems);
+            const dailySales = salesSnapshot.docs.map(doc => doc.data() as SavedBill);
 
             // Fetch production for the selected date
             const prodQuery = query(
@@ -103,15 +104,26 @@ export default function StockCheckPage() {
             const report: StockReportItem[] = items.map(item => {
                 const closingBalance = item.balance ?? 0;
 
-                const totalSaleQty = dailySales
-                    .filter(sale => sale.itemName.toLowerCase() === item.name.toLowerCase())
-                    .reduce((sum, sale) => sum + sale.quantity, 0);
+                let totalSaleQty = 0;
+                let totalSaleReturnQty = 0;
+
+                dailySales.forEach(bill => {
+                    const billItems = bill.billingItems.filter(billedItem => billedItem.itemName.toLowerCase() === item.name.toLowerCase());
+                    const totalQty = billItems.reduce((sum, i) => sum + i.quantity, 0);
+
+                    if (bill.filters.billType === 'sale-return') {
+                        totalSaleReturnQty += totalQty;
+                    } else {
+                        totalSaleQty += totalQty;
+                    }
+                });
 
                 const totalProdQty = dailyProduction
                     .filter(prod => prod.itemId === item.id)
                     .reduce((sum, prod) => sum + prod.quantity, 0);
-
-                const openingBalance = closingBalance - totalProdQty + totalSaleQty;
+                
+                // Opening Balance = Closing - Production + Sales - Sale Returns
+                const openingBalance = closingBalance - totalProdQty + totalSaleQty - totalSaleReturnQty;
 
                 return {
                     id: item.id,
@@ -119,6 +131,7 @@ export default function StockCheckPage() {
                     openingBalance,
                     production: totalProdQty,
                     sale: totalSaleQty,
+                    saleReturn: totalSaleReturnQty,
                     closingBalance,
                 };
             });
@@ -175,7 +188,7 @@ export default function StockCheckPage() {
             <main className="flex-1 p-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Stock Report for {format(new Date(reportDate), 'PPP')}</CardTitle>
+                        <CardTitle>Stock Report for {format(parseISO(reportDate + 'T00:00:00'), 'PPP')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <ScrollArea className="h-[70vh]">
@@ -183,24 +196,26 @@ export default function StockCheckPage() {
                                 <TableHeader className="sticky top-0 bg-background">
                                     <TableRow>
                                         <TableHead>Item Name</TableHead>
-                                        <TableHead className="text-right">Opening Balance</TableHead>
-                                        <TableHead className="text-right text-green-600">Production</TableHead>
+                                        <TableHead className="text-right">Opening</TableHead>
+                                        <TableHead className="text-right text-purple-600">Production</TableHead>
                                         <TableHead className="text-right text-red-600">Sale</TableHead>
-                                        <TableHead className="text-right font-bold">Closing Balance</TableHead>
+                                        <TableHead className="text-right text-green-600">Sale Return</TableHead>
+                                        <TableHead className="text-right font-bold">Closing</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {loadingReport ? (
-                                         <TableRow><TableCell colSpan={5} className="text-center h-24">Generating report...</TableCell></TableRow>
+                                         <TableRow><TableCell colSpan={6} className="text-center h-24">Generating report...</TableCell></TableRow>
                                     ) : filteredStockReport.length === 0 ? (
-                                        <TableRow><TableCell colSpan={5} className="text-center h-24">{searchQuery ? 'No items match your search.' : 'No items found.'}</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={6} className="text-center h-24">{searchQuery ? 'No items match your search.' : 'No items found.'}</TableCell></TableRow>
                                     ) : (
                                         filteredStockReport.map(item => (
                                             <TableRow key={item.id}>
                                                 <TableCell className="font-medium">{item.name}</TableCell>
                                                 <TableCell className="text-right">{item.openingBalance}</TableCell>
-                                                <TableCell className="text-right text-green-600">+{item.production}</TableCell>
-                                                <TableCell className="text-right text-red-600">-{item.sale}</TableCell>
+                                                <TableCell className="text-right text-purple-600">{item.production > 0 ? `+${item.production}`: ''}</TableCell>
+                                                <TableCell className="text-right text-red-600">{item.sale > 0 ? `-${item.sale}`: ''}</TableCell>
+                                                <TableCell className="text-right text-green-600">{item.saleReturn > 0 ? `+${item.saleReturn}`: ''}</TableCell>
                                                 <TableCell className="text-right font-bold">{item.closingBalance}</TableCell>
                                             </TableRow>
                                         ))
