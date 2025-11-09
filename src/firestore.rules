@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -8,36 +9,40 @@ service cloud.firestore {
     }
 
     function isOwnerEmail() {
-      return request.auth.token.email == 'rohitvetma101010@gmail.com';
-    }
-
-    function getUserRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+      return request.auth.token.email == "rohitvetma101010@gmail.com";
     }
     
-    function isOwnerOrAdmin() {
-      if (isOwnerEmail()) {
-        return true;
-      }
-      if (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))) {
-          let userRole = getUserRole(request.auth.uid);
-          return userRole == 'admin' || userRole == 'owner';
-      }
-      return false;
+    function getUserRole(userId) {
+        // Check if the user document exists before trying to access its data
+        return exists(/databases/$(database)/documents/users/$(userId))
+            ? get(/databases/$(database)/documents/users/$(userId)).data.role
+            : 'pending'; // Default to a non-privileged role if doc doesn't exist
     }
 
+    function isOwnerOrAdmin() {
+        if (isOwnerEmail()) {
+            return true;
+        }
+        if (isSignedIn()) {
+            let userRole = getUserRole(request.auth.uid);
+            return userRole == 'admin' || userRole == 'owner';
+        }
+        return false;
+    }
+    
     // User Profiles:
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isOwnerOrAdmin());
-      allow create: if isSignedIn() && (request.auth.uid == userId || isOwnerOrAdmin());
-      allow update: if isSignedIn() && (request.auth.uid == userId || isOwnerOrAdmin());
+      allow read: if isSignedIn() && (isOwnerOrAdmin() || request.auth.uid == userId);
+      allow list: if isSignedIn() && isOwnerOrAdmin();
+      allow create: if isSignedIn() && (isOwnerEmail() || request.auth.uid == userId);
+      allow update: if isSignedIn() && (isOwnerEmail() || isOwnerOrAdmin() || request.auth.uid == userId);
       allow delete: if isOwnerOrAdmin();
     }
     
     // Access Requests:
     match /access_requests/{requestId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, list, update, delete: if isOwnerOrAdmin();
+      allow read, list, update, delete: if isSignedIn() && isOwnerOrAdmin();
     }
     
     // Data collections can be managed by authorized roles.

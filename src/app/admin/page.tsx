@@ -22,14 +22,14 @@ const roleHierarchy: UserRole[] = ['viewer', 'editor', 'manager', 'admin', 'owne
 export default function AdminPage() {
     const firestore = useFirestore();
     const auth = useAuth();
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const { toast } = useToast();
     const router = useRouter();
 
-    const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+    const usersQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users') : null, [firestore, user]);
     const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersQuery);
 
-    const requestsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'access_requests') : null, [firestore]);
+    const requestsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'access_requests') : null, [firestore, user]);
     const { data: accessRequests, isLoading: requestsLoading } = useCollection<AccessRequest>(requestsQuery);
     
     // Ensure the admin user has the 'owner' role in Firestore.
@@ -109,7 +109,7 @@ export default function AdminPage() {
     };
 
 
-    if (usersLoading || requestsLoading) {
+    if (isUserLoading || usersLoading || requestsLoading) {
         return <div className="flex items-center justify-center min-h-screen">Loading Admin Dashboard...</div>;
     }
 
