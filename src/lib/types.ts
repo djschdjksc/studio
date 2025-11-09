@@ -9,6 +9,7 @@ export interface Party {
     pincode: string;
     station: string;
     phone: string;
+    priceList?: Record<string, number>;
 }
 
 export interface ItemGroup {

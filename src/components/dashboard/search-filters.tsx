@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,7 +58,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
         <CardTitle>Search & Filters</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
           <div className="space-y-2 col-span-2 xl:col-span-1">
             <Label htmlFor="partyName">Party Name</Label>
             <PartySearchInput
@@ -68,15 +69,15 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
                 disabled={!canEdit}
             />
           </div>
-          <div className="space-y-2 col-span-2 xl:col-span-2">
+          <div className="space-y-2 col-span-2 xl:col-span-1">
             <Label htmlFor="address">Address</Label>
             <Input id="address" placeholder="Enter address..." value={filters.address} onChange={e => handleFieldChange('address', e.target.value)} disabled={!canEdit} />
           </div>
-          <div className="space-y-2 col-span-2 md:col-span-1">
+          <div className="space-y-2 col-span-1">
             <Label htmlFor="date">Date</Label>
              <Input id="date" type="date" value={getDateValue()} onChange={handleDateChange} disabled={!canEdit} />
           </div>
-          <div className="space-y-2 col-span-2 md:col-span-1">
+          <div className="space-y-2 col-span-1">
             <Label htmlFor="slipNo">Slip No</Label>
             <div className="flex items-center gap-2">
               <Input id="slipNo" placeholder="Enter slip no..." value={filters.slipNo} onChange={e => handleFieldChange('slipNo', e.target.value)} disabled={!canEdit} />
@@ -89,7 +90,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
             <Label htmlFor="vehicleNo">Vehicle No</Label>
             <Input id="vehicleNo" placeholder="Enter vehicle no..." value={filters.vehicleNo} onChange={e => handleFieldChange('vehicleNo', e.target.value)} disabled={!canEdit} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-1">
             <Label htmlFor="vehicleType">Vehicle Type</Label>
             <Select onValueChange={(val) => handleFieldChange('vehicleType', val)} value={filters.vehicleType} disabled={!canEdit}>
               <SelectTrigger id="vehicleType">
@@ -107,7 +108,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-1">
             <Label htmlFor="billType">Bill Type</Label>
             <Select onValueChange={(val) => handleFieldChange('billType', val)} value={filters.billType} disabled={!canEdit}>
               <SelectTrigger id="billType">

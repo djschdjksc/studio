@@ -14,7 +14,8 @@
         "state": { "type": "string", "description": "State of the party." },
         "pincode": { "type": "string", "description": "Pin code of the party's address." },
         "station": { "type": "string", "description": "Nearest station to the party." },
-        "phone": { "type": "string", "description": "Phone number of the party." }
+        "phone": { "type": "string", "description": "Phone number of the party." },
+        "priceList": { "type": "object", "description": "Party-specific prices for item groups.", "additionalProperties": { "type": "number" } }
       },
       "required": ["id", "name", "station"]
     },

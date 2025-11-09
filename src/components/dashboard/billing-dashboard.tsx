@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -6,7 +7,7 @@ import { NewPartyDialog } from '@/components/dashboard/new-party-dialog';
 import SearchFilters from '@/components/dashboard/search-filters';
 import MainBillingTable from '@/components/dashboard/main-billing-table';
 import TotalsSummary from '@/components/dashboard/totals-summary';
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
@@ -18,10 +19,11 @@ import { BulkAddItemDialog } from './bulk-add-item-dialog';
 import { ImportExportDialog } from './import-export-dialog';
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import Link from 'next/link';
-import { collection, doc, deleteDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, doc, deleteDoc, setDoc, updateDoc, increment, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import StockManagement from './stock-management';
 import { useSearchParams } from 'next/navigation';
+import { PartyPriceList } from './party-price-list';
 
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
@@ -85,6 +87,10 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   const [isNewPartyOpen, setIsNewPartyOpen] = useState(false);
   const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
 
+  const selectedParty = useMemo(() => {
+    return parties?.find(p => p.name.toLowerCase() === searchFilters.partyName.toLowerCase());
+  }, [parties, searchFilters.partyName]);
+
 
   const savedBills = React.useMemo(() => {
     if (!savedBillsData) return {};
@@ -120,6 +126,45 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     }));
   }, []);
 
+  // Effect to load party price list or last bill prices
+  useEffect(() => {
+    if (!selectedParty || !firestore) {
+      setManualPrices({});
+      return;
+    }
+
+    // Prioritize the saved price list on the party object
+    if (selectedParty.priceList && Object.keys(selectedParty.priceList).length > 0) {
+        setManualPrices(selectedParty.priceList);
+        return;
+    }
+
+    // If no price list, find the last bill for that party
+    const findLastBill = async () => {
+        const q = query(
+            collection(firestore, 'billingRecords'),
+            where('filters.partyName', '==', selectedParty.name),
+            orderBy('filters.date', 'desc'),
+            limit(1)
+        );
+
+        try {
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const lastBill = querySnapshot.docs[0].data() as SavedBill;
+                setManualPrices(lastBill.manualPrices || {});
+            } else {
+                setManualPrices({}); // No last bill, clear prices
+            }
+        } catch (error) {
+            console.error("Error fetching last bill:", error);
+            setManualPrices({});
+        }
+    };
+
+    findLastBill();
+  }, [selectedParty, firestore]);
+
 
   const addParty = async (party: Omit<Party, 'id'>) => {
     if (!canEdit || !firestore) return;
@@ -143,14 +188,14 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     });
   }
 
-  const addItem = async (item: Omit<Item, 'id' | 'price'>) => {
+  const addItem = async (item: Omit<Item, 'id' | 'price' | 'balance'>) => {
     if (!canEdit || !firestore) return;
     const newDocRef = doc(collection(firestore, 'items'));
     setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
     toast({ title: 'Item Added', description: `Added ${item.name}.` });
   };
   
-  const addBulkItems = async (newItems: Omit<Item, 'id' | 'price'>[]) => {
+  const addBulkItems = async (newItems: Omit<Item, 'id' | 'price' | 'balance'>[]) => {
     if (!canEdit || !firestore) return;
     for (const item of newItems) {
         const newDocRef = doc(collection(firestore, 'items'));
@@ -174,7 +219,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     });
   };
 
-  const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
+  const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price' | 'balance'>[]) => {
     if (!canEdit || !firestore || !items) return;
     for (const i of items) {
         deleteDocumentNonBlocking(doc(firestore, 'items', i.id));
@@ -244,6 +289,14 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
       });
       return;
     }
+     if (!selectedParty) {
+      toast({
+        variant: 'destructive',
+        title: 'Party Not Selected',
+        description: 'Please select a party before saving.',
+      });
+      return;
+    }
 
     const billData: Omit<SavedBill, 'id'> = {
       filters: { ...searchFilters, date: searchFilters.date ? new Date(searchFilters.date).toISOString() : new Date().toISOString() },
@@ -264,8 +317,14 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
         }
     });
 
+    // Save the bill
     const docRef = doc(firestore, 'billingRecords', searchFilters.slipNo);
     setDocumentNonBlocking(docRef, billData, {});
+
+    // Save the price list to the party
+    const partyRef = doc(firestore, 'parties', selectedParty.id);
+    updateDocumentNonBlocking(partyRef, { priceList: manualPrices });
+
 
     toast({
         title: "Bill Saved!",
@@ -401,34 +460,45 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
           </Button>
         </div>
       </header>
-      <main className="flex-1 p-4 md:p-6 space-y-4">
-        <SearchFilters 
-          parties={parties || []}
-          filters={searchFilters}
-          onFiltersChange={setSearchFilters}
-          onLoadBill={() => handleLoadBill()}
-          canEdit={canEdit}
-         />
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-3">
-            <MainBillingTable 
-              billingItems={billingItems}
-              items={items || []}
-              onAddRow={addBillingItem}
-              onItemChange={handleBillingItemChange}
-              onRemoveRow={removeBillingItem}
-              canEdit={canEdit}
+      <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-3 space-y-4">
+            <PartyPriceList
+                party={selectedParty}
+                manualPrices={manualPrices}
+                onPriceChange={handleManualPriceChange}
+                itemGroups={itemGroups || []}
+                canEdit={canEdit}
             />
-          </div>
-          <div className="lg:col-span-2 space-y-4">
-            <TotalsSummary 
-              billingItems={billingItems} 
-              items={items || []}
-              manualPrices={manualPrices}
-              onManualPriceChange={handleManualPriceChange}
-              canEdit={canEdit}
-             />
-          </div>
+        </div>
+        <div className="lg:col-span-9 space-y-4">
+            <SearchFilters 
+            parties={parties || []}
+            filters={searchFilters}
+            onFiltersChange={setSearchFilters}
+            onLoadBill={() => handleLoadBill()}
+            canEdit={canEdit}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-3">
+                <MainBillingTable 
+                billingItems={billingItems}
+                items={items || []}
+                onAddRow={addBillingItem}
+                onItemChange={handleBillingItemChange}
+                onRemoveRow={removeBillingItem}
+                canEdit={canEdit}
+                />
+            </div>
+            <div className="lg:col-span-2 space-y-4">
+                <TotalsSummary 
+                billingItems={billingItems} 
+                items={items || []}
+                manualPrices={manualPrices}
+                onManualPriceChange={handleManualPriceChange}
+                canEdit={canEdit}
+                />
+            </div>
+            </div>
         </div>
       </main>
       <NewItemDialog onSave={addItem} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isNewItemOpen} onOpenChange={setIsNewItemOpen} />
