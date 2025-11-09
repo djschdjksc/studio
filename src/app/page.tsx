@@ -22,21 +22,28 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
+        // Don't do anything until all loading is complete
         if (isUserLoading || isProfileLoading) {
             return; 
         }
 
+        // If loading is done and there's no user, redirect to login
         if (!user) {
             router.push('/login');
             return;
         }
 
-        if (user && userProfile && (userProfile.role === 'admin' || userProfile.role === 'owner')) {
-            router.push('/admin');
-            return;
+        // If loading is done and there IS a user, check their profile
+        if (userProfile) {
+            if (userProfile.role === 'admin' || userProfile.role === 'owner') {
+                router.push('/admin');
+            }
+            // Otherwise, they are a regular user, and the main content will render, so no redirect is needed.
         }
         
-    }, [isUserLoading, isProfileLoading, user, userProfile]);
+        // If there's a user but no profile, the AccessRequestPage will render, so no redirect needed.
+
+    }, [isUserLoading, isProfileLoading, user, router]);
 
 
     if (isUserLoading || (user && isProfileLoading)) {
