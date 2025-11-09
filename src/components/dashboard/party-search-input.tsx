@@ -34,8 +34,8 @@ export function PartySearchInput({ id, parties, value, onValueChange, onKeyDown,
       const lowerCaseQuery = query.toLowerCase();
       const filteredSuggestions = parties.filter(
         party =>
-          party.name.toLowerCase().includes(lowerCaseQuery) ||
-          party.station.toLowerCase().includes(lowerCaseQuery)
+          (party.name && party.name.toLowerCase().includes(lowerCaseQuery)) ||
+          (party.station && party.station.toLowerCase().includes(lowerCaseQuery))
       );
       setSuggestions(filteredSuggestions);
       setShowSuggestions(true);
