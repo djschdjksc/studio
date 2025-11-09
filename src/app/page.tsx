@@ -22,10 +22,8 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
-        // This effect handles all redirection logic.
-        // It waits until all loading is complete before making a decision.
         if (isUserLoading || isProfileLoading) {
-            return; // Wait until we have all user and profile data.
+            return; 
         }
 
         if (!user) {
@@ -41,19 +39,15 @@ export default function Home() {
     }, [isUserLoading, isProfileLoading, user, userProfile]);
 
 
-    // This block handles what to RENDER based on the current state.
     if (isUserLoading || (user && isProfileLoading)) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
     if (user && !userProfile) {
-        // User is logged in but has no profile (or it's still loading and we got here).
-        // This state means they need to request access.
         return <AccessRequestPage />;
     }
 
     if (userProfile && (userProfile.role === 'viewer' || userProfile.role === 'editor' || userProfile.role === 'manager')) {
-        // User has a profile with a valid role for the dashboard.
         return (
             <div className="min-h-screen w-full bg-background">
                 <BillingDashboard userProfile={userProfile} />
@@ -61,7 +55,6 @@ export default function Home() {
         );
     }
     
-    // This is a fallback state, useful while the initial checks and redirects are happening.
-    // It also catches the case where an admin/owner is briefly visible before being redirected.
+    // Fallback for admin/owner before redirect, or other transient states.
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
 }
