@@ -2,13 +2,10 @@
 'use client';
 
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { UserProfile, WithId, UserRole } from "@/lib/types";
-import { collection, doc, writeBatch, setDoc } from "firebase/firestore";
+import { UserProfile } from "@/lib/types";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -16,8 +13,6 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-
-const roleHierarchy: UserRole[] = ['viewer', 'editor', 'manager', 'admin', 'owner'];
 
 export default function AdminPage() {
     const firestore = useFirestore();
@@ -29,9 +24,6 @@ export default function AdminPage() {
     const usersQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users') : null, [firestore, user]);
     const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersQuery);
 
-    const requestsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'access_requests') : null, [firestore, user]);
-    const { data: accessRequests, isLoading: requestsLoading } = useCollection<AccessRequest>(requestsQuery);
-    
     useEffect(() => {
         if (!isUserLoading && !user) {
             router.push('/login');
@@ -55,7 +47,7 @@ export default function AdminPage() {
     }, [user, firestore]);
 
 
-    if (isUserLoading || usersLoading || requestsLoading) {
+    if (isUserLoading || usersLoading) {
         return <div className="flex items-center justify-center min-h-screen">Loading Admin Dashboard...</div>;
     }
     
@@ -75,7 +67,7 @@ export default function AdminPage() {
                     <Button variant="outline" asChild>
                         <Link href="/">Return to App</Link>
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => auth.signOut()}>
+                    <Button variant="ghost" size="icon" onClick={() => auth?.signOut()}>
                         <LogOut className="h-4 w-4" />
                     </Button>
                  </div>
