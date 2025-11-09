@@ -113,9 +113,10 @@ export default function PartyBalancesPage() {
     if (!searchQuery) {
         return partyBalances;
     }
+    const lowerCaseQuery = searchQuery.toLowerCase();
     return partyBalances.filter(party =>
-        party.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        party.station.toLowerCase().includes(searchQuery.toLowerCase())
+        (party.name && party.name.toLowerCase().includes(lowerCaseQuery)) ||
+        (party.station && party.station.toLowerCase().includes(lowerCaseQuery))
     );
   }, [partyBalances, searchQuery]);
 
