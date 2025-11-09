@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth, useCollection, useFirestore, useUser } from "@/firebase";
+import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { UserProfile, AccessRequest, WithId, UserRole } from "@/lib/types";
 import { collection, doc, writeBatch, setDoc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,10 +23,10 @@ export default function AdminPage() {
     const { toast } = useToast();
     const router = useRouter();
 
-    const usersQuery = firestore ? collection(firestore, 'users') : null;
+    const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
     const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersQuery);
 
-    const requestsQuery = firestore ? collection(firestore, 'access_requests') : null;
+    const requestsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'access_requests') : null, [firestore]);
     const { data: accessRequests, isLoading: requestsLoading } = useCollection<AccessRequest>(requestsQuery);
     
     // Ensure the admin user has the 'owner' role in Firestore.
