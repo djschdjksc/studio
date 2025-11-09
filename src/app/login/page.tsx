@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -28,33 +30,36 @@ export default function LoginPage() {
     const expectedPassword = format(now, 'HHmm');
 
     if (timePassword === expectedPassword) {
-      try {
-        await signInWithEmailAndPassword(auth, 'rohitvetma101010@gmail.com', 'verma@99');
-        toast({ title: 'Owner Login Successful', description: 'Redirecting to your dashboard...' });
-        router.push('/admin');
-      } catch (error: any) {
-        // If owner account doesn't exist, create it first then ask for login again
-        if (error.code === 'auth/user-not-found') {
-          try {
-            await createUserWithEmailAndPassword(auth, 'rohitvetma101010@gmail.com', 'verma@99');
-            toast({ title: 'Owner Account Created', description: 'Please log in again to access the dashboard.' });
-          } catch (creationError: any) {
-            toast({
-              variant: 'destructive',
-              title: 'Owner Creation Failed',
-              description: creationError.message,
-            });
-          }
-        } else {
-           toast({
-              variant: 'destructive',
-              title: 'Owner Login Failed',
-              description: error.message,
-           });
-        }
-      } finally {
-        setLoading(false);
-      }
+      signInWithEmailAndPassword(auth, 'rohitvetma101010@gmail.com', 'verma@99')
+        .then(() => {
+            toast({ title: 'Owner Login Successful', description: 'Redirecting to your dashboard...' });
+            router.push('/admin');
+        })
+        .catch(async (error: any) => {
+            // If owner account doesn't exist, create it first then ask for login again
+            if (error.code === 'auth/user-not-found') {
+              try {
+                await createUserWithEmailAndPassword(auth, 'rohitvetma101010@gmail.com', 'verma@99');
+                toast({ title: 'Owner Account Created', description: 'Please log in again to access the dashboard.' });
+              } catch (creationError: any) {
+                toast({
+                  variant: 'destructive',
+                  title: 'Owner Creation Failed',
+                  description: creationError.message,
+                });
+              }
+            } else {
+               toast({
+                  variant: 'destructive',
+                  title: 'Owner Login Failed',
+                  description: error.message,
+               });
+            }
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+
     } else {
       toast({
         variant: 'destructive',
@@ -65,7 +70,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleAuthAction = async (action: 'login' | 'signup') => {
+  const handleAuthAction = (action: 'login' | 'signup') => {
     if (!auth) {
         toast({
             variant: 'destructive',
@@ -75,25 +80,26 @@ export default function LoginPage() {
         return;
     }
     setLoading(true);
+    
+    const authPromise = action === 'login' 
+        ? signInWithEmailAndPassword(auth, email, password)
+        : createUserWithEmailAndPassword(auth, email, password);
 
-    try {
-      if (action === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: 'Login Successful', description: 'Redirecting...' });
-      } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-        toast({ title: 'Signup Successful', description: 'Please request access to continue.' });
-      }
-      router.push('/');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Failed',
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
-    }
+    authPromise
+        .then(() => {
+            toast({ title: action === 'login' ? 'Login Successful' : 'Signup Successful', description: 'Redirecting...' });
+            router.push('/');
+        })
+        .catch((error: any) => {
+            toast({
+                variant: 'destructive',
+                title: 'Authentication Failed',
+                description: error.message,
+            });
+        })
+        .finally(() => {
+            setLoading(false);
+        });
   };
 
   return (
@@ -189,4 +195,4 @@ export default function LoginPage() {
     </div>
   );
 
-    
+}

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
@@ -13,6 +14,8 @@ import { LogOut, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect } from "react";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 const roleHierarchy: UserRole[] = ['viewer', 'editor', 'manager', 'admin', 'owner'];
 
@@ -33,13 +36,21 @@ export default function AdminPage() {
     useEffect(() => {
         if (user && user.email === 'rohitvetma101010@gmail.com' && firestore) {
             const userDocRef = doc(firestore, 'users', user.uid);
-            setDoc(userDocRef, { role: 'owner', email: user.email }, { merge: true });
+            setDoc(userDocRef, { role: 'owner', email: user.email }, { merge: true })
+                .catch(async (serverError) => {
+                    const permissionError = new FirestorePermissionError({
+                        path: userDocRef.path,
+                        operation: 'update',
+                        requestResourceData: { role: 'owner', email: user.email },
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                });
         }
     }, [user, firestore]);
 
     const pendingRequests = accessRequests?.filter(req => req.status === 'pending') || [];
 
-    const handleRoleChange = async (userId: string, newRole: UserRole) => {
+    const handleRoleChange = (userId: string, newRole: UserRole) => {
         if (!firestore) return;
         if (user?.uid === userId) {
             toast({ variant: 'destructive', title: 'Error', description: "You cannot change your own role." });
@@ -47,41 +58,54 @@ export default function AdminPage() {
         }
         const userDocRef = doc(firestore, 'users', userId);
         
-        try {
-            await setDoc(userDocRef, { role: newRole }, { merge: true });
-            toast({ title: 'Role Updated', description: `User role has been changed to ${newRole}.` });
-        } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
-        }
+        setDoc(userDocRef, { role: newRole }, { merge: true })
+            .then(() => {
+                toast({ title: 'Role Updated', description: `User role has been changed to ${newRole}.` });
+            })
+            .catch(async (error: any) => {
+                 const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'update',
+                    requestResourceData: { role: newRole },
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
     };
 
-    const handleRequest = async (request: WithId<AccessRequest>, newStatus: 'approved' | 'denied') => {
+    const handleRequest = (request: WithId<AccessRequest>, newStatus: 'approved' | 'denied') => {
         if (!firestore) return;
         const batch = writeBatch(firestore);
         const requestRef = doc(firestore, 'access_requests', request.id);
 
+        let userData = {};
         if (newStatus === 'approved') {
             const userRef = doc(firestore, 'users', request.userId);
-            
-            batch.set(userRef, {
+            userData = {
                 id: request.userId,
                 email: request.email,
                 role: request.requestedRole,
                 displayName: request.email.split('@')[0],
-            }, { merge: true });
+            };
+            batch.set(userRef, userData, { merge: true });
         }
         
         batch.update(requestRef, { status: newStatus });
 
-        try {
-            await batch.commit();
-            toast({
-                title: `Request ${newStatus}`,
-                description: `The access request from ${request.email} has been ${newStatus}.`
+        batch.commit()
+            .then(() => {
+                toast({
+                    title: `Request ${newStatus}`,
+                    description: `The access request from ${request.email} has been ${newStatus}.`
+                });
+            })
+            .catch(async (error: any) => {
+                 const permissionError = new FirestorePermissionError({
+                    path: requestRef.path,
+                    operation: 'update',
+                    requestResourceData: { status: newStatus },
+                });
+                errorEmitter.emit('permission-error', permissionError);
             });
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
-        }
     };
 
 
