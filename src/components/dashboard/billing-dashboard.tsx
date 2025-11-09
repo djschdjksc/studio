@@ -140,7 +140,6 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
 
     // If no price list, find the last bill for that party
     const findLastBill = async () => {
-        // Simplified query to avoid needing an index
         const q = query(
             collection(firestore, 'billingRecords'),
             where('filters.partyName', '==', selectedParty.name)
@@ -149,7 +148,6 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
         try {
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
-                // Sort in-app to find the latest bill
                 const bills = querySnapshot.docs.map(doc => doc.data() as SavedBill);
                 bills.sort((a, b) => {
                     const dateA = a.filters.date ? parseISO(String(a.filters.date)).getTime() : 0;
@@ -159,12 +157,11 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
                 const lastBill = bills[0];
                 setManualPrices(lastBill.manualPrices || {});
             } else {
-                setManualPrices({}); // No last bill, clear prices
+                setManualPrices({});
             }
         } catch (error: any) {
             console.error("Error fetching last bill:", error);
-            // Even with the simplified query, handle potential permission issues.
-            if (error.code === 'permission-denied') {
+            if (error.code === 'failed-precondition' || error.code === 'permission-denied') {
                  const permissionError = new FirestorePermissionError({
                     path: `billingRecords where partyName == ${selectedParty.name}`,
                     operation: 'list',
@@ -392,8 +389,6 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
 
     const billToDelete = savedBills[slipNo];
     if (billToDelete) {
-        // If deleting a "sale", items go back into stock (positive increment).
-        // If deleting a "sale-return", items that were returned now are removed from stock (negative increment).
         const stockChangeMultiplier = billToDelete.filters.billType === 'sale-return' ? -1 : 1;
         billToDelete.billingItems.forEach(billedItem => {
             const item = items.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
@@ -473,8 +468,8 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
           </Button>
         </div>
       </header>
-      <main className="flex-1 p-4 md:p-6">
-        <div className="space-y-4">
+      <main className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 md:p-6">
+        <div className="md:col-span-3">
             <SearchFilters 
             parties={parties || []}
             filters={searchFilters}
@@ -482,27 +477,25 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             onLoadBill={() => handleLoadBill()}
             canEdit={canEdit}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-3">
-                <MainBillingTable 
-                billingItems={billingItems}
-                items={items || []}
-                onAddRow={addBillingItem}
-                onItemChange={handleBillingItemChange}
-                onRemoveRow={removeBillingItem}
-                canEdit={canEdit}
-                />
-            </div>
-            <div className="lg:col-span-2 space-y-4">
-                <TotalsSummary 
-                billingItems={billingItems} 
-                items={items || []}
-                manualPrices={manualPrices}
-                onManualPriceChange={handleManualPriceChange}
-                canEdit={canEdit}
-                />
-            </div>
-            </div>
+        </div>
+        <div className="md:col-span-2">
+            <MainBillingTable 
+            billingItems={billingItems}
+            items={items || []}
+            onAddRow={addBillingItem}
+            onItemChange={handleBillingItemChange}
+            onRemoveRow={removeBillingItem}
+            canEdit={canEdit}
+            />
+        </div>
+        <div className="md:col-span-1">
+            <TotalsSummary 
+            billingItems={billingItems} 
+            items={items || []}
+            manualPrices={manualPrices}
+            onManualPriceChange={handleManualPriceChange}
+            canEdit={canEdit}
+            />
         </div>
       </main>
       <NewItemDialog onSave={addItem} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isNewItemOpen} onOpenChange={setIsNewItemOpen} />

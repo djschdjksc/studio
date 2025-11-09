@@ -90,7 +90,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
         </div>
       </CardHeader>
       <CardContent className="flex-grow p-0">
-        <ScrollArea className="h-[400px] w-full">
+        <ScrollArea className="h-[50vh] w-full">
             <Table>
             <TableHeader className="sticky top-0 bg-card">
                 <TableRow>
