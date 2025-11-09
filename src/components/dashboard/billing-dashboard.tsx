@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -23,8 +22,6 @@ import { collection, doc, deleteDoc, setDoc, updateDoc, increment, query, where,
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import StockManagement from './stock-management';
 import { useSearchParams } from 'next/navigation';
-import { PartyPriceList } from './party-price-list';
-
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -460,17 +457,8 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
           </Button>
         </div>
       </header>
-      <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-3 space-y-4">
-            <PartyPriceList
-                party={selectedParty}
-                manualPrices={manualPrices}
-                onPriceChange={handleManualPriceChange}
-                itemGroups={itemGroups || []}
-                canEdit={canEdit}
-            />
-        </div>
-        <div className="lg:col-span-9 space-y-4">
+      <main className="flex-1 p-4 md:p-6">
+        <div className="space-y-4">
             <SearchFilters 
             parties={parties || []}
             filters={searchFilters}
@@ -515,5 +503,3 @@ export default function BillingDashboard(props: BillingDashboardProps) {
     </Suspense>
   )
 }
-
-    

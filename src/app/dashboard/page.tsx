@@ -4,7 +4,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare, Banknote } from "lucide-react";
+import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare, Banknote, VenetianMask } from "lucide-react";
 import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useState, useMemo } from "react";
@@ -123,6 +123,12 @@ export default function DashboardPage() {
             description: "View and manage party balances.",
             icon: <Banknote className="h-8 w-8 text-teal-600" />,
             href: "/party-balances",
+        },
+        {
+            title: "Party Prices",
+            description: "Set custom prices for parties.",
+            icon: <VenetianMask className="h-8 w-8 text-orange-600" />,
+            href: "/party-prices",
         },
         {
             title: "New Party",
