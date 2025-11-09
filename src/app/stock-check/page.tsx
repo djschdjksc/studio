@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 
 interface StockReportItem {
     id: string;
@@ -44,61 +45,78 @@ export default function StockCheckPage() {
     }, [isUserLoading, user, router]);
 
     useEffect(() => {
-        if (items) {
+        if (items && firestore && user) {
             generateReport();
         }
-    }, [items, reportDate]);
+    }, [items, reportDate, firestore, user]);
 
     const generateReport = async () => {
-        if (!firestore || !items) return;
+        if (!firestore || !items || !user) return;
         setLoadingReport(true);
 
         const date = new Date(reportDate);
         const startOfReportDate = startOfDay(date);
         const endOfReportDate = endOfDay(date);
 
-        // Fetch sales for the selected date
-        const salesQuery = query(
-            collection(firestore, 'billingRecords'),
-            where('filters.date', '>=', startOfReportDate.toISOString()),
-            where('filters.date', '<=', endOfReportDate.toISOString())
-        );
-        const salesSnapshot = await getDocs(salesQuery);
-        const dailySales = salesSnapshot.docs.flatMap(doc => (doc.data() as SavedBill).billingItems);
+        try {
+            // Fetch sales for the selected date
+            const salesQuery = query(
+                collection(firestore, 'billingRecords'),
+                where('filters.date', '>=', startOfReportDate.toISOString()),
+                where('filters.date', '<=', endOfReportDate.toISOString())
+            );
+            const salesSnapshot = await getDocs(salesQuery).catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: 'billingRecords',
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
+            });
+            const dailySales = salesSnapshot.docs.flatMap(doc => (doc.data() as SavedBill).billingItems);
 
-        // Fetch production for the selected date
-        const prodQuery = query(
-            collection(firestore, 'productionLogs'),
-            where('date', '==', reportDate)
-        );
-        const prodSnapshot = await getDocs(prodQuery);
-        const dailyProduction = prodSnapshot.docs.map(doc => doc.data() as ProductionLog);
+            // Fetch production for the selected date
+            const prodQuery = query(
+                collection(firestore, 'productionLogs'),
+                where('date', '==', reportDate)
+            );
+            const prodSnapshot = await getDocs(prodQuery).catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: 'productionLogs',
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
+            });
+            const dailyProduction = prodSnapshot.docs.map(doc => doc.data() as ProductionLog);
 
-        const report: StockReportItem[] = items.map(item => {
-            const closingBalance = item.balance ?? 0;
+            const report: StockReportItem[] = items.map(item => {
+                const closingBalance = item.balance ?? 0;
 
-            const totalSaleQty = dailySales
-                .filter(sale => sale.itemName.toLowerCase() === item.name.toLowerCase())
-                .reduce((sum, sale) => sum + sale.quantity, 0);
+                const totalSaleQty = dailySales
+                    .filter(sale => sale.itemName.toLowerCase() === item.name.toLowerCase())
+                    .reduce((sum, sale) => sum + sale.quantity, 0);
 
-            const totalProdQty = dailyProduction
-                .filter(prod => prod.itemId === item.id)
-                .reduce((sum, prod) => sum + prod.quantity, 0);
+                const totalProdQty = dailyProduction
+                    .filter(prod => prod.itemId === item.id)
+                    .reduce((sum, prod) => sum + prod.quantity, 0);
 
-            const openingBalance = closingBalance - totalProdQty + totalSaleQty;
+                const openingBalance = closingBalance - totalProdQty + totalSaleQty;
 
-            return {
-                id: item.id,
-                name: item.name,
-                openingBalance,
-                production: totalProdQty,
-                sale: totalSaleQty,
-                closingBalance,
-            };
-        });
+                return {
+                    id: item.id,
+                    name: item.name,
+                    openingBalance,
+                    production: totalProdQty,
+                    sale: totalSaleQty,
+                    closingBalance,
+                };
+            });
 
-        setStockReport(report);
-        setLoadingReport(false);
+            setStockReport(report);
+        } finally {
+            setLoadingReport(false);
+        }
     };
 
 
