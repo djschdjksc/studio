@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
-
-import AccessRequestPage from '@/components/dashboard/access-request-page';
 import BillingDashboard from '@/components/dashboard/billing-dashboard';
 
 export default function Home() {
@@ -22,15 +20,9 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
-        if (isUserLoading) {
-            return; 
-        }
-
-        if (!user) {
+        if (!isUserLoading && !user) {
             router.push('/login');
-            return;
         }
-
     }, [isUserLoading, user, router]);
 
 
@@ -38,11 +30,7 @@ export default function Home() {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
-    if (user && !userProfile) {
-        return <AccessRequestPage />;
-    }
-
-    if (userProfile) {
+    if (user && userProfile) {
          return (
             <div className="min-h-screen w-full bg-background">
                 <BillingDashboard userProfile={userProfile} />
@@ -50,5 +38,11 @@ export default function Home() {
         );
     }
     
+    // This can happen briefly while the user profile is being created for the first time.
+    if (user && !userProfile) {
+        return <div className="flex items-center justify-center min-h-screen">Setting up account...</div>;
+    }
+
+    // Default return if no other condition is met
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
 }
