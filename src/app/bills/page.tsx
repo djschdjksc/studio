@@ -5,7 +5,7 @@ import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser } from '
 import { Item, SavedBill, WithId } from '@/lib/types';
 import React, { useEffect, useState } from 'react';
 import { AllBillsDialog } from '@/components/dashboard/all-bills-dialog';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, increment } from 'firebase/firestore';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -51,12 +51,13 @@ export default function AllBillsPage() {
 
     const billToDelete = savedBills[slipNo];
     if (billToDelete) {
+        const stockChangeMultiplier = billToDelete.filters.billType === 'sale-return' ? -1 : 1;
         billToDelete.billingItems.forEach(billedItem => {
             const item = items?.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
             if (item && billedItem.quantity > 0) {
                 const itemRef = doc(firestore, 'items', item.id);
                 updateDocumentNonBlocking(itemRef, {
-                    balance: item.balance ? item.balance + billedItem.quantity : billedItem.quantity
+                    balance: increment(billedItem.quantity * stockChangeMultiplier)
                 });
             }
         });
@@ -106,3 +107,5 @@ export default function AllBillsPage() {
     </div>
   );
 }
+
+    

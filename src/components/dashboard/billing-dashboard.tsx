@@ -1,3 +1,4 @@
+
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -250,13 +251,15 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
       manualPrices
     };
     
-    // Decrease stock for each item in the bill
+    const stockChangeMultiplier = billData.filters.billType === 'sale-return' ? 1 : -1;
+
+    // Adjust stock for each item in the bill
     billData.billingItems.forEach(billedItem => {
         const item = items?.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
         if (item && billedItem.quantity > 0) {
             const itemRef = doc(firestore, 'items', item.id);
             updateDocumentNonBlocking(itemRef, {
-                balance: increment(-billedItem.quantity)
+                balance: increment(billedItem.quantity * stockChangeMultiplier)
             });
         }
     });
@@ -315,15 +318,15 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   const handleDeleteBill = async (slipNo: string) => {
     if (!canDelete || !firestore) return;
 
-    // Restore stock before deleting bill
     const billToDelete = savedBills[slipNo];
     if (billToDelete) {
+        const stockChangeMultiplier = billToDelete.filters.billType === 'sale-return' ? -1 : 1;
         billToDelete.billingItems.forEach(billedItem => {
             const item = items?.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
             if (item && billedItem.quantity > 0) {
                 const itemRef = doc(firestore, 'items', item.id);
                 updateDocumentNonBlocking(itemRef, {
-                    balance: increment(billedItem.quantity)
+                    balance: increment(billedItem.quantity * stockChangeMultiplier)
                 });
             }
         });
@@ -440,3 +443,5 @@ export default function BillingDashboard(props: BillingDashboardProps) {
     </Suspense>
   )
 }
+
+    
