@@ -27,6 +27,8 @@ interface PartyBalance {
 
 interface Transaction {
   id: string;
+  type: 'bill' | 'payment';
+  slipNo?: string;
   date: Date;
   particulars: string;
   debit: number;
@@ -140,6 +142,8 @@ export default function PartyBalancesPage() {
         .filter(bill => bill.filters.partyName === selectedParty.name)
         .map(bill => ({
             id: `bill-${bill.id}`,
+            type: 'bill',
+            slipNo: bill.filters.slipNo,
             date: bill.filters.date ? parseISO(String(bill.filters.date)) : new Date(),
             particulars: `Bill - Slip No: ${bill.filters.slipNo}`,
             debit: calculateGrandTotal(bill, items),
@@ -150,6 +154,7 @@ export default function PartyBalancesPage() {
         .filter(payment => payment.partyName === selectedParty.name)
         .map(payment => ({
             id: `payment-${payment.id}`,
+            type: 'payment',
             date: parseISO(payment.date),
             particulars: `Payment Received ${payment.notes ? `(${payment.notes})` : ''}`,
             debit: 0,
@@ -180,6 +185,12 @@ export default function PartyBalancesPage() {
         setSelectedParty(fullParty);
     }
   };
+
+  const handleTransactionClick = (transaction: Transaction) => {
+    if (transaction.type === 'bill' && transaction.slipNo) {
+        router.push(`/billing?slipNo=${transaction.slipNo}`);
+    }
+  }
   
   const handleAddPayment = async (paymentData: Omit<Payment, 'id' | 'createdAt' | 'partyName' | 'partyId'>) => {
     if (!firestore || !selectedParty) return;
@@ -302,8 +313,13 @@ export default function PartyBalancesPage() {
                                     <TableBody>
                                         {transactionLedger.length > 0 ? transactionLedger.reduce((acc, tx) => {
                                             const runningBalance = acc.balance + tx.debit - tx.credit;
+                                            const isBill = tx.type === 'bill';
                                             acc.rows.push(
-                                                <TableRow key={tx.id}>
+                                                <TableRow 
+                                                    key={tx.id} 
+                                                    onClick={() => handleTransactionClick(tx)}
+                                                    className={isBill ? 'cursor-pointer hover:bg-muted/50' : ''}
+                                                >
                                                     <TableCell>{format(tx.date, 'dd-MMM-yy')}</TableCell>
                                                     <TableCell>{tx.particulars}</TableCell>
                                                     <TableCell className="text-right">{tx.debit > 0 ? `₹${tx.debit.toLocaleString('en-IN')}` : ''}</TableCell>
