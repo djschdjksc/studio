@@ -23,6 +23,7 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlo
 import StockManagement from './stock-management';
 import { useSearchParams } from 'next/navigation';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
+import { parseISO } from 'date-fns';
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -139,26 +140,33 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
 
     // If no price list, find the last bill for that party
     const findLastBill = async () => {
+        // Simplified query to avoid needing an index
         const q = query(
             collection(firestore, 'billingRecords'),
-            where('filters.partyName', '==', selectedParty.name),
-            orderBy('filters.date', 'desc'),
-            limit(1)
+            where('filters.partyName', '==', selectedParty.name)
         );
 
         try {
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
-                const lastBill = querySnapshot.docs[0].data() as SavedBill;
+                // Sort in-app to find the latest bill
+                const bills = querySnapshot.docs.map(doc => doc.data() as SavedBill);
+                bills.sort((a, b) => {
+                    const dateA = a.filters.date ? parseISO(String(a.filters.date)).getTime() : 0;
+                    const dateB = b.filters.date ? parseISO(String(b.filters.date)).getTime() : 0;
+                    return dateB - dateA;
+                });
+                const lastBill = bills[0];
                 setManualPrices(lastBill.manualPrices || {});
             } else {
                 setManualPrices({}); // No last bill, clear prices
             }
         } catch (error: any) {
             console.error("Error fetching last bill:", error);
-            if (error.code === 'failed-precondition' || error.message.includes('query requires an index')) {
+            // Even with the simplified query, handle potential permission issues.
+            if (error.code === 'permission-denied') {
                  const permissionError = new FirestorePermissionError({
-                    path: 'billingRecords',
+                    path: `billingRecords where partyName == ${selectedParty.name}`,
                     operation: 'list',
                 });
                 errorEmitter.emit('permission-error', permissionError);
@@ -511,5 +519,3 @@ export default function BillingDashboard(props: BillingDashboardProps) {
     </Suspense>
   )
 }
-
-    
