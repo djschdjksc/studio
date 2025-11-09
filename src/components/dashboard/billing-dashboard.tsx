@@ -1,23 +1,23 @@
+'use client';
 
-"use client";
-
-import { NewItemDialog } from "@/components/dashboard/new-item-dialog";
-import { NewPartyDialog } from "@/components/dashboard/new-party-dialog";
-import SearchFilters from "@/components/dashboard/search-filters";
-import MainBillingTable from "@/components/dashboard/main-billing-table";
-import TotalsSummary from "@/components/dashboard/totals-summary";
-import React, { useState, useEffect, useCallback } from "react";
-import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { BookOpen, FileUp, PackagePlus, Save, Import, LogOut, Shield } from "lucide-react";
-import { NewItemGroupDialog } from "./new-item-group-dialog";
-import { BillPreviewDialog } from "./bill-preview-dialog";
-import { AllBillsDialog } from "./all-bills-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { BulkAddItemDialog } from "./bulk-add-item-dialog";
-import { ImportExportDialog } from "./import-export-dialog";
-import { useAuth } from "@/firebase";
-import Link from "next/link";
+import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
+import { NewPartyDialog } from '@/components/dashboard/new-party-dialog';
+import SearchFilters from '@/components/dashboard/search-filters';
+import MainBillingTable from '@/components/dashboard/main-billing-table';
+import TotalsSummary from '@/components/dashboard/totals-summary';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { BookOpen, FileUp, PackagePlus, Save, Import, LogOut, Shield } from 'lucide-react';
+import { NewItemGroupDialog } from './new-item-group-dialog';
+import { BillPreviewDialog } from './bill-preview-dialog';
+import { AllBillsDialog } from './all-bills-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { BulkAddItemDialog } from './bulk-add-item-dialog';
+import { ImportExportDialog } from './import-export-dialog';
+import { useAuth, useCollection, useFirestore } from '@/firebase';
+import Link from 'next/link';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -46,10 +46,18 @@ interface BillingDashboardProps {
 
 
 export default function BillingDashboard({ userProfile }: BillingDashboardProps) {
-  const [parties, setParties] = useState<WithId<Party>[]>([]);
-  const [items, setItems] = useState<WithId<Item>[]>([]);
-  const [itemGroups, setItemGroups] = useState<WithId<ItemGroup>[]>([]);
-  const [savedBills, setSavedBills] = useState<Record<string, WithId<SavedBill>>>({});
+  const firestore = useFirestore();
+  const auth = useAuth();
+  const { toast } = useToast();
+  
+  const canEdit = userProfile.role === 'editor' || userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
+  const canDelete = userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
+  const isAdmin = userProfile.role === 'admin' || userProfile.role === 'owner';
+
+  const { data: parties } = useCollection<Party>(firestore ? collection(firestore, 'parties') : null);
+  const { data: items } = useCollection<Item>(firestore ? collection(firestore, 'items') : null);
+  const { data: itemGroups } = useCollection<ItemGroup>(firestore ? collection(firestore, 'itemGroups') : null);
+  const { data: savedBillsData } = useCollection<SavedBill>(firestore ? collection(firestore, 'billingRecords') : null);
 
   const [billingItems, setBillingItems] = useState<BillingItem[]>(generateInitialBillingItems(5));
   const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
@@ -61,12 +69,13 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
   const [isAllBillsOpen, setIsAllBillsOpen] = useState(false);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
 
-  const auth = useAuth();
-  const { toast } = useToast();
-  
-  const canEdit = userProfile.role === 'editor' || userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
-  const canDelete = userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
-  const isAdmin = userProfile.role === 'admin' || userProfile.role === 'owner';
+  const savedBills = React.useMemo(() => {
+    if (!savedBillsData) return {};
+    return savedBillsData.reduce((acc, bill) => {
+        acc[bill.filters.slipNo] = bill;
+        return acc;
+    }, {} as Record<string, WithId<SavedBill>>)
+  }, [savedBillsData]);
 
 
   useEffect(() => {
@@ -86,53 +95,68 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
   }, []);
 
 
-  const addParty = (party: Omit<Party, 'id'>) => {
-    if (!canEdit) return;
-    const newParty = { ...party, id: `party-${Date.now()}`};
-    setParties(prev => [...prev, newParty]);
+  const addParty = async (party: Omit<Party, 'id'>) => {
+    if (!canEdit || !firestore) return;
+    const newDocRef = doc(collection(firestore, 'parties'));
+    await writeBatch(firestore).set(newDocRef, party).commit();
   };
   
   const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
-    if (!canEdit) return;
-    const newParties = uploadedParties.map((p, i) => ({...p, id: `party-upload-${i}-${Date.now()}`}));
-    setParties(newParties);
+    if (!canEdit || !firestore) return;
+    const batch = writeBatch(firestore);
+    // Note: This replaces all existing parties. A safer approach might be to merge.
+    parties?.forEach(p => batch.delete(doc(firestore, 'parties', p.id)));
+    uploadedParties.forEach(p => {
+        const newDocRef = doc(collection(firestore, 'parties'));
+        batch.set(newDocRef, p);
+    });
+    await batch.commit();
      toast({
         title: "Parties Restored!",
-        description: `Restored ${newParties.length} parties. Old data has been replaced.`,
+        description: `Restored ${uploadedParties.length} parties. Old data has been replaced.`,
     });
   }
 
-  const addItem = (item: Omit<Item, 'id' | 'price'>) => {
-    if (!canEdit) return;
-    const newItem = { ...item, id: `item-${Date.now()}`, price: 0 };
-    setItems(prev => [...prev, newItem]);
+  const addItem = async (item: Omit<Item, 'id' | 'price'>) => {
+    if (!canEdit || !firestore) return;
+    const newDocRef = doc(collection(firestore, 'items'));
+    await writeBatch(firestore).set(newDocRef, {...item, price: 0}).commit();
   };
   
   const addBulkItems = async (newItems: Omit<Item, 'id' | 'price'>[]) => {
-    if (!canEdit) return;
-    const itemsToAdd = newItems.map((item, i) => ({...item, id: `bulk-item-${i}-${Date.now()}`, price: 0}));
-    setItems(prev => [...prev, ...itemsToAdd]);
+    if (!canEdit || !firestore) return;
+    const batch = writeBatch(firestore);
+    newItems.forEach(item => {
+        const newDocRef = doc(collection(firestore, 'items'));
+        batch.set(newDocRef, {...item, price: 0});
+    });
+    await batch.commit();
     toast({
       title: "Items Added!",
-      description: `${itemsToAdd.length} new items have been added.`,
+      description: `${newItems.length} new items have been added.`,
     });
   };
 
   const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
-    if (!canEdit) return;
-    const newItems = uploadedItems.map((item, i) => ({...item, id: `item-upload-${i}-${Date.now()}`, price: 0}));
-    setItems(newItems);
+    if (!canEdit || !firestore) return;
+    const batch = writeBatch(firestore);
+    items?.forEach(i => batch.delete(doc(firestore, 'items', i.id)));
+    uploadedItems.forEach(item => {
+        const newDocRef = doc(collection(firestore, 'items'));
+        batch.set(newDocRef, {...item, price: 0});
+    });
+    await batch.commit();
     toast({
         title: "Items Restored!",
-        description: `Restored ${newItems.length} items. Old data has been replaced.`,
+        description: `Restored ${uploadedItems.length} items. Old data has been replaced.`,
     });
   };
 
-  const addItemGroup = (groupName: string) => {
-    if (!canEdit) return;
-    if (groupName && !itemGroups.some(g => g.name.toLowerCase() === groupName.toLowerCase())) {
-        const newGroup = { name: groupName, id: `group-${Date.now()}`};
-        setItemGroups(prev => [...prev, newGroup]);
+  const addItemGroup = async (groupName: string) => {
+    if (!canEdit || !firestore) return;
+    if (groupName && !itemGroups?.some(g => g.name.toLowerCase() === groupName.toLowerCase())) {
+        const newDocRef = doc(collection(firestore, 'itemGroups'));
+        await writeBatch(firestore).set(newDocRef, { name: groupName }).commit();
     }
   };
 
@@ -155,7 +179,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
         (itemToUpdate[field] as string) = String(value);
     }
 
-    if (field === 'itemName') {
+    if (field === 'itemName' && items) {
       const selectedItem = items.find(i => i.name.toLowerCase() === String(value).toLowerCase());
       if (selectedItem) {
         itemToUpdate.unit = selectedItem.unit;
@@ -172,8 +196,8 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
     setManualPrices(prev => ({...prev, [group.toLowerCase()]: price}))
   }
 
-  const handleSaveBill = () => {
-    if (!canEdit) return;
+  const handleSaveBill = async () => {
+    if (!canEdit || !firestore) return;
     if (!searchFilters.slipNo) {
       toast({
         variant: "destructive",
@@ -189,8 +213,8 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
       manualPrices
     };
     
-    const newBill = { ...billData, id: searchFilters.slipNo };
-    setSavedBills(prev => ({...prev, [searchFilters.slipNo]: newBill}));
+    const docRef = doc(firestore, 'billingRecords', searchFilters.slipNo);
+    await writeBatch(firestore).set(docRef, billData).commit();
 
     toast({
         title: "Bill Saved!",
@@ -236,6 +260,17 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
       });
     }
   };
+  
+  const handleDeleteBill = async (slipNo: string) => {
+    if (!canDelete || !firestore) return;
+    const docRef = doc(firestore, 'billingRecords', slipNo);
+    await writeBatch(firestore).delete(docRef).commit();
+    toast({
+        title: "Bill Deleted",
+        description: `Bill with Slip No. ${slipNo} has been deleted.`,
+    });
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -255,23 +290,14 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
             handleLoadBill(slipNo);
             setIsAllBillsOpen(false);
           }}
-          onDeleteBill={(slipNo) => {
-            if (!canDelete) return;
-            const newBills = {...savedBills};
-            delete newBills[slipNo];
-            setSavedBills(newBills);
-            toast({
-                title: "Bill Deleted",
-                description: `Bill with Slip No. ${slipNo} has been deleted.`,
-            });
-          }}
-          items={items}
+          onDeleteBill={handleDeleteBill}
+          items={items || []}
           canDelete={canDelete}
        />
         <ImportExportDialog
           isOpen={isImportExportOpen}
           onClose={() => setIsImportExportOpen(false)}
-          data={{ parties: parties, items: items, savedBills: Object.values(savedBills) }}
+          data={{ parties: parties || [], items: items || [], savedBills: Object.values(savedBills) }}
           onImportParties={handlePartyUpload}
           onImportItems={handleItemUpload}
           canEdit={canEdit}
@@ -320,7 +346,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
       </header>
       <main className="flex-1 p-4 md:p-6 space-y-4">
         <SearchFilters 
-          parties={parties}
+          parties={parties || []}
           filters={searchFilters}
           onFiltersChange={setSearchFilters}
           onLoadBill={() => handleLoadBill()}
@@ -330,7 +356,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
           <div className="lg:col-span-3">
             <MainBillingTable 
               billingItems={billingItems}
-              items={items}
+              items={items || []}
               onAddRow={addBillingItem}
               onItemChange={handleBillingItemChange}
               onRemoveRow={removeBillingItem}
@@ -340,7 +366,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
           <div className="lg:col-span-2">
             <TotalsSummary 
               billingItems={billingItems} 
-              items={items}
+              items={items || []}
               manualPrices={manualPrices}
               onManualPriceChange={handleManualPriceChange}
               canEdit={canEdit}

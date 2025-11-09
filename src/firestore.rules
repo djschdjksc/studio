@@ -28,7 +28,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isOwnerOrAdmin());
       allow list: if isSignedIn() && isOwnerOrAdmin();
-      allow create: if isSignedIn() && (isOwnerOrAdmin() || request.auth.token.email == 'rohitvetma101010@gmail.com');
+      allow create: if isSignedIn() && (isOwnerOrAdmin() || (request.auth.token.email == 'rohitvetma101010@gmail.com' && request.resource.data.role == 'owner'));
       allow update: if isSignedIn() && isOwnerOrAdmin();
     }
     
@@ -40,8 +40,7 @@ service cloud.firestore {
       allow list, update: if isSignedIn() && isOwnerOrAdmin();
     }
     
-    // Allow admins/owners to read and write to all other collections for app functionality.
-    // These are placeholders and should be refined for production.
+    // Data collections can be managed by authorized roles.
     match /parties/{partyId} {
        allow read, write: if isSignedIn() && (getUserRole(request.auth.uid) in ['editor', 'manager', 'admin', 'owner']);
        allow delete: if isSignedIn() && (getUserRole(request.auth.uid) in ['manager', 'admin', 'owner']);
@@ -64,7 +63,7 @@ service cloud.firestore {
 
     // Audit Logs:
     // - Only Admins/Owners can read logs.
-    // - (For now, let's assume writes happen from a trusted environment like a Cloud Function)
+    // - (Writes should happen from a trusted server environment)
     match /logs/{logId} {
       allow read, write: if isSignedIn() && isOwnerOrAdmin();
     }

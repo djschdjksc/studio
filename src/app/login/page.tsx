@@ -37,13 +37,11 @@ export default function LoginPage() {
             toast({ title: 'Admin Login Successful', description: 'Redirecting to your dashboard...' });
             router.push('/admin'); // Redirect admin directly
         } catch (error: any) {
-             // If admin doesn't exist, we might need to create it. For now, we'll just show an error.
-             // A more robust solution would be a setup script.
+             // If admin doesn't exist, we might need to create it.
              if (error.code === 'auth/user-not-found') {
                 try {
                     await createUserWithEmailAndPassword(auth, email, password);
                     toast({ title: 'Admin Account Created', description: 'Please log in again to access the dashboard.' });
-                    // We don't automatically log in, to ensure Firestore rules for user creation can be set.
                 } catch (creationError: any) {
                      toast({
                         variant: 'destructive',

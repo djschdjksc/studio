@@ -22,45 +22,38 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
-        // Wait until authentication state is resolved before doing anything
-        if (isUserLoading) {
-            return;
+        // This effect handles all redirection logic.
+        // It waits until all loading is complete before making a decision.
+        if (isUserLoading || isProfileLoading) {
+            return; // Wait until we have all user and profile data.
         }
 
-        // If there's no authenticated user, redirect to the login page
         if (!user) {
             router.push('/login');
             return;
         }
 
-        // If the user is logged in, but we are still loading their profile, do nothing yet
-        if (isProfileLoading) {
-            return;
-        }
-
-        // Once user and profile are loaded, handle role-based redirection
         if (user && userProfile && (userProfile.role === 'admin' || userProfile.role === 'owner')) {
             router.push('/admin');
+            return;
         }
-
-        // The logic for rendering the correct component based on profile status is handled in the return statement.
-        // This useEffect is now only responsible for redirection.
-
-    }, [isUserLoading, user, isProfileLoading, userProfile]);
+        
+    }, [isUserLoading, isProfileLoading, user, userProfile]);
 
 
-    // Show a global loading indicator while we check auth or profile
+    // This block handles what to RENDER based on the current state.
     if (isUserLoading || (user && isProfileLoading)) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
-    // If a user is logged in but has no profile document, they need to request access
     if (user && !userProfile) {
+        // User is logged in but has no profile (or it's still loading and we got here).
+        // This state means they need to request access.
         return <AccessRequestPage />;
     }
 
-    // If the user has a profile with a valid role for the dashboard, show it
     if (userProfile && (userProfile.role === 'viewer' || userProfile.role === 'editor' || userProfile.role === 'manager')) {
+        // User has a profile with a valid role for the dashboard.
         return (
             <div className="min-h-screen w-full bg-background">
                 <BillingDashboard userProfile={userProfile} />
