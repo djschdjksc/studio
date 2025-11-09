@@ -22,6 +22,7 @@ import { collection, doc, deleteDoc, setDoc, updateDoc, increment, query, where,
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import StockManagement from './stock-management';
 import { useSearchParams } from 'next/navigation';
+import { FirestorePermissionError, errorEmitter } from '@/firebase';
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -153,8 +154,15 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             } else {
                 setManualPrices({}); // No last bill, clear prices
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching last bill:", error);
+            if (error.code === 'failed-precondition') {
+                 const permissionError = new FirestorePermissionError({
+                    path: 'billingRecords',
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            }
             setManualPrices({});
         }
     };
