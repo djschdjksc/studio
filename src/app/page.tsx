@@ -22,26 +22,31 @@ export default function Home() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
+        // Wait until authentication state is resolved
         if (isUserLoading) {
-            return; // Wait until user authentication state is resolved
+            return;
         }
 
+        // If no user, redirect to login
         if (!user) {
             router.push('/login');
             return;
         }
 
-        if (!isProfileLoading && user) {
-            if (userProfile) {
-                if (userProfile.role === 'admin' || userProfile.role === 'owner') {
-                    router.push('/admin');
-                }
-                // For other roles, they will see the BillingDashboard below.
-            } 
-            // If !userProfile, they will see the AccessRequestPage below.
+        // Wait until profile is loaded for the logged-in user
+        if (isProfileLoading) {
+            return;
         }
 
-    }, [isUserLoading, user, isProfileLoading, userProfile, router]);
+        // Once user and profile status are known, handle redirection
+        if (userProfile && (userProfile.role === 'admin' || userProfile.role === 'owner')) {
+            router.push('/admin');
+        }
+        
+        // For other cases (user with non-admin role, or no profile yet),
+        // the component will render the correct page below.
+
+    }, [isUserLoading, user, isProfileLoading, userProfile]);
 
 
     if (isUserLoading || (user && isProfileLoading)) {
