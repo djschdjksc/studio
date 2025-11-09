@@ -12,13 +12,19 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // Check if the signed-in user's email is the designated owner's email.
+    function isOwnerEmail() {
+      return request.auth.token.email == 'rohitvetma101010@gmail.com';
+    }
+
     function getUserRole(userId) {
       return get(/databases/$(database)/documents/users/$(userId)).data.role;
     }
     
     function isOwnerOrAdmin() {
+      // Grant access if it's the owner's email OR if their role in the DB is admin/owner.
       let userRole = getUserRole(request.auth.uid);
-      return userRole == 'admin' || userRole == 'owner';
+      return isOwnerEmail() || userRole == 'admin' || userRole == 'owner';
     }
 
     // User Profiles:
@@ -28,7 +34,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isOwnerOrAdmin());
       allow list: if isSignedIn() && isOwnerOrAdmin();
-      allow create: if isSignedIn() && (isOwnerOrAdmin() || (request.auth.token.email == 'rohitvetma101010@gmail.com' && request.resource.data.role == 'owner'));
+      allow create: if isSignedIn() && (isOwnerOrAdmin() || (isOwnerEmail() && request.resource.data.role == 'owner'));
       allow update: if isSignedIn() && isOwnerOrAdmin();
     }
     
