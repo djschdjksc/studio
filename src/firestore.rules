@@ -41,10 +41,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isOwnerOrAdmin());
       allow list: if isSignedIn() && isOwnerOrAdmin();
-      // Allow owner email to create their initial record.
-      allow create: if (isOwnerEmail() && request.resource.data.role == 'owner') || (isSignedIn() && isOwnerOrAdmin());
+      // Allow owner email to create their initial record. Also allow admins to create users.
+      allow create: if (isOwner(userId) && isOwnerEmail()) || (isSignedIn() && isOwnerOrAdmin());
       // Allow owner to update their own record, and admins to update any.
-      allow update: if isSignedIn() && ((isOwnerEmail() && isOwner(userId)) || isOwnerOrAdmin());
+      allow update: if (isOwner(userId) && isOwnerEmail()) || (isSignedIn() && isOwnerOrAdmin());
     }
     
     // Access Requests:
