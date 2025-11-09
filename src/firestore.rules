@@ -18,7 +18,8 @@ service cloud.firestore {
     }
 
     function getUserRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+      // Use exists() to avoid errors on non-existent documents.
+      return exists(/databases/$(database)/documents/users/$(userId)) ? get(/databases/$(database)/documents/users/$(userId)).data.role : '';
     }
     
     function isOwnerOrAdmin() {
@@ -34,7 +35,7 @@ service cloud.firestore {
     }
 
     // User Profiles:
-    // - The owner can create their own 'owner' profile.
+    // - The owner can create/update their own 'owner' profile.
     // - Any user can read their own profile.
     // - Admins/Owners can read/write any profile.
     match /users/{userId} {
@@ -42,7 +43,8 @@ service cloud.firestore {
       allow list: if isSignedIn() && isOwnerOrAdmin();
       // Allow owner email to create their initial record.
       allow create: if (isOwnerEmail() && request.resource.data.role == 'owner') || (isSignedIn() && isOwnerOrAdmin());
-      allow update: if isSignedIn() && isOwnerOrAdmin();
+      // Allow owner to update their own record, and admins to update any.
+      allow update: if isSignedIn() && ((isOwnerEmail() && isOwner(userId)) || isOwnerOrAdmin());
     }
     
     // Access Requests:
