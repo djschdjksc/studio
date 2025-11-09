@@ -1,4 +1,3 @@
-
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -6,10 +5,10 @@ import { NewPartyDialog } from '@/components/dashboard/new-party-dialog';
 import SearchFilters from '@/components/dashboard/search-filters';
 import MainBillingTable from '@/components/dashboard/main-billing-table';
 import TotalsSummary from '@/components/dashboard/totals-summary';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers } from 'lucide-react';
+import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { BillPreviewDialog } from './bill-preview-dialog';
 import { AllBillsDialog } from './all-bills-dialog';
@@ -21,6 +20,7 @@ import Link from 'next/link';
 import { collection, doc, deleteDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import StockManagement from './stock-management';
+import { useSearchParams } from 'next/navigation';
 
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
@@ -48,11 +48,11 @@ interface BillingDashboardProps {
   userProfile: UserProfile;
 }
 
-
-export default function BillingDashboard({ userProfile }: BillingDashboardProps) {
+function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   const firestore = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   
   const canEdit = userProfile.role === 'editor' || userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
   const canDelete = userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
@@ -100,8 +100,14 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
     if(!canEdit) return;
     const slipNumbers = Object.values(savedBills).map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
     const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
-    setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
-  }, [savedBills, canEdit]);
+    
+    const slipNoFromUrl = searchParams.get('slipNo');
+    if (slipNoFromUrl) {
+      handleLoadBill(slipNoFromUrl);
+    } else {
+      setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
+    }
+  }, [savedBills, canEdit, searchParams]);
 
   const clearForm = useCallback((nextSlipNo: string) => {
     setBillingItems(generateInitialBillingItems(5));
@@ -269,7 +275,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
     clearForm(nextSlipNo);
   }
 
-  const handleLoadBill = (slipNoToLoad?: string) => {
+  const handleLoadBill = useCallback((slipNoToLoad?: string) => {
     const slipNo = slipNoToLoad || searchFilters.slipNo;
 
     if(!slipNo) {
@@ -289,7 +295,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
       };
       setSearchFilters(loadedFilters);
       
-      const loadedItems = billData.billingItems.length > 0 ? billData.billingItems : generateInitialBillingItems(5);
+      const loadedItems = billData.billingItems.length > 0 ? billData.billingItems.map((item, index) => ({...item, srNo: index + 1})) : generateInitialBillingItems(5);
       setBillingItems(loadedItems);
 
       setManualPrices(billData.manualPrices || {});
@@ -304,7 +310,7 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
         description: `No bill found with Slip No. ${slipNo}.`,
       });
     }
-  };
+  }, [savedBills, searchFilters.slipNo, toast]);
   
   const handleDeleteBill = async (slipNo: string) => {
     if (!canDelete || !firestore) return;
@@ -342,18 +348,6 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
           items={items || []}
           manualPrices={manualPrices}
        />
-       <AllBillsDialog
-          isOpen={isAllBillsOpen}
-          onClose={() => setIsAllBillsOpen(false)}
-          savedBills={savedBills}
-          onLoadBill={(slipNo) => {
-            handleLoadBill(slipNo);
-            setIsAllBillsOpen(false);
-          }}
-          onDeleteBill={handleDeleteBill}
-          items={items || []}
-          canDelete={canDelete}
-       />
         <ImportExportDialog
           isOpen={isImportExportOpen}
           onClose={() => setIsImportExportOpen(false)}
@@ -362,38 +356,34 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
           onImportItems={handleItemUpload}
           canEdit={canEdit}
         />
-        <NewItemDialog onSave={addItem} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isNewItemOpen} onOpenChange={setIsNewItemOpen} />
-        <NewPartyDialog onSave={addParty} isOpen={isNewPartyOpen} onOpenChange={setIsNewPartyOpen} />
-        <NewItemGroupDialog onSave={addItemGroup} isOpen={isNewGroupOpen} onOpenChange={setIsNewGroupOpen} />
         <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isBulkAddOpen} onOpenChange={setIsBulkAddOpen} />
 
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
         <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro</h1>
-            <span className="text-sm text-muted-foreground capitalize">({userProfile.role})</span>
+            <Button variant="outline" size="icon" asChild>
+                <Link href="/dashboard"><ArrowLeft/></Link>
+            </Button>
+            <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">Create Bill</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-            {isAdmin && (
-                <Button variant="secondary" asChild>
-                    <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
-                </Button>
-            )}
           {canEdit && (
             <Button variant="outline" onClick={() => setIsImportExportOpen(true)}>
                 <Import className="mr-2 h-4 w-4" />
                 Import/Export
             </Button>
           )}
-          <Button variant="outline" onClick={() => setIsAllBillsOpen(true)}>
-            <BookOpen className="mr-2 h-4 w-4" />
-            All Bills
+          <Button variant="outline" asChild>
+            <Link href="/bills">
+                <BookOpen className="mr-2 h-4 w-4" />
+                All Bills
+            </Link>
           </Button>
           {canEdit && (
             <>
               <Button onClick={() => setIsNewGroupOpen(true)} variant="outline"><Layers className="mr-2 h-4 w-4" />New Group</Button>
               <Button onClick={() => setIsBulkAddOpen(true)}><PackagePlus className="mr-2 h-4 w-4" />Bulk Add Items</Button>
-              <Button onClick={() => setIsNewItemOpen(true)} variant="outline"><PackagePlus className="mr-2 h-4 w-4" />New Item</Button>
-              <Button onClick={() => setIsNewPartyOpen(true)} variant="outline"><UserPlus className="mr-2 h-4 w-4" />New Party</Button>
+               <Button onClick={() => setIsNewItemOpen(true)} variant="outline"><PackagePlus className="mr-2 h-4 w-4" />New Item</Button>
+               <Button onClick={() => setIsNewPartyOpen(true)} variant="outline"><UserPlus className="mr-2 h-4 w-4" />New Party</Button>
               <Button variant="outline" onClick={handleSaveBill}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Bill
@@ -403,9 +393,6 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
           <Button onClick={() => setIsBillPreviewOpen(true)}>
             <FileUp className="mr-2 h-4 w-4" />
             Preview Bill
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => auth?.signOut()}>
-            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>
@@ -436,16 +423,20 @@ export default function BillingDashboard({ userProfile }: BillingDashboardProps)
               onManualPriceChange={handleManualPriceChange}
               canEdit={canEdit}
              />
-             <StockManagement
-                items={items || []}
-                onAddStock={handleAddStock}
-                canEdit={canEdit}
-              />
           </div>
         </div>
       </main>
+      <NewItemDialog onSave={addItem} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isNewItemOpen} onOpenChange={setIsNewItemOpen} />
+      <NewPartyDialog onSave={addParty} isOpen={isNewPartyOpen} onOpenChange={setIsNewPartyOpen} />
+      <NewItemGroupDialog onSave={addItemGroup} isOpen={isNewGroupOpen} onOpenChange={setIsNewGroupOpen} />
     </div>
   );
 }
 
-    
+export default function BillingDashboard(props: BillingDashboardProps) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BillingDashboardContent {...props} />
+    </Suspense>
+  )
+}
