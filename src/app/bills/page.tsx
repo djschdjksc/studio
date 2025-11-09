@@ -4,7 +4,7 @@ import { useFirestore, useCollection, useMemoFirebase, useAuth } from '@/firebas
 import { Item, SavedBill, WithId } from '@/lib/types';
 import React, { useState } from 'react';
 import { AllBillsDialog } from '@/components/dashboard/all-bills-dialog';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
