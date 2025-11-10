@@ -35,8 +35,8 @@ interface ImportExportDialogProps {
 export function ImportExportDialog({ 
     isOpen, 
     onClose, 
-    parties, 
-    items, 
+    parties = [], 
+    items = [], 
     onImportParties, 
     onImportItems, 
     canEdit 
@@ -260,3 +260,5 @@ export function ImportExportDialog({
     </Dialog>
   );
 }
+
+    

@@ -423,7 +423,8 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
         <ImportExportDialog
           isOpen={isImportExportOpen}
           onClose={() => setIsImportExportOpen(false)}
-          data={{ parties: parties || [], items: items || [], savedBills: Object.values(savedBills) }}
+          parties={parties || []}
+          items={items || []}
           onImportParties={handlePartyUpload}
           onImportItems={handleItemUpload}
           canEdit={canEdit}
@@ -468,8 +469,8 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
           </Button>
         </div>
       </header>
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 md:p-6">
-        <div className="md:col-span-3">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 md:p-6">
+        <div className="lg:col-span-5">
             <SearchFilters 
             parties={parties || []}
             filters={searchFilters}
@@ -478,7 +479,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             canEdit={canEdit}
             />
         </div>
-        <div className="md:col-span-2">
+        <div className="lg:col-span-3">
             <MainBillingTable 
             billingItems={billingItems}
             items={items || []}
@@ -488,7 +489,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             canEdit={canEdit}
             />
         </div>
-        <div className="md:col-span-1">
+        <div className="lg:col-span-2">
             <TotalsSummary 
             billingItems={billingItems} 
             items={items || []}
@@ -512,3 +513,5 @@ export default function BillingDashboard(props: BillingDashboardProps) {
     </Suspense>
   )
 }
+
+    
