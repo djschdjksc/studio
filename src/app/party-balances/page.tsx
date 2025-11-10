@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, LogOut, Search, PlusCircle } from 'lucide-react';
+import { ArrowLeft, LogOut, Search, PlusCircle, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -218,6 +218,18 @@ export default function PartyBalancesPage() {
     setIsPaymentDialogOpen(false);
   }
 
+  const handlePrint = () => {
+    if (!selectedParty) {
+        toast({
+            variant: 'destructive',
+            title: 'No Party Selected',
+            description: 'Please select a party to print their ledger.'
+        });
+        return;
+    }
+    window.print();
+  }
+
   if (isUserLoading || itemsLoading || partiesLoading || billsLoading || paymentsLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading Party Balances...</div>;
   }
@@ -230,8 +242,8 @@ export default function PartyBalancesPage() {
         onSave={handleAddPayment}
         partyName={selectedParty?.name || ''}
     />
-    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
-        <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-white/80 backdrop-blur-sm md:px-6 shrink-0">
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden print:bg-white">
+        <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-white/80 backdrop-blur-sm md:px-6 shrink-0 print:hidden">
             <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" asChild>
                     <Link href="/dashboard"><ArrowLeft /></Link>
@@ -249,13 +261,16 @@ export default function PartyBalancesPage() {
                         className="w-full pl-8 sm:w-[200px] md:w-[300px]"
                     />
                 </div>
+                <Button onClick={handlePrint} variant="outline">
+                    <Printer className="mr-2 h-4 w-4" /> Print Ledger
+                </Button>
                 <Button variant="ghost" size="icon" onClick={() => auth?.signOut()}>
                     <LogOut className="h-4 w-4" />
                 </Button>
             </div>
         </header>
         <main className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 overflow-hidden">
-            <Card className="md:col-span-1 flex flex-col">
+            <Card className="md:col-span-1 flex flex-col print:hidden">
                 <CardHeader>
                     <CardTitle>All Parties</CardTitle>
                     <CardDescription>Select a party to view their ledger.</CardDescription>
@@ -292,10 +307,10 @@ export default function PartyBalancesPage() {
                 </CardContent>
             </Card>
 
-            <div className="md:col-span-2 flex flex-col gap-6">
+            <div className="md:col-span-2 flex flex-col gap-6" id="printable-area">
                 {selectedParty ? (
                     <Card className="flex-grow flex flex-col">
-                        <CardHeader className="flex flex-row items-start justify-between">
+                        <CardHeader className="flex flex-row items-start justify-between print:hidden">
                             <div>
                                 <CardTitle className="text-primary">{selectedParty.name}</CardTitle>
                                 <CardDescription>{selectedParty.station}</CardDescription>
@@ -304,6 +319,10 @@ export default function PartyBalancesPage() {
                                 <PlusCircle className="mr-2 h-4 w-4"/> Add Payment
                             </Button>
                         </CardHeader>
+                         <div className="hidden print:block p-6">
+                             <CardTitle className="text-primary text-2xl">{selectedParty.name}</CardTitle>
+                             <CardDescription>{selectedParty.station}</CardDescription>
+                         </div>
                         <CardContent className="flex-grow overflow-hidden p-0">
                            <ScrollArea className="h-full">
                                 <Table>
@@ -354,7 +373,7 @@ export default function PartyBalancesPage() {
                         </CardFooter>
                     </Card>
                 ) : (
-                     <Card className="flex-grow flex items-center justify-center">
+                     <Card className="flex-grow flex items-center justify-center print:hidden">
                         <div className="text-center text-muted-foreground">
                             <p className="text-lg font-semibold">Select a party</p>
                             <p>Choose a party from the list to see their transaction ledger.</p>
@@ -363,6 +382,23 @@ export default function PartyBalancesPage() {
                 )}
             </div>
         </main>
+         <style jsx global>{`
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+                #printable-area, #printable-area * {
+                    visibility: visible;
+                }
+                #printable-area {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                }
+            }
+        `}</style>
     </div>
     </>
   );
