@@ -1,3 +1,4 @@
+
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -135,15 +136,20 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   }, [savedBills, searchFilters.slipNo, toast]);
 
   const loadOrderIntoBilling = useCallback(async (orderSlipNo: string) => {
-    if (!firestore) return;
+    if (!firestore || !savedBillsData) return;
     const orderRef = doc(firestore, 'orders', orderSlipNo);
     const orderSnap = await getDoc(orderRef);
 
     if (orderSnap.exists()) {
         const orderData = orderSnap.data() as SavedOrder;
+
+        // Calculate next bill slip number
+        const slipNumbers = savedBillsData.map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
+        const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
         
         const loadedFilters: SearchFiltersState = {
             ...initialFilters,
+            slipNo: nextSlipNo, // Set the next slip number
             partyName: orderData.filters.partyName,
             address: orderData.filters.address,
             date: orderData.filters.date ? new Date(orderData.filters.date) : new Date(),
@@ -157,7 +163,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
 
         toast({
             title: "Order Loaded",
-            description: `Order #${orderSlipNo} is ready to be billed.`,
+            description: `Order #${orderSlipNo} is ready. New bill number is ${nextSlipNo}.`,
         });
     } else {
         toast({
@@ -166,11 +172,11 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             description: `Could not find order with number ${orderSlipNo}.`,
         });
     }
-  }, [firestore, toast]);
+  }, [firestore, toast, savedBillsData]);
 
 
   useEffect(() => {
-    if(!canEdit) return;
+    if(!canEdit || !savedBills) return;
 
     const orderSlipNo = searchParams.get('orderSlipNo');
     if (orderSlipNo) {
@@ -178,13 +184,12 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
         return;
     }
 
-    const slipNumbers = Object.values(savedBills).map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
-    const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
-    
     const slipNoFromUrl = searchParams.get('slipNo');
     if (slipNoFromUrl) {
       handleLoadBill(slipNoFromUrl);
     } else {
+      const slipNumbers = Object.values(savedBills).map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
+      const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
       setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
     }
   }, [savedBills, canEdit, searchParams, loadOrderIntoBilling, handleLoadBill]);
@@ -425,8 +430,6 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
         <ImportExportDialog
           isOpen={isImportExportOpen}
           onClose={() => setIsImportExportOpen(false)}
-          parties={parties || []}
-          items={items || []}
           onImportParties={handlePartyUpload}
           onImportItems={handleItemUpload}
           canEdit={canEdit}
@@ -515,3 +518,5 @@ export default function BillingDashboard(props: BillingDashboardProps) {
     </Suspense>
   )
 }
+
+    
