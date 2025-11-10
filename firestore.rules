@@ -40,6 +40,10 @@ service cloud.firestore {
        allow read, write: if isSignedIn();
     }
     
+    match /loadingSlips/{loadingSlipId} {
+       allow read, write: if isSignedIn();
+    }
+    
     match /payments/{paymentId} {
       allow read, write: if isSignedIn();
     }

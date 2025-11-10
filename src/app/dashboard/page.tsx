@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare, Banknote, VenetianMask, BookCheck, ShoppingCart, ListOrdered } from "lucide-react";
+import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare, Banknote, VenetianMask, BookCheck, ShoppingCart, ListOrdered, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useState, useMemo } from "react";
@@ -112,6 +112,12 @@ export default function DashboardPage() {
             description: "Create a new sales order.",
             icon: <ShoppingCart className="h-8 w-8 text-blue-500" />,
             href: "/orders/create",
+        },
+         {
+            title: "Loading Slip",
+            description: "Create a new loading slip.",
+            icon: <ClipboardList className="h-8 w-8 text-gray-500" />,
+            href: "/loading-slip",
         },
         {
             title: "All Orders",

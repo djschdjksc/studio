@@ -117,6 +117,40 @@
       },
       "required": ["id", "filters"]
     },
+    "LoadingSlip": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LoadingSlip",
+      "type": "object",
+      "description": "Represents a loading slip record.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the LoadingSlip entity." },
+        "filters": {
+          "type": "object",
+          "properties": {
+            "partyName": { "type": "string" },
+            "address": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "slipNo": { "type": "string" },
+            "notes": { "type": "string" }
+          }
+        },
+        "billingItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "srNo": { "type": "number" },
+              "itemName": { "type": "string" },
+              "quantity": { "type": "number" },
+              "unit": { "type": "string" },
+              "uCap": { "type": "number" },
+              "lCap": { "type": "number" }
+            }
+          }
+        }
+      },
+      "required": ["id", "filters"]
+    },
     "Payment": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Payment",
@@ -187,6 +221,7 @@
       { "path": "/items/{itemId}", "definition": { "entityName": "Item", "schema": { "$ref": "#/backend/entities/Item" }, "description": "Stores items." } },
       { "path": "/billingRecords/{billingRecordId}", "definition": { "entityName": "BillingRecord", "schema": { "$ref": "#/backend/entities/BillingRecord" }, "description": "Stores billing records." } },
       { "path": "/orders/{orderId}", "definition": { "entityName": "OrderRecord", "schema": { "$ref": "#/backend/entities/OrderRecord" }, "description": "Stores sales orders." } },
+      { "path": "/loadingSlips/{loadingSlipId}", "definition": { "entityName": "LoadingSlip", "schema": { "$ref": "#/backend/entities/LoadingSlip" }, "description": "Stores loading slips." } },
       { "path": "/payments/{paymentId}", "definition": { "entityName": "Payment", "schema": { "$ref": "#/backend/entities/Payment" }, "description": "Stores payment records from parties." } },
       { "path": "/users/{userId}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/backend/entities/UserProfile" }, "description": "Stores user profiles." } },
       { "path": "/access_requests/{requestId}", "definition": { "entityName": "AccessRequest", "schema": { "$ref": "#/backend/entities/AccessRequest" }, "description": "Stores user access requests." } },

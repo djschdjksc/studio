@@ -47,6 +47,15 @@ export interface SearchFiltersState {
     notes?: string;
 }
 
+export interface LoadingSlipFiltersState {
+    partyName: string;
+    address: string;
+    date: Date | string | undefined;
+    slipNo: string;
+    notes?: string;
+}
+
+
 export interface OrderFiltersState {
     partyName: string;
     address: string;
@@ -75,6 +84,12 @@ export interface SavedOrder {
     filters: OrderFiltersState;
     billingItems: BillingItem[];
     manualPrices: Record<string, number>;
+}
+
+export interface SavedLoadingSlip {
+    id: string;
+    filters: LoadingSlipFiltersState;
+    billingItems: BillingItem[];
 }
 
 
