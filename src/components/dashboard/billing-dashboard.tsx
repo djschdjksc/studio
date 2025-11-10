@@ -97,6 +97,42 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     }, {} as Record<string, WithId<SavedBill>>)
   }, [savedBillsData]);
 
+  const handleLoadBill = useCallback((slipNoToLoad?: string) => {
+    const slipNo = slipNoToLoad || searchFilters.slipNo;
+
+    if(!slipNo) {
+        toast({
+            variant: "destructive",
+            title: "Slip No. required",
+            description: "Please enter a Slip No. to load a bill.",
+        });
+        return;
+    }
+    const billData = savedBills[slipNo];
+
+    if (billData) {
+      const loadedFilters = {
+        ...billData.filters,
+        date: billData.filters.date ? new Date(billData.filters.date) : new Date(),
+      };
+      setSearchFilters(loadedFilters);
+      
+      const loadedItems = billData.billingItems.length > 0 ? billData.billingItems.map((item, index) => ({...item, srNo: index + 1})) : generateInitialBillingItems(5);
+      setBillingItems(loadedItems);
+
+      setManualPrices(billData.manualPrices || {});
+      toast({
+        title: "Bill Loaded",
+        description: `Bill with Slip No. ${slipNo} has been loaded.`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Bill not found",
+        description: `No bill found with Slip No. ${slipNo}.`,
+      });
+    }
+  }, [savedBills, searchFilters.slipNo, toast]);
 
   const loadOrderIntoBilling = useCallback(async (orderSlipNo: string) => {
     if (!firestore) return;
@@ -374,43 +410,6 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
 
     clearForm(nextSlipNo);
   }
-
-  const handleLoadBill = useCallback((slipNoToLoad?: string) => {
-    const slipNo = slipNoToLoad || searchFilters.slipNo;
-
-    if(!slipNo) {
-        toast({
-            variant: "destructive",
-            title: "Slip No. required",
-            description: "Please enter a Slip No. to load a bill.",
-        });
-        return;
-    }
-    const billData = savedBills[slipNo];
-
-    if (billData) {
-      const loadedFilters = {
-        ...billData.filters,
-        date: billData.filters.date ? new Date(billData.filters.date) : new Date(),
-      };
-      setSearchFilters(loadedFilters);
-      
-      const loadedItems = billData.billingItems.length > 0 ? billData.billingItems.map((item, index) => ({...item, srNo: index + 1})) : generateInitialBillingItems(5);
-      setBillingItems(loadedItems);
-
-      setManualPrices(billData.manualPrices || {});
-      toast({
-        title: "Bill Loaded",
-        description: `Bill with Slip No. ${slipNo} has been loaded.`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Bill not found",
-        description: `No bill found with Slip No. ${slipNo}.`,
-      });
-    }
-  }, [savedBills, searchFilters.slipNo, toast]);
 
 
   return (
