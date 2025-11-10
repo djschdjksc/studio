@@ -2,21 +2,19 @@
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
 import { NewPartyDialog } from '@/components/dashboard/new-party-dialog';
-import SearchFilters from '@/components/dashboard/search-filters';
+import OrderSearchFilters from '@/components/dashboard/order-search-filters';
 import MainBillingTable from '@/components/dashboard/main-billing-table';
 import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
-import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile, SavedOrder } from '@/lib/types';
+import { Party, Item, BillingItem, OrderFiltersState, SavedOrder, WithId, ItemGroup, UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
+import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
-import { BillPreviewDialog } from './bill-preview-dialog';
-import { ImportExportDialog } from './import-export-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { BulkAddItemDialog } from './bulk-add-item-dialog';
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import Link from 'next/link';
-import { collection, doc, deleteDoc, setDoc, updateDoc, increment, query, where, orderBy, limit, getDocs, getDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, setDoc, updateDoc, increment, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useSearchParams } from 'next/navigation';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
@@ -33,29 +31,25 @@ const generateInitialBillingItems = (count: number): BillingItem[] => {
     }));
 };
 
-const initialFilters: Omit<SearchFiltersState, 'date'> = {
+const initialFilters: Omit<OrderFiltersState, 'date'> = {
     partyName: "",
     address: "",
     slipNo: "",
-    vehicleNo: "",
-    vehicleType: "",
-    billType: "sale",
+    orderStatus: "pending",
     notes: "",
 };
 
-interface BillingDashboardProps {
+interface OrderDashboardProps {
   userProfile: UserProfile;
 }
 
-function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
+function OrderDashboardContent({ userProfile }: OrderDashboardProps) {
   const firestore = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   
   const canEdit = userProfile.role === 'editor' || userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
-  const canDelete = userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
-  const isAdmin = userProfile.role === 'admin' || userProfile.role === 'owner';
 
   const partiesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'parties') : null, [firestore]);
   const { data: parties } = useCollection<Party>(partiesQuery);
@@ -66,17 +60,16 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   const itemGroupsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'itemGroups') : null, [firestore]);
   const { data: itemGroups } = useCollection<ItemGroup>(itemGroupsQuery);
 
-  const billingRecordsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'billingRecords') : null, [firestore]);
-  const { data: savedBillsData } = useCollection<SavedBill>(billingRecordsQuery);
+  const ordersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'orders') : null, [firestore]);
+  const { data: savedOrdersData } = useCollection<SavedOrder>(ordersQuery);
 
   const [billingItems, setBillingItems] = useState<BillingItem[]>(generateInitialBillingItems(5));
   const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
-  const [searchFilters, setSearchFilters] = useState<SearchFiltersState>({
+  const [searchFilters, setSearchFilters] = useState<OrderFiltersState>({
     ...initialFilters,
     date: new Date(),
   });
-  const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
-  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [isNewItemOpen, setIsNewItemOpen] = useState(false);
   const [isNewPartyOpen, setIsNewPartyOpen] = useState(false);
@@ -87,71 +80,29 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   }, [parties, searchFilters.partyName]);
 
 
-  const savedBills = React.useMemo(() => {
-    if (!savedBillsData) return {};
-    return savedBillsData.reduce((acc, bill) => {
-        if(bill.filters.slipNo) {
-            acc[bill.filters.slipNo] = bill;
+  const savedOrders = React.useMemo(() => {
+    if (!savedOrdersData) return {};
+    return savedOrdersData.reduce((acc, order) => {
+        if(order.filters.slipNo) {
+            acc[order.filters.slipNo] = order;
         }
         return acc;
-    }, {} as Record<string, WithId<SavedBill>>)
-  }, [savedBillsData]);
-
-
-  const loadOrderIntoBilling = useCallback(async (orderSlipNo: string) => {
-    if (!firestore) return;
-    const orderRef = doc(firestore, 'orders', orderSlipNo);
-    const orderSnap = await getDoc(orderRef);
-
-    if (orderSnap.exists()) {
-        const orderData = orderSnap.data() as SavedOrder;
-        
-        const loadedFilters: SearchFiltersState = {
-            ...initialFilters,
-            partyName: orderData.filters.partyName,
-            address: orderData.filters.address,
-            date: orderData.filters.date ? new Date(orderData.filters.date) : new Date(),
-            notes: orderData.filters.notes
-        };
-
-        setSearchFilters(loadedFilters);
-        const loadedItems = orderData.billingItems.length > 0 ? orderData.billingItems.map((item, index) => ({ ...item, srNo: index + 1 })) : generateInitialBillingItems(5);
-        setBillingItems(loadedItems);
-        setManualPrices(orderData.manualPrices || {});
-
-        toast({
-            title: "Order Loaded",
-            description: `Order #${orderSlipNo} is ready to be billed.`,
-        });
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Order Not Found",
-            description: `Could not find order with number ${orderSlipNo}.`,
-        });
-    }
-  }, [firestore, toast]);
+    }, {} as Record<string, WithId<SavedOrder>>)
+  }, [savedOrdersData]);
 
 
   useEffect(() => {
     if(!canEdit) return;
-
-    const orderSlipNo = searchParams.get('orderSlipNo');
-    if (orderSlipNo) {
-        loadOrderIntoBilling(orderSlipNo);
-        return;
-    }
-
-    const slipNumbers = Object.values(savedBills).map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
+    const slipNumbers = Object.values(savedOrders).map(order => Number(order.filters.slipNo)).filter(n => !isNaN(n));
     const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
     
     const slipNoFromUrl = searchParams.get('slipNo');
     if (slipNoFromUrl) {
-      handleLoadBill(slipNoFromUrl);
+      handleLoadOrder(slipNoFromUrl);
     } else {
       setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
     }
-  }, [savedBills, canEdit, searchParams, loadOrderIntoBilling, handleLoadBill]);
+  }, [savedOrders, canEdit, searchParams]);
 
   const clearForm = useCallback((nextSlipNo: string) => {
     setBillingItems(generateInitialBillingItems(5));
@@ -170,49 +121,10 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
       return;
     }
 
-    // Prioritize the saved price list on the party object
     if (selectedParty.priceList && Object.keys(selectedParty.priceList).length > 0) {
         setManualPrices(selectedParty.priceList);
         return;
     }
-
-    // If no price list, find the last bill for that party
-    const findLastBill = async () => {
-        const q = query(
-            collection(firestore, 'billingRecords'),
-            where('filters.partyName', '==', selectedParty.name),
-            limit(1)
-        );
-
-        try {
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const bills = querySnapshot.docs.map(doc => doc.data() as SavedBill);
-                // In-app sort as orderBy is not used to avoid needing an index
-                bills.sort((a, b) => {
-                    const dateA = a.filters.date ? parseISO(String(a.filters.date)).getTime() : 0;
-                    const dateB = b.filters.date ? parseISO(String(b.filters.date)).getTime() : 0;
-                    return dateB - dateA;
-                });
-                const lastBill = bills[0];
-                setManualPrices(lastBill.manualPrices || {});
-            } else {
-                setManualPrices({});
-            }
-        } catch (error: any) {
-            console.error("Error fetching last bill:", error);
-            if (error.code === 'failed-precondition' || error.code === 'permission-denied') {
-                 const permissionError = new FirestorePermissionError({
-                    path: `billingRecords where partyName == ${selectedParty.name}`,
-                    operation: 'list',
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            }
-            setManualPrices({});
-        }
-    };
-
-    findLastBill();
   }, [selectedParty, firestore]);
 
 
@@ -223,20 +135,6 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     toast({ title: 'Party Added', description: `Added ${party.name}.` });
   };
   
-  const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
-    if (!canEdit || !firestore || !parties) return;
-    for (const p of parties) {
-        deleteDocumentNonBlocking(doc(firestore, 'parties', p.id));
-    }
-    for (const p of uploadedParties) {
-        const newDocRef = doc(collection(firestore, 'parties'));
-        setDocumentNonBlocking(newDocRef, p, {});
-    }
-     toast({
-        title: "Parties Restored!",
-        description: `Restored ${uploadedParties.length} parties. Old data has been replaced.`,
-    });
-  }
 
   const addItem = async (item: Omit<Item, 'id' | 'price' | 'balance'>) => {
     if (!canEdit || !firestore) return;
@@ -257,21 +155,6 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     });
   };
   
-  const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price' | 'balance'>[]) => {
-    if (!canEdit || !firestore || !items) return;
-    for (const i of items) {
-        deleteDocumentNonBlocking(doc(firestore, 'items', i.id));
-    }
-    for (const item of uploadedItems) {
-        const newDocRef = doc(collection(firestore, 'items'));
-        setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
-    }
-    toast({
-        title: "Items Restored!",
-        description: `Restored ${uploadedItems.length} items. Old data has been replaced.`,
-    });
-  };
-
   const addItemGroup = async (groupName: string) => {
     if (!canEdit || !firestore) return;
     if (groupName && !itemGroups?.some(g => g.name.toLowerCase() === groupName.toLowerCase())) {
@@ -317,13 +200,13 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     setManualPrices(prev => ({...prev, [group.toLowerCase()]: price}))
   }
 
-  const handleSaveBill = async () => {
+  const handleSaveOrder = async () => {
     if (!canEdit || !firestore) return;
     if (!searchFilters.slipNo) {
       toast({
         variant: "destructive",
-        title: "Slip No. required",
-        description: "Please enter a Slip No. before saving.",
+        title: "Order No. required",
+        description: "Please enter an Order No. before saving.",
       });
       return;
     }
@@ -336,28 +219,15 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
       return;
     }
 
-    const billData: Omit<SavedBill, 'id'> = {
+    const orderData: Omit<SavedOrder, 'id'> = {
       filters: { ...searchFilters, date: searchFilters.date ? new Date(searchFilters.date).toISOString() : new Date().toISOString() },
       billingItems: billingItems.filter(item => item.itemName && item.quantity),
       manualPrices
     };
     
-    const stockChangeMultiplier = billData.filters.billType === 'sale-return' ? 1 : -1;
-
-    // Adjust stock for each item in the bill
-    billData.billingItems.forEach(billedItem => {
-        const item = items?.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
-        if (item && billedItem.quantity > 0) {
-            const itemRef = doc(firestore, 'items', item.id);
-            updateDocumentNonBlocking(itemRef, {
-                balance: increment(billedItem.quantity * stockChangeMultiplier)
-            });
-        }
-    });
-
-    // Save the bill
-    const docRef = doc(firestore, 'billingRecords', searchFilters.slipNo);
-    setDocumentNonBlocking(docRef, billData, {});
+    // Save the order
+    const docRef = doc(firestore, 'orders', searchFilters.slipNo);
+    setDocumentNonBlocking(docRef, orderData, {});
 
     // Save the price list to the party
     const partyRef = doc(firestore, 'parties', selectedParty.id);
@@ -365,8 +235,8 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
 
 
     toast({
-        title: "Bill Saved!",
-        description: `Bill with Slip No. ${searchFilters.slipNo} has been saved successfully.`,
+        title: "Order Saved!",
+        description: `Order with No. ${searchFilters.slipNo} has been saved successfully.`,
     });
 
     const currentSlipNo = Number(searchFilters.slipNo);
@@ -375,63 +245,47 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     clearForm(nextSlipNo);
   }
 
-  const handleLoadBill = useCallback((slipNoToLoad?: string) => {
+  const handleLoadOrder = useCallback((slipNoToLoad?: string) => {
     const slipNo = slipNoToLoad || searchFilters.slipNo;
 
     if(!slipNo) {
         toast({
             variant: "destructive",
-            title: "Slip No. required",
-            description: "Please enter a Slip No. to load a bill.",
+            title: "Order No. required",
+            description: "Please enter an Order No. to load an order.",
         });
         return;
     }
-    const billData = savedBills[slipNo];
+    const orderData = savedOrders[slipNo];
 
-    if (billData) {
+    if (orderData) {
       const loadedFilters = {
-        ...billData.filters,
-        date: billData.filters.date ? new Date(billData.filters.date) : new Date(),
+        ...orderData.filters,
+        date: orderData.filters.date ? new Date(orderData.filters.date) : new Date(),
       };
       setSearchFilters(loadedFilters);
       
-      const loadedItems = billData.billingItems.length > 0 ? billData.billingItems.map((item, index) => ({...item, srNo: index + 1})) : generateInitialBillingItems(5);
+      const loadedItems = orderData.billingItems.length > 0 ? orderData.billingItems.map((item, index) => ({...item, srNo: index + 1})) : generateInitialBillingItems(5);
       setBillingItems(loadedItems);
 
-      setManualPrices(billData.manualPrices || {});
+      setManualPrices(orderData.manualPrices || {});
       toast({
-        title: "Bill Loaded",
-        description: `Bill with Slip No. ${slipNo} has been loaded.`,
+        title: "Order Loaded",
+        description: `Order with No. ${slipNo} has been loaded.`,
       });
     } else {
       toast({
         variant: "destructive",
-        title: "Bill not found",
-        description: `No bill found with Slip No. ${slipNo}.`,
+        title: "Order not found",
+        description: `No order found with No. ${slipNo}.`,
       });
     }
-  }, [savedBills, searchFilters.slipNo, toast]);
+  }, [savedOrders, searchFilters.slipNo, toast]);
 
 
   return (
     <div className="flex flex-col min-h-screen">
-       <BillPreviewDialog 
-          isOpen={isBillPreviewOpen}
-          onClose={() => setIsBillPreviewOpen(false)}
-          filters={searchFilters}
-          billingItems={billingItems}
-          items={items || []}
-          manualPrices={manualPrices}
-       />
-        <ImportExportDialog
-          isOpen={isImportExportOpen}
-          onClose={() => setIsImportExportOpen(false)}
-          parties={parties || []}
-          items={items || []}
-          onImportParties={handlePartyUpload}
-          onImportItems={handleItemUpload}
-          canEdit={canEdit}
-        />
+       
         <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isBulkAddOpen} onOpenChange={setIsBulkAddOpen} />
 
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
@@ -439,19 +293,13 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             <Button variant="outline" size="icon" asChild>
                 <Link href="/dashboard"><ArrowLeft/></Link>
             </Button>
-            <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">Create Bill</h1>
+            <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">Create Order</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {canEdit && (
-            <Button variant="outline" onClick={() => setIsImportExportOpen(true)}>
-                <Import className="mr-2 h-4 w-4" />
-                Import/Export
-            </Button>
-          )}
           <Button variant="outline" asChild>
-            <Link href="/bills">
+            <Link href="/orders">
                 <BookOpen className="mr-2 h-4 w-4" />
-                All Bills
+                All Orders
             </Link>
           </Button>
           {canEdit && (
@@ -460,25 +308,21 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
               <Button onClick={() => setIsBulkAddOpen(true)}><PackagePlus className="mr-2 h-4 w-4" />Bulk Add Items</Button>
                <Button onClick={() => setIsNewItemOpen(true)} variant="outline"><PackagePlus className="mr-2 h-4 w-4" />New Item</Button>
                <Button onClick={() => setIsNewPartyOpen(true)} variant="outline"><UserPlus className="mr-2 h-4 w-4" />New Party</Button>
-              <Button variant="outline" onClick={handleSaveBill}>
+              <Button variant="outline" onClick={handleSaveOrder}>
                 <Save className="mr-2 h-4 w-4" />
-                Save Bill
+                Save Order
               </Button>
             </>
           )}
-          <Button onClick={() => setIsBillPreviewOpen(true)}>
-            <FileUp className="mr-2 h-4 w-4" />
-            Preview Bill
-          </Button>
         </div>
       </header>
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 md:p-6">
         <div className="lg:col-span-5">
-            <SearchFilters 
+            <OrderSearchFilters 
             parties={parties || []}
             filters={searchFilters}
             onFiltersChange={setSearchFilters}
-            onLoadBill={() => handleLoadBill()}
+            onLoadOrder={() => handleLoadOrder()}
             canEdit={canEdit}
             />
         </div>
@@ -509,10 +353,10 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   );
 }
 
-export default function BillingDashboard(props: BillingDashboardProps) {
+export default function OrderDashboard(props: OrderDashboardProps) {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <BillingDashboardContent {...props} />
+      <OrderDashboardContent {...props} />
     </Suspense>
   )
 }

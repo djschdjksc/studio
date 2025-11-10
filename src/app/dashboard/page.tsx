@@ -1,10 +1,9 @@
-
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare, Banknote, VenetianMask, BookCheck } from "lucide-react";
+import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare, Banknote, VenetianMask, BookCheck, ShoppingCart, ListOrdered } from "lucide-react";
 import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useState, useMemo } from "react";
@@ -109,6 +108,24 @@ export default function DashboardPage() {
             href: "/billing",
         },
         {
+            title: "Create Order",
+            description: "Create a new sales order.",
+            icon: <ShoppingCart className="h-8 w-8 text-blue-500" />,
+            href: "/orders/create",
+        },
+        {
+            title: "All Orders",
+            description: "View and manage all sales orders.",
+            icon: <ListOrdered className="h-8 w-8 text-orange-500" />,
+            href: "/orders",
+        },
+        {
+            title: "All Bills",
+            description: "View, edit, or delete all saved bills.",
+            icon: <Library className="h-8 w-8 text-yellow-600" />,
+            href: "/bills",
+        },
+        {
             title: "Manage Stock",
             description: "Add inventory and view item balances.",
             icon: <Boxes className="h-8 w-8 text-green-600" />,
@@ -119,12 +136,6 @@ export default function DashboardPage() {
             description: "Log daily production from machines.",
             icon: <Factory className="h-8 w-8 text-purple-600" />,
             href: "/production",
-        },
-        {
-            title: "All Bills",
-            description: "View, edit, or delete all saved bills.",
-            icon: <Library className="h-8 w-8 text-yellow-600" />,
-            href: "/bills",
         },
         {
             title: "All Production",
@@ -202,7 +213,7 @@ export default function DashboardPage() {
             </header>
             <main className="flex-1 p-6">
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {actions.map((action) => (
+                    {actions.sort((a,b) => a.title.localeCompare(b.title)).map((action) => (
                          <DashboardCard 
                             key={action.title} 
                             title={action.title}

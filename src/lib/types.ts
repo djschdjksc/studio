@@ -47,6 +47,15 @@ export interface SearchFiltersState {
     notes?: string;
 }
 
+export interface OrderFiltersState {
+    partyName: string;
+    address: string;
+    date: Date | string | undefined;
+    slipNo: string;
+    orderStatus: 'pending' | 'completed';
+    notes?: string;
+}
+
 export interface SummaryItem {
     item: string;
     totalQty: number;
@@ -60,6 +69,14 @@ export interface SavedBill {
     billingItems: BillingItem[];
     manualPrices: Record<string, number>;
 }
+
+export interface SavedOrder {
+    id: string;
+    filters: OrderFiltersState;
+    billingItems: BillingItem[];
+    manualPrices: Record<string, number>;
+}
+
 
 export interface Payment {
     id: string;
