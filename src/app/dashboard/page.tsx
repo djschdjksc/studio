@@ -25,25 +25,15 @@ export default function DashboardPage() {
     
     const isAdmin = user?.email === 'rohitvetma101010@gmail.com';
 
-    // Data fetching for Import/Export dialog
+    // Data fetching for Import/Export dialog - these will now be passed as props
     const partiesQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'parties') : null, [firestore, user]);
     const { data: parties } = useCollection<Party>(partiesQuery);
 
     const itemsQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'items') : null, [firestore, user]);
     const { data: items } = useCollection<Item>(itemsQuery);
     
-    const billingRecordsQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'billingRecords') : null, [firestore, user]);
-    const { data: savedBillsData } = useCollection<SavedBill>(billingRecordsQuery);
-
-    const savedBills = useMemo(() => {
-        if (!savedBillsData) return [];
-        return Object.values(savedBillsData.reduce((acc, bill) => {
-            if(bill.filters.slipNo) {
-                acc[bill.filters.slipNo] = bill;
-            }
-            return acc;
-        }, {} as Record<string, WithId<SavedBill>>))
-    }, [savedBillsData]);
+    // We remove the automatic fetching of savedBillsData from here to speed up dashboard load time.
+    // It will be fetched on-demand inside the ImportExportDialog.
 
     const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
         if (!firestore || !parties) return;
@@ -155,7 +145,8 @@ export default function DashboardPage() {
              <ImportExportDialog
                 isOpen={isImportExportOpen}
                 onClose={() => setIsImportExportOpen(false)}
-                data={{ parties: parties || [], items: items || [], savedBills: savedBills || [] }}
+                parties={parties || []}
+                items={items || []}
                 onImportParties={handlePartyUpload}
                 onImportItems={handleItemUpload}
                 canEdit={isAdmin}

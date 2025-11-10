@@ -14,61 +14,95 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Item, Party, SavedBill } from "@/lib/types";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
+import { useFirestore, useUser } from "@/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 interface ImportExportDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  data: {
-    parties: Party[];
-    items: Item[];
-    savedBills: SavedBill[];
-  },
+  parties: Party[];
+  items: Item[];
   onImportParties: (parties: Omit<Party, 'id'>[]) => void;
   onImportItems: (items: Omit<Item, 'id' | 'price' | 'balance'>[]) => void;
   canEdit: boolean;
 }
 
-export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onImportItems, canEdit }: ImportExportDialogProps) {
+export function ImportExportDialog({ 
+    isOpen, 
+    onClose, 
+    parties, 
+    items, 
+    onImportParties, 
+    onImportItems, 
+    canEdit 
+}: ImportExportDialogProps) {
   const [includeParties, setIncludeParties] = useState(true);
   const [includeItems, setIncludeItems] = useState(true);
   const [includeSavedBills, setIncludeSavedBills] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
+
   const partyFileInputRef = useRef<HTMLInputElement>(null);
   const itemFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    setIsExporting(true);
+    toast({ title: 'Starting Export...', description: 'Preparing your data for download.' });
+    
     const workbook = XLSX.utils.book_new();
 
-    if (includeParties && data.parties.length > 0) {
-      const partiesSheet = XLSX.utils.json_to_sheet(data.parties.map(({id, ...rest}) => rest));
+    if (includeParties && parties.length > 0) {
+      const partiesSheet = XLSX.utils.json_to_sheet(parties.map(({id, ...rest}) => rest));
       XLSX.utils.book_append_sheet(workbook, partiesSheet, "Parties");
     }
-    if (includeItems && data.items.length > 0) {
-      const itemsSheet = XLSX.utils.json_to_sheet(data.items.map(({id, price, ...rest}) => rest));
+    if (includeItems && items.length > 0) {
+      const itemsSheet = XLSX.utils.json_to_sheet(items.map(({id, price, ...rest}) => rest));
       XLSX.utils.book_append_sheet(workbook, itemsSheet, "Items");
     }
-    if (includeSavedBills && data.savedBills.length > 0) {
-      const billsData = data.savedBills.map(bill => ({
-        slipNo: bill.filters.slipNo,
-        date: bill.filters.date ? format(new Date(bill.filters.date), 'yyyy-MM-dd') : '',
-        partyName: bill.filters.partyName,
-        address: bill.filters.address,
-        vehicleNo: bill.filters.vehicleNo,
-        vehicleType: bill.filters.vehicleType,
-        billType: bill.filters.billType,
-        notes: bill.filters.notes,
-        billingItems: JSON.stringify(bill.billingItems),
-        manualPrices: JSON.stringify(bill.manualPrices),
-      }));
-      const billsSheet = XLSX.utils.json_to_sheet(billsData);
-      XLSX.utils.book_append_sheet(workbook, billsSheet, "Saved Bills");
+    if (includeSavedBills) {
+      if (firestore && user) {
+        toast({ title: 'Fetching Bills...', description: 'This may take a moment for large datasets.' });
+        try {
+            const billingRecordsQuery = collection(firestore, 'billingRecords');
+            const querySnapshot = await getDocs(billingRecordsQuery);
+            const savedBills = querySnapshot.docs.map(doc => doc.data() as SavedBill);
+
+            if (savedBills.length > 0) {
+                const billsData = savedBills.map(bill => ({
+                    slipNo: bill.filters.slipNo,
+                    date: bill.filters.date ? format(new Date(bill.filters.date), 'yyyy-MM-dd') : '',
+                    partyName: bill.filters.partyName,
+                    address: bill.filters.address,
+                    vehicleNo: bill.filters.vehicleNo,
+                    vehicleType: bill.filters.vehicleType,
+                    billType: bill.filters.billType,
+                    notes: bill.filters.notes,
+                    billingItems: JSON.stringify(bill.billingItems),
+                    manualPrices: JSON.stringify(bill.manualPrices),
+                }));
+                const billsSheet = XLSX.utils.json_to_sheet(billsData);
+                XLSX.utils.book_append_sheet(workbook, billsSheet, "Saved Bills");
+            }
+        } catch (error) {
+             toast({
+                variant: "destructive",
+                title: "Failed to Fetch Bills",
+                description: "Could not export saved bills. Please check your connection and permissions.",
+            });
+        }
+      }
     }
     
+    setIsExporting(false);
+
     if (workbook.SheetNames.length === 0) {
       toast({
         variant: "destructive",
@@ -119,12 +153,6 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                 const itemsToUpload = json.map(i => ({ name: i.name, group: i.group, unit: i.unit, alias: i.alias || '', balance: i.balance || 0 }));
                 onImportItems(itemsToUpload);
             }
-
-            // The parent component now shows a more detailed toast.
-            // toast({
-            //     title: "Import Successful",
-            //     description: `Successfully imported ${json.length} records. Old data has been replaced.`
-            // })
 
         } catch (error) {
              toast({
@@ -178,27 +206,27 @@ export function ImportExportDialog({ isOpen, onClose, data, onImportParties, onI
                     <div className="flex items-center space-x-2">
                         <Checkbox id="includeParties" checked={includeParties} onCheckedChange={(checked) => setIncludeParties(!!checked)} />
                         <Label htmlFor="includeParties" className="font-medium">
-                            Export Parties ({data.parties.length} records)
+                            Export Parties ({parties.length} records)
                         </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                         <Checkbox id="includeItems" checked={includeItems} onCheckedChange={(checked) => setIncludeItems(!!checked)} />
                         <Label htmlFor="includeItems" className="font-medium">
-                            Export Items ({data.items.length} records)
+                            Export Items ({items.length} records)
                         </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                         <Checkbox id="includeSavedBills" checked={includeSavedBills} onCheckedChange={(checked) => setIncludeSavedBills(!!checked)} />
                         <Label htmlFor="includeSavedBills" className="font-medium">
-                            Export Saved Bills ({data.savedBills.length} records)
+                            Export Saved Bills
                         </Label>
                     </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleExport}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Export to Excel
+                    <Button onClick={handleExport} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {isExporting ? 'Exporting...' : 'Export to Excel'}
                     </Button>
                 </DialogFooter>
             </TabsContent>

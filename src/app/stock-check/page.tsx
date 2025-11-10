@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { Item, SavedBill, WithId, ProductionLog } from '@/lib/types';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -14,7 +14,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { errorEmitter, FirestorePermissionError } from '@/firebase';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { useToast } from '@/hooks/use-toast';
 
 interface StockReportItem {
     id: string;
@@ -31,6 +33,7 @@ export default function StockCheckPage() {
     const auth = useAuth();
     const { user, isUserLoading } = useUser();
     const router = useRouter();
+    const { toast } = useToast();
 
     const [reportDate, setReportDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [searchQuery, setSearchQuery] = useState('');
@@ -55,15 +58,10 @@ export default function StockCheckPage() {
         }
     }, [isUserLoading, user, router]);
 
-    useEffect(() => {
-        if (items && firestore && user) {
-            generateReport();
-        }
-    }, [items, reportDate, firestore, user]);
-
-    const generateReport = async () => {
+    const generateReport = useCallback(async () => {
         if (!firestore || !items || !user) return;
         setLoadingReport(true);
+        toast({ title: 'Generating Report...', description: 'Please wait while we calculate the stock.' });
 
         try {
             const date = parseISO(reportDate + 'T00:00:00');
@@ -137,10 +135,27 @@ export default function StockCheckPage() {
             });
 
             setStockReport(report);
-        } finally {
+            toast({ title: 'Report Generated Successfully!' });
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'Error Generating Report',
+                description: 'Could not generate the stock report. Please try again.',
+            });
+            console.error(error);
+        }
+        finally {
             setLoadingReport(false);
         }
-    };
+    }, [firestore, items, user, reportDate, toast]);
+
+
+    useEffect(() => {
+        // Automatically generate report when the page loads for the first time with data
+        if (items && items.length > 0 && stockReport.length === 0) {
+            generateReport();
+        }
+    }, [items, generateReport, stockReport.length]);
 
 
     if (isUserLoading || itemsLoading) {
