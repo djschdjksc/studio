@@ -9,10 +9,29 @@ import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useState, useMemo } from "react";
 import { ImportExportDialog } from "@/components/dashboard/import-export-dialog";
-import { Party, Item, SavedBill, WithId } from "@/lib/types";
+import { Party, Item, ProductionLog, WithId } from "@/lib/types";
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc } from "firebase/firestore";
+
+function DashboardCard({ title, description, icon, href, action, children }: { title: string, description: string, icon: React.ReactNode, href?: string, action?: () => void, children?: React.ReactNode }) {
+    const router = useRouter();
+    return (
+        <Card className="transition-all duration-200 ease-in-out transform hover:shadow-lg hover:-translate-y-1 flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+                {icon}
+            </CardHeader>
+            <CardContent className="flex-grow">
+                <p className="text-sm text-muted-foreground mb-4">{description}</p>
+                {children}
+            </CardContent>
+            <CardFooter>
+                 <Button className="w-full mt-auto" onClick={() => href ? router.push(href) : action?.()}>Go</Button>
+            </CardFooter>
+        </Card>
+    );
+}
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -32,8 +51,13 @@ export default function DashboardPage() {
     const itemsQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'items') : null, [firestore, user]);
     const { data: items } = useCollection<Item>(itemsQuery);
     
-    // We remove the automatic fetching of savedBillsData from here to speed up dashboard load time.
-    // It will be fetched on-demand inside the ImportExportDialog.
+    const productionLogsQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'productionLogs') : null, [firestore, user]);
+    const { data: productionLogs } = useCollection<ProductionLog>(productionLogsQuery);
+    
+    const totalProduction = useMemo(() => {
+        return productionLogs?.reduce((sum, log) => sum + log.quantity, 0) || 0;
+    }, [productionLogs]);
+
 
     const handlePartyUpload = async (uploadedParties: Omit<Party, 'id'>[]) => {
         if (!firestore || !parties) return;
@@ -107,6 +131,12 @@ export default function DashboardPage() {
             description: "View and print all production logs.",
             icon: <BookCheck className="h-8 w-8 text-pink-600" />,
             href: "/all-production",
+            children: (
+                <div className="p-3 bg-muted rounded-md text-center">
+                    <p className="text-xs font-medium text-muted-foreground">Total Items Produced</p>
+                    <p className="text-2xl font-bold">{totalProduction.toLocaleString('en-IN')}</p>
+                </div>
+            )
         },
         {
             title: "Stock Check",
@@ -173,19 +203,16 @@ export default function DashboardPage() {
             <main className="flex-1 p-6">
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {actions.map((action) => (
-                         <Card 
+                         <DashboardCard 
                             key={action.title} 
-                            className="transition-all duration-200 ease-in-out transform hover:shadow-lg hover:-translate-y-1"
-                        >
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-lg font-semibold">{action.title}</CardTitle>
-                                {action.icon}
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-muted-foreground mb-4">{action.description}</p>
-                                <Button className="w-full" onClick={() => action.href ? router.push(action.href) : action.action?.()}>Go</Button>
-                            </CardContent>
-                        </Card>
+                            title={action.title}
+                            description={action.description}
+                            icon={action.icon}
+                            href={action.href}
+                            action={action.action}
+                         >
+                            {action.children}
+                         </DashboardCard>
                     ))}
                 </div>
             </main>
