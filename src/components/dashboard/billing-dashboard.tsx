@@ -7,7 +7,7 @@ import SearchFilters from '@/components/dashboard/search-filters';
 import MainBillingTable from '@/components/dashboard/main-billing-table';
 import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
-import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile, SavedOrder } from '@/lib/types';
+import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile, SavedOrder, SavedLoadingSlip } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
@@ -174,6 +174,47 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     }
   }, [firestore, toast, savedBillsData]);
 
+  const loadSlipIntoBilling = useCallback(async (loadingSlipNo: string) => {
+    if (!firestore || !savedBillsData) return;
+    const slipRef = doc(firestore, 'loadingSlips', loadingSlipNo);
+    const slipSnap = await getDoc(slipRef);
+
+    if (slipSnap.exists()) {
+        const slipData = slipSnap.data() as SavedLoadingSlip;
+
+        // Calculate next bill slip number
+        const slipNumbers = savedBillsData.map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
+        const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
+        
+        const loadedFilters: SearchFiltersState = {
+            ...initialFilters,
+            slipNo: nextSlipNo, // Set the next slip number
+            partyName: slipData.filters.partyName,
+            address: slipData.filters.address,
+            date: slipData.filters.date ? new Date(slipData.filters.date) : new Date(),
+            notes: slipData.filters.notes
+        };
+
+        setSearchFilters(loadedFilters);
+        const loadedItems = slipData.billingItems.length > 0 ? slipData.billingItems.map((item, index) => ({ ...item, srNo: index + 1 })) : generateInitialBillingItems(5);
+        setBillingItems(loadedItems);
+        
+        // Prices will be loaded by the party price list effect
+        setManualPrices({});
+
+        toast({
+            title: "Loading Slip Loaded",
+            description: `Slip #${loadingSlipNo} is ready. New bill number is ${nextSlipNo}.`,
+        });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Loading Slip Not Found",
+            description: `Could not find loading slip with number ${loadingSlipNo}.`,
+        });
+    }
+  }, [firestore, toast, savedBillsData]);
+
 
   useEffect(() => {
     if(!canEdit || !savedBills) return;
@@ -181,6 +222,12 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     const orderSlipNo = searchParams.get('orderSlipNo');
     if (orderSlipNo) {
         loadOrderIntoBilling(orderSlipNo);
+        return;
+    }
+
+    const loadingSlipNo = searchParams.get('loadingSlipNo');
+    if (loadingSlipNo) {
+        loadSlipIntoBilling(loadingSlipNo);
         return;
     }
 
@@ -192,7 +239,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
       const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
       setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
     }
-  }, [savedBills, canEdit, searchParams, loadOrderIntoBilling, handleLoadBill]);
+  }, [savedBills, canEdit, searchParams, loadOrderIntoBilling, loadSlipIntoBilling, handleLoadBill]);
 
   const clearForm = useCallback((nextSlipNo: string) => {
     setBillingItems(generateInitialBillingItems(5));
@@ -430,6 +477,8 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
         <ImportExportDialog
           isOpen={isImportExportOpen}
           onClose={() => setIsImportExportOpen(false)}
+          parties={parties}
+          items={items}
           onImportParties={handlePartyUpload}
           onImportItems={handleItemUpload}
           canEdit={canEdit}

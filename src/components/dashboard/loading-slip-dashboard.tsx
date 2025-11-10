@@ -7,7 +7,7 @@ import MainBillingTable from '@/components/dashboard/main-billing-table';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { Party, Item, BillingItem, LoadingSlipFiltersState, SavedLoadingSlip, WithId, ItemGroup, UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Save, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
+import { BookOpen, Save, PackagePlus, UserPlus, Layers, ArrowLeft, FileUp } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { BulkAddItemDialog } from './bulk-add-item-dialog';
@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { collection, doc } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useSearchParams } from 'next/navigation';
+import { LoadingSlipPreviewDialog } from './loading-slip-preview-dialog';
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -68,6 +69,7 @@ function LoadingSlipDashboardContent({ userProfile }: LoadingSlipDashboardProps)
   const [isNewItemOpen, setIsNewItemOpen] = useState(false);
   const [isNewPartyOpen, setIsNewPartyOpen] = useState(false);
   const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const savedSlips = React.useMemo(() => {
     if (!savedSlipsData) return {};
@@ -253,7 +255,12 @@ function LoadingSlipDashboardContent({ userProfile }: LoadingSlipDashboardProps)
 
   return (
     <div className="flex flex-col min-h-screen">
-       
+       <LoadingSlipPreviewDialog 
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          filters={searchFilters}
+          billingItems={billingItems}
+       />
         <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isBulkAddOpen} onOpenChange={setIsBulkAddOpen} />
 
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
@@ -278,6 +285,10 @@ function LoadingSlipDashboardContent({ userProfile }: LoadingSlipDashboardProps)
             <Button variant="outline" onClick={handleSaveSlip}>
               <Save className="mr-2 h-4 w-4" />
               Save Slip
+            </Button>
+             <Button onClick={() => setIsPreviewOpen(true)}>
+                <FileUp className="mr-2 h-4 w-4" />
+                Preview Slip
             </Button>
           </>
         </div>

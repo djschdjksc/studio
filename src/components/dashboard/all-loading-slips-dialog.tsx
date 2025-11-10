@@ -25,7 +25,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Item, SavedLoadingSlip, WithId } from "@/lib/types";
 import { format } from "date-fns";
 import { useMemo } from "react";
-import { Trash2, FileText } from "lucide-react";
+import { Trash2, FileText, FileCheck } from "lucide-react";
 
 interface AllLoadingSlipsDialogProps {
   isOpen: boolean;
@@ -33,6 +33,7 @@ interface AllLoadingSlipsDialogProps {
   savedSlips: Record<string, WithId<SavedLoadingSlip>>;
   onLoadSlip: (slipNo: string) => void;
   onDeleteSlip: (slipNo: string) => void;
+  onConvertToBill: (slipNo: string) => void;
   items: Item[];
   canDelete: boolean;
 }
@@ -48,6 +49,7 @@ export function AllLoadingSlipsDialog({
   savedSlips,
   onLoadSlip,
   onDeleteSlip,
+  onConvertToBill,
   items,
   canDelete,
 }: AllLoadingSlipsDialogProps) {
@@ -67,7 +69,7 @@ export function AllLoadingSlipsDialog({
         <DialogHeader className="p-6 pb-0">
           <DialogTitle>All Saved Loading Slips</DialogTitle>
           <DialogDescription>
-            Here you can view, load, or delete any of your previously saved loading slips.
+            Here you can view, load, delete, or convert any of your previously saved loading slips.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] border-t">
@@ -78,7 +80,7 @@ export function AllLoadingSlipsDialog({
                 <TableHead>Date</TableHead>
                 <TableHead>Party Name</TableHead>
                 <TableHead className="text-right">Total Quantity</TableHead>
-                <TableHead className="text-center w-[200px]">Actions</TableHead>
+                <TableHead className="text-center w-[300px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -101,12 +103,19 @@ export function AllLoadingSlipsDialog({
                     <TableCell className="text-right font-semibold">
                        {slip.totalQuantity.toLocaleString('en-IN')}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center space-x-2">
+                         <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onConvertToBill(slip.filters.slipNo)}
+                        >
+                          <FileCheck className="h-4 w-4 mr-1" />
+                          Convert to Bill
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onLoadSlip(slip.filters.slipNo)}
-                          className="mr-2"
                         >
                           <FileText className="h-4 w-4 mr-1" />
                           Load

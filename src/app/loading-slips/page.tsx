@@ -54,6 +54,16 @@ export default function AllLoadingSlipsPage() {
         description: `Slip No. ${slipNo} has been deleted.`,
     });
   };
+  
+  const handleConvertToBill = (slipNo: string) => {
+    if (!firestore) return;
+    // Redirect to billing page with loading slipNo to load data
+    router.push(`/billing?loadingSlipNo=${slipNo}`);
+    toast({
+      title: "Slip Converted",
+      description: `Loading slip ${slipNo} into billing page.`,
+    });
+  }
 
 
   if (isUserLoading || itemsLoading || slipsLoading) {
@@ -83,6 +93,7 @@ export default function AllLoadingSlipsPage() {
                 savedSlips={savedSlips}
                 onLoadSlip={handleLoadSlip}
                 onDeleteSlip={handleDeleteSlip}
+                onConvertToBill={handleConvertToBill}
                 items={items || []}
                 canDelete={true}
             />
