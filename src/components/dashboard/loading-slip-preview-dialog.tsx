@@ -52,11 +52,8 @@ export function LoadingSlipPreviewDialog({
         <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
             <div ref={billRef} className="bg-white text-black" id="slip-preview-content">
                 <div className="p-8">
-                <header className="mb-8 text-center print:hidden">
+                <header className="mb-8 text-center print-header">
                     <h1 className="text-3xl font-bold text-gray-800">Loading Slip</h1>
-                    <p className="text-sm text-gray-500">
-                        BillTrack Pro
-                    </p>
                 </header>
                 <style>{`
                 @media print {
@@ -87,6 +84,13 @@ export function LoadingSlipPreviewDialog({
                   #dialog-footer {
                     display: none;
                   }
+                  .print-header, .print-footer {
+                      display: none;
+                  }
+                  #slip-preview-content table td, #slip-preview-content table th {
+                       border: 2px solid black !important;
+                       font-weight: bold;
+                   }
                 }
                 `}</style>
                 
@@ -123,13 +127,13 @@ export function LoadingSlipPreviewDialog({
                         </TableHeader>
                         <TableBody>
                             {filteredBillingItems.map((item) => (
-                                <TableRow key={item.srNo} className="border">
-                                    <TableCell className="border">{item.srNo}</TableCell>
-                                    <TableCell className="font-medium border">{item.itemName}</TableCell>
-                                    <TableCell className="text-right border">{item.quantity}</TableCell>
-                                    <TableCell className="border">{item.unit}</TableCell>
-                                    <TableCell className="text-right border">{item.uCap || ''}</TableCell>
-                                    <TableCell className="text-right border">{item.lCap || ''}</TableCell>
+                                <TableRow key={item.srNo}>
+                                    <TableCell>{item.srNo}</TableCell>
+                                    <TableCell className="font-medium">{item.itemName}</TableCell>
+                                    <TableCell className="text-right">{item.quantity}</TableCell>
+                                    <TableCell>{item.unit}</TableCell>
+                                    <TableCell className="text-right">{item.uCap || ''}</TableCell>
+                                    <TableCell className="text-right">{item.lCap || ''}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -143,7 +147,7 @@ export function LoadingSlipPreviewDialog({
                     </div>
                 </div>
 
-                <footer className="text-center mt-12 text-xs text-gray-500">
+                <footer className="text-center mt-12 text-xs text-gray-500 print-footer">
                     <p>This is not a bill.</p>
                 </footer>
                 </div>

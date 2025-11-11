@@ -179,6 +179,13 @@ export function BillPreviewDialog({
                   #dialog-footer {
                     display: none;
                   }
+                  .print-header, .print-footer {
+                      display: none;
+                  }
+                   #bill-preview-content table td, #bill-preview-content table th {
+                       border: 2px solid black !important;
+                       font-weight: bold;
+                   }
                 }
                 `}</style>
                 
@@ -212,13 +219,13 @@ export function BillPreviewDialog({
                         </TableHeader>
                         <TableBody>
                             {filteredBillingItems.map((item) => (
-                                <TableRow key={item.srNo} className="border">
-                                    <TableCell className="border">{item.srNo}</TableCell>
-                                    <TableCell className="font-medium border">{item.itemName}</TableCell>
-                                    <TableCell className="text-right border">{item.quantity}</TableCell>
-                                    <TableCell className="border">{item.unit}</TableCell>
-                                    <TableCell className="text-right border">{item.uCap || ''}</TableCell>
-                                    <TableCell className="text-right border">{item.lCap || ''}</TableCell>
+                                <TableRow key={item.srNo}>
+                                    <TableCell>{item.srNo}</TableCell>
+                                    <TableCell className="font-medium">{item.itemName}</TableCell>
+                                    <TableCell className="text-right">{item.quantity}</TableCell>
+                                    <TableCell>{item.unit}</TableCell>
+                                    <TableCell className="text-right">{item.uCap || ''}</TableCell>
+                                    <TableCell className="text-right">{item.lCap || ''}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -249,11 +256,11 @@ export function BillPreviewDialog({
                             </TableHeader>
                             <TableBody>
                                 {summaryItems.map((item) => (
-                                    <TableRow key={item.item} className="border">
-                                        <TableCell className="font-medium border">{item.item}</TableCell>
-                                        <TableCell className="text-right border">{item.totalQty}</TableCell>
-                                        <TableCell className="text-right border">₹{item.price.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-semibold border">₹{item.totalPrice.toFixed(2)}</TableCell>
+                                    <TableRow key={item.item}>
+                                        <TableCell className="font-medium">{item.item}</TableCell>
+                                        <TableCell className="text-right">{item.totalQty}</TableCell>
+                                        <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-semibold">₹{item.totalPrice.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -266,7 +273,7 @@ export function BillPreviewDialog({
                         </div>
                     </div>
                 </section>
-                <footer className="text-center mt-12 text-xs text-gray-500">
+                <footer className="text-center mt-12 text-xs text-gray-500 print-footer">
                     <p>Thank you for your business!</p>
                     <p>All disputes subject to local jurisdiction.</p>
                 </footer>

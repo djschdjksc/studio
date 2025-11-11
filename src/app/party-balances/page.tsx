@@ -401,6 +401,10 @@ export default function PartyBalancesPage() {
                     width: 100% !important;
                     height: auto !important;
                 }
+                 #printable-area table td, #printable-area table th {
+                    border: 2px solid black !important;
+                    font-weight: bold;
+                }
             }
         `}</style>
     </div>
