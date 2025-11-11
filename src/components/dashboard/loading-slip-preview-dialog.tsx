@@ -52,7 +52,7 @@ export function LoadingSlipPreviewDialog({
         <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
             <div ref={billRef} className="bg-white text-black" id="slip-preview-content">
                 <div className="p-8">
-                <header className="mb-8 text-center">
+                <header className="mb-8 text-center print:hidden">
                     <h1 className="text-3xl font-bold text-gray-800">Loading Slip</h1>
                     <p className="text-sm text-gray-500">
                         BillTrack Pro
