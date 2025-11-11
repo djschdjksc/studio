@@ -71,13 +71,18 @@ export function LoadingSlipPreviewDialog({
                     visibility: visible;
                   }
                    #slip-preview-dialog {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
-                    height: 100%;
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    max-width: none !important;
+                    height: auto !important;
                     overflow: visible !important;
                     max-height: none !important;
+                    border-radius: 0 !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    transform: none !important;
                   }
                   #dialog-footer {
                     display: none;
