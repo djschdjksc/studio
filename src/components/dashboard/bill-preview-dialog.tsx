@@ -134,13 +134,13 @@ export function BillPreviewDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
-        <DialogHeader className="p-6 pb-0">
+        <DialogHeader className="p-6 pb-0 print:hidden">
           <DialogTitle>Bill Preview</DialogTitle>
           <DialogDescription>
             Review the bill details below before printing or sending.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] border-t">
+        <ScrollArea className="max-h-[70vh] border-t print:max-h-full print:border-0">
             <div ref={billRef} className="bg-white text-black" id="bill-preview-content">
                 <div className="p-8">
                 <header className="mb-8 text-center">
@@ -152,29 +152,25 @@ export function BillPreviewDialog({
                 </header>
                 <style>{`
                 @media print {
+                    body {
+                      -webkit-print-color-adjust: exact;
+                       print-color-adjust: exact;
+                    }
                     body * {
                       visibility: hidden;
                     }
-                    #bill-preview-dialog, #bill-preview-dialog * {
+                    #bill-preview-content, #bill-preview-content * {
                       visibility: visible;
                     }
-                    #bill-preview-dialog {
+                    #bill-preview-content {
                       position: absolute;
                       left: 0;
                       top: 0;
                       width: 100%;
-                      height: auto;
+                    }
+                    #bill-preview-dialog {
                       overflow: visible;
                       max-height: none;
-                    }
-                    #dialog-footer {
-                        display: none;
-                    }
-                    #bill-preview-content table td, #bill-preview-content table th {
-                        border: 1px solid black;
-                    }
-                    #bill-preview-content table {
-                        border-collapse: collapse;
                     }
                 }
                 `}</style>
@@ -270,7 +266,7 @@ export function BillPreviewDialog({
                 </div>
             </div>
         </ScrollArea>
-        <DialogFooter className="p-4 border-t bg-background" id="dialog-footer">
+        <DialogFooter className="p-4 border-t bg-background print:hidden" id="dialog-footer">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>

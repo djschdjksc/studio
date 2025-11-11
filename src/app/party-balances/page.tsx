@@ -384,6 +384,10 @@ export default function PartyBalancesPage() {
         </main>
          <style jsx global>{`
             @media print {
+                body {
+                    -webkit-print-color-adjust: exact;
+                     print-color-adjust: exact;
+                }
                 body * {
                     visibility: hidden;
                 }
@@ -395,7 +399,6 @@ export default function PartyBalancesPage() {
                     left: 0;
                     top: 0;
                     width: 100%;
-                    height: 100%;
                 }
             }
         `}</style>

@@ -43,13 +43,13 @@ export function LoadingSlipPreviewDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0" id="slip-preview-dialog">
-        <DialogHeader className="p-6 pb-0">
+        <DialogHeader className="p-6 pb-0 print:hidden">
           <DialogTitle>Loading Slip Preview</DialogTitle>
           <DialogDescription>
             Review the slip details below before printing.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] border-t">
+        <ScrollArea className="max-h-[70vh] border-t print:max-h-full print:border-0">
             <div ref={billRef} className="bg-white text-black" id="slip-preview-content">
                 <div className="p-8">
                 <header className="mb-8 text-center">
@@ -60,29 +60,25 @@ export function LoadingSlipPreviewDialog({
                 </header>
                 <style>{`
                 @media print {
+                    body {
+                      -webkit-print-color-adjust: exact;
+                       print-color-adjust: exact;
+                    }
                     body * {
                       visibility: hidden;
                     }
-                    #slip-preview-dialog, #slip-preview-dialog * {
+                    #slip-preview-content, #slip-preview-content * {
                       visibility: visible;
                     }
-                    #slip-preview-dialog {
+                    #slip-preview-content {
                       position: absolute;
                       left: 0;
                       top: 0;
                       width: 100%;
-                      height: auto;
+                    }
+                    #slip-preview-dialog {
                       overflow: visible;
                       max-height: none;
-                    }
-                    #dialog-footer {
-                        display: none;
-                    }
-                    #slip-preview-content table td, #slip-preview-content table th {
-                        border: 1px solid black;
-                    }
-                    #slip-preview-content table {
-                        border-collapse: collapse;
                     }
                 }
                 `}</style>
@@ -146,7 +142,7 @@ export function LoadingSlipPreviewDialog({
                 </div>
             </div>
         </ScrollArea>
-        <DialogFooter className="p-4 border-t bg-background" id="dialog-footer">
+        <DialogFooter className="p-4 border-t bg-background print:hidden" id="dialog-footer">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
