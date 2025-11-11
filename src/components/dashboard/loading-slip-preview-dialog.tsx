@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -77,6 +78,12 @@ export function LoadingSlipPreviewDialog({
                     #dialog-footer {
                         display: none;
                     }
+                    #slip-preview-content table td, #slip-preview-content table th {
+                        border: 1px solid black;
+                    }
+                    #slip-preview-content table {
+                        border-collapse: collapse;
+                    }
                 }
                 `}</style>
                 
@@ -107,6 +114,8 @@ export function LoadingSlipPreviewDialog({
                                 <TableHead>Item Name</TableHead>
                                 <TableHead className="text-right">Quantity</TableHead>
                                 <TableHead>Unit</TableHead>
+                                <TableHead className="text-right">U Cap</TableHead>
+                                <TableHead className="text-right">L Cap</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -116,6 +125,8 @@ export function LoadingSlipPreviewDialog({
                                     <TableCell className="font-medium">{item.itemName}</TableCell>
                                     <TableCell className="text-right">{item.quantity}</TableCell>
                                     <TableCell>{item.unit}</TableCell>
+                                    <TableCell className="text-right">{item.uCap || ''}</TableCell>
+                                    <TableCell className="text-right">{item.lCap || ''}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

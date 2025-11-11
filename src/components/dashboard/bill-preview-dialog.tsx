@@ -170,6 +170,12 @@ export function BillPreviewDialog({
                     #dialog-footer {
                         display: none;
                     }
+                    #bill-preview-content table td, #bill-preview-content table th {
+                        border: 1px solid black;
+                    }
+                    #bill-preview-content table {
+                        border-collapse: collapse;
+                    }
                 }
                 `}</style>
                 
