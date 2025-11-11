@@ -52,7 +52,7 @@ export function LoadingSlipPreviewDialog({
         <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
             <div ref={billRef} className="bg-white text-black" id="slip-preview-content">
                 <div className="p-8">
-                <header className="mb-8 text-center print-header">
+                <header className="mb-8 text-center print:hidden">
                     <h1 className="text-3xl font-bold text-gray-800">Loading Slip</h1>
                 </header>
                 <style>{`
@@ -83,9 +83,6 @@ export function LoadingSlipPreviewDialog({
                   }
                   #dialog-footer {
                     display: none;
-                  }
-                  .print-header, .print-footer {
-                      display: none;
                   }
                   #slip-preview-content table td, #slip-preview-content table th {
                        border: 2px solid black !important;
@@ -147,7 +144,7 @@ export function LoadingSlipPreviewDialog({
                     </div>
                 </div>
 
-                <footer className="text-center mt-12 text-xs text-gray-500 print-footer">
+                <footer className="text-center mt-12 text-xs text-gray-500 print:hidden">
                     <p>This is not a bill.</p>
                 </footer>
                 </div>

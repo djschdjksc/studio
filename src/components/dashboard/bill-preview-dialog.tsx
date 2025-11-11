@@ -179,9 +179,6 @@ export function BillPreviewDialog({
                   #dialog-footer {
                     display: none;
                   }
-                  .print-header, .print-footer {
-                      display: none;
-                  }
                    #bill-preview-content table td, #bill-preview-content table th {
                        border: 2px solid black !important;
                        font-weight: bold;
@@ -273,7 +270,7 @@ export function BillPreviewDialog({
                         </div>
                     </div>
                 </section>
-                <footer className="text-center mt-12 text-xs text-gray-500 print-footer">
+                <footer className="text-center mt-12 text-xs text-gray-500 print:hidden">
                     <p>Thank you for your business!</p>
                     <p>All disputes subject to local jurisdiction.</p>
                 </footer>
