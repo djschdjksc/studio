@@ -19,6 +19,7 @@ import React, { useRef, useMemo, useCallback } from "react";
 import * as htmlToImage from "html-to-image";
 import { useToast } from "@/hooks/use-toast";
 import { FileUp, Printer, Send } from "lucide-react";
+import TotalsSummary from "./totals-summary";
 
 interface BillPreviewDialogProps {
   isOpen: boolean;
@@ -131,6 +132,12 @@ export function BillPreviewDialog({
 
   const filteredBillingItems = billingItems.filter(item => item.itemName && item.quantity);
 
+  const handlePriceChange = (group: string, price: number) => {
+    // This function is a prop for TotalsSummary, but its implementation is in billing-dashboard.
+    // To avoid prop-drilling or complex state management here, we assume the parent handles it.
+    // The preview is read-only in this context.
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
@@ -160,6 +167,9 @@ export function BillPreviewDialog({
                     visibility: hidden;
                   }
                   #bill-preview-content, #bill-preview-content * {
+                    visibility: visible;
+                  }
+                  #summary-section * {
                     visibility: visible;
                   }
                    #bill-preview-dialog {
@@ -240,34 +250,14 @@ export function BillPreviewDialog({
                              </>
                         )}
                     </div>
-                    <div className="w-full md:w-2/3 lg:w-1/2">
-                        <h2 className="text-lg font-semibold mb-3 border-b pb-2">Summary</h2>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Item Group</TableHead>
-                                    <TableHead className="text-right">Total Qty</TableHead>
-                                    <TableHead className="text-right">Price</TableHead>
-                                    <TableHead className="text-right">Total</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {summaryItems.map((item) => (
-                                    <TableRow key={item.item}>
-                                        <TableCell className="font-medium">{item.item}</TableCell>
-                                        <TableCell className="text-right">{item.totalQty}</TableCell>
-                                        <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-semibold">₹{item.totalPrice.toFixed(2)}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                        <div className="flex justify-end mt-4 p-4 bg-gray-100 rounded-lg">
-                            <div className="flex items-center gap-4 text-xl font-bold">
-                                <span>Grand Total:</span>
-                                <span className="text-gray-800">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                        </div>
+                     <div className="w-full md:w-2/3 lg:w-1/2">
+                        <TotalsSummary
+                            billingItems={billingItems}
+                            items={items}
+                            manualPrices={manualPrices}
+                            onManualPriceChange={handlePriceChange}
+                            canEdit={false} // Preview is read-only
+                        />
                     </div>
                 </section>
                 <footer className="text-center mt-12 text-xs text-gray-500 print:hidden">
