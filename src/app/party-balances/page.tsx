@@ -310,18 +310,18 @@ export default function PartyBalancesPage() {
             <div className="md:col-span-2 flex flex-col gap-6" id="printable-area">
                 {selectedParty ? (
                     <Card className="flex-grow flex flex-col">
-                        <CardHeader className="flex flex-row items-start justify-between print:hidden">
-                            <div>
+                        <CardHeader className="flex flex-row items-start justify-between">
+                            <div className="print:hidden">
                                 <CardTitle className="text-primary">{selectedParty.name}</CardTitle>
                                 <CardDescription>{selectedParty.station}</CardDescription>
                             </div>
-                            <Button onClick={() => setIsPaymentDialogOpen(true)}>
+                            <Button onClick={() => setIsPaymentDialogOpen(true)} className="print:hidden">
                                 <PlusCircle className="mr-2 h-4 w-4"/> Add Payment
                             </Button>
                         </CardHeader>
                          <div className="hidden print:block p-6">
-                             <CardTitle className="text-primary text-2xl">{selectedParty.name}</CardTitle>
-                             <CardDescription>{selectedParty.station}</CardDescription>
+                             <h1 className="text-2xl font-bold">Ledger for {selectedParty.name}</h1>
+                             <p className="text-muted-foreground">{selectedParty.station}</p>
                          </div>
                         <CardContent className="flex-grow overflow-hidden p-0">
                            <ScrollArea className="h-full">
@@ -399,6 +399,7 @@ export default function PartyBalancesPage() {
                     left: 0;
                     top: 0;
                     width: 100%;
+                    height: 100%;
                 }
             }
         `}</style>

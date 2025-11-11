@@ -49,7 +49,7 @@ export function LoadingSlipPreviewDialog({
             Review the slip details below before printing.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] border-t print:max-h-full print:border-0">
+        <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
             <div ref={billRef} className="bg-white text-black" id="slip-preview-content">
                 <div className="p-8">
                 <header className="mb-8 text-center">
@@ -60,26 +60,28 @@ export function LoadingSlipPreviewDialog({
                 </header>
                 <style>{`
                 @media print {
-                    body {
-                      -webkit-print-color-adjust: exact;
-                       print-color-adjust: exact;
-                    }
-                    body * {
-                      visibility: hidden;
-                    }
-                    #slip-preview-content, #slip-preview-content * {
-                      visibility: visible;
-                    }
-                    #slip-preview-content {
-                      position: absolute;
-                      left: 0;
-                      top: 0;
-                      width: 100%;
-                    }
-                    #slip-preview-dialog {
-                      overflow: visible;
-                      max-height: none;
-                    }
+                  body {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                  }
+                  body * {
+                    visibility: hidden;
+                  }
+                  #slip-preview-dialog, #slip-preview-dialog * {
+                    visibility: visible;
+                  }
+                   #slip-preview-dialog {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    overflow: visible !important;
+                    max-height: none !important;
+                  }
+                  #dialog-footer {
+                    display: none;
+                  }
                 }
                 `}</style>
                 
@@ -116,13 +118,13 @@ export function LoadingSlipPreviewDialog({
                         </TableHeader>
                         <TableBody>
                             {filteredBillingItems.map((item) => (
-                                <TableRow key={item.srNo}>
-                                    <TableCell>{item.srNo}</TableCell>
-                                    <TableCell className="font-medium">{item.itemName}</TableCell>
-                                    <TableCell className="text-right">{item.quantity}</TableCell>
-                                    <TableCell>{item.unit}</TableCell>
-                                    <TableCell className="text-right">{item.uCap || ''}</TableCell>
-                                    <TableCell className="text-right">{item.lCap || ''}</TableCell>
+                                <TableRow key={item.srNo} className="border">
+                                    <TableCell className="border">{item.srNo}</TableCell>
+                                    <TableCell className="font-medium border">{item.itemName}</TableCell>
+                                    <TableCell className="text-right border">{item.quantity}</TableCell>
+                                    <TableCell className="border">{item.unit}</TableCell>
+                                    <TableCell className="text-right border">{item.uCap || ''}</TableCell>
+                                    <TableCell className="text-right border">{item.lCap || ''}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

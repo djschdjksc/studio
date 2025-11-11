@@ -140,7 +140,7 @@ export function BillPreviewDialog({
             Review the bill details below before printing or sending.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] border-t print:max-h-full print:border-0">
+        <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
             <div ref={billRef} className="bg-white text-black" id="bill-preview-content">
                 <div className="p-8">
                 <header className="mb-8 text-center">
@@ -152,26 +152,28 @@ export function BillPreviewDialog({
                 </header>
                 <style>{`
                 @media print {
-                    body {
-                      -webkit-print-color-adjust: exact;
-                       print-color-adjust: exact;
-                    }
-                    body * {
-                      visibility: hidden;
-                    }
-                    #bill-preview-content, #bill-preview-content * {
-                      visibility: visible;
-                    }
-                    #bill-preview-content {
-                      position: absolute;
-                      left: 0;
-                      top: 0;
-                      width: 100%;
-                    }
-                    #bill-preview-dialog {
-                      overflow: visible;
-                      max-height: none;
-                    }
+                  body {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                  }
+                  body * {
+                    visibility: hidden;
+                  }
+                  #bill-preview-dialog, #bill-preview-dialog * {
+                    visibility: visible;
+                  }
+                   #bill-preview-dialog {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    overflow: visible !important;
+                    max-height: none !important;
+                  }
+                  #dialog-footer {
+                    display: none;
+                  }
                 }
                 `}</style>
                 
@@ -205,13 +207,13 @@ export function BillPreviewDialog({
                         </TableHeader>
                         <TableBody>
                             {filteredBillingItems.map((item) => (
-                                <TableRow key={item.srNo}>
-                                    <TableCell>{item.srNo}</TableCell>
-                                    <TableCell className="font-medium">{item.itemName}</TableCell>
-                                    <TableCell className="text-right">{item.quantity}</TableCell>
-                                    <TableCell>{item.unit}</TableCell>
-                                    <TableCell className="text-right">{item.uCap || ''}</TableCell>
-                                    <TableCell className="text-right">{item.lCap || ''}</TableCell>
+                                <TableRow key={item.srNo} className="border">
+                                    <TableCell className="border">{item.srNo}</TableCell>
+                                    <TableCell className="font-medium border">{item.itemName}</TableCell>
+                                    <TableCell className="text-right border">{item.quantity}</TableCell>
+                                    <TableCell className="border">{item.unit}</TableCell>
+                                    <TableCell className="text-right border">{item.uCap || ''}</TableCell>
+                                    <TableCell className="text-right border">{item.lCap || ''}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -242,11 +244,11 @@ export function BillPreviewDialog({
                             </TableHeader>
                             <TableBody>
                                 {summaryItems.map((item) => (
-                                    <TableRow key={item.item}>
-                                        <TableCell className="font-medium">{item.item}</TableCell>
-                                        <TableCell className="text-right">{item.totalQty}</TableCell>
-                                        <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-semibold">₹{item.totalPrice.toFixed(2)}</TableCell>
+                                    <TableRow key={item.item} className="border">
+                                        <TableCell className="font-medium border">{item.item}</TableCell>
+                                        <TableCell className="text-right border">{item.totalQty}</TableCell>
+                                        <TableCell className="text-right border">₹{item.price.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-semibold border">₹{item.totalPrice.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
