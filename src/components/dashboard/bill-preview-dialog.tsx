@@ -159,7 +159,7 @@ export function BillPreviewDialog({
                   body * {
                     visibility: hidden;
                   }
-                  #bill-preview-dialog, #bill-preview-dialog * {
+                  #bill-preview-content, #bill-preview-content * {
                     visibility: visible;
                   }
                    #bill-preview-dialog {
@@ -167,7 +167,7 @@ export function BillPreviewDialog({
                     left: 0 !important;
                     top: 0 !important;
                     width: 100% !important;
-                    max-width: none !important;
+                    max-width: 100% !important;
                     height: auto !important;
                     overflow: visible !important;
                     max-height: none !important;
