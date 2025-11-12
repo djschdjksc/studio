@@ -152,28 +152,28 @@ export function BillPreviewDialog({
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
         <style>{`
           @media print {
-            body * {
-              visibility: hidden;
-            }
-            #printable-content, #printable-content * {
-              visibility: visible;
-            }
-            #printable-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              height: auto;
-              overflow: visible;
-              font-size: 12pt;
-            }
-             #printable-content table td, #printable-content table th {
-                border: 2px solid black !important;
-                font-weight: bold;
-            }
-            .print-hidden {
-              display: none !important;
-            }
+              body * {
+                  visibility: hidden;
+              }
+              #printable-content, #printable-content * {
+                  visibility: visible;
+              }
+              #printable-content {
+                  position: absolute;
+                  left: 0;
+                  top: 0;
+                  width: 100%;
+                  height: auto;
+                  overflow: visible;
+                  font-size: 12pt;
+              }
+               #printable-content table td, #printable-content table th {
+                  border: 2px solid black !important;
+                  font-weight: bold;
+              }
+              .print-hidden {
+                display: none !important;
+              }
           }
         `}</style>
         <DialogHeader className="p-6 pb-0">
@@ -189,7 +189,7 @@ export function BillPreviewDialog({
                   <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
                   <p className="text-sm text-gray-500">
                       Your Trusted Billing Partner <br />
-                      123 Business Rd, Commerce City, 12345
+                      REAL PVC PANLE
                   </p>
               </header>
               
