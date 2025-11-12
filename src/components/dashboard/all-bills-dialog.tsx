@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -26,7 +25,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Item, SavedBill, WithId } from "@/lib/types";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
-import { Trash2, FileText } from "lucide-react";
+import { Trash2, FileText, Search } from "lucide-react";
+import { Input } from "../ui/input";
 
 interface AllBillsDialogProps {
   isOpen: boolean;
@@ -90,25 +90,48 @@ export function AllBillsDialog({
   canDelete,
 }: AllBillsDialogProps) {
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   const billsArray = useMemo(() => {
-    return Object.values(savedBills)
+    const allBills = Object.values(savedBills)
       .map((bill) => ({
         ...bill,
         grandTotal: calculateGrandTotal(bill, items),
       }))
       .sort((a, b) => Number(b.filters.slipNo) - Number(a.filters.slipNo));
-  }, [savedBills, items]);
+
+    if (!searchQuery) {
+        return allBills;
+    }
+
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    return allBills.filter(bill => 
+        (bill.filters.slipNo && bill.filters.slipNo.includes(searchQuery)) ||
+        (bill.filters.partyName && bill.filters.partyName.toLowerCase().includes(lowerCaseQuery))
+    );
+
+  }, [savedBills, items, searchQuery]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl p-0">
-        <DialogHeader className="p-6 pb-0">
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>All Saved Bills</DialogTitle>
           <DialogDescription>
             Here you can view, load, or delete any of your previously saved bills.
           </DialogDescription>
+           <div className="relative pt-2">
+            <Search className="absolute left-2.5 top-4 h-4 w-4 text-muted-foreground" />
+            <Input
+                type="search"
+                placeholder="Search by Slip No. or Party Name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 sm:w-[300px]"
+            />
+          </div>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] border-t">
+        <ScrollArea className="max-h-[60vh] border-t">
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
