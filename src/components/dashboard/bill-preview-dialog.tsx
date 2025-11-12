@@ -21,6 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { FileUp, Printer, Send } from "lucide-react";
 import TotalsSummary from "./totals-summary";
 
+type PrintMode = 'bill' | 'loadingSlip';
+
 interface BillPreviewDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,6 +30,7 @@ interface BillPreviewDialogProps {
   billingItems: BillingItem[];
   items: Item[];
   manualPrices: Record<string, number>;
+  printMode: PrintMode;
 }
 
 export function BillPreviewDialog({
@@ -37,6 +40,7 @@ export function BillPreviewDialog({
   billingItems,
   items,
   manualPrices,
+  printMode,
 }: BillPreviewDialogProps) {
   const billRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -131,6 +135,7 @@ export function BillPreviewDialog({
   }, [filters.partyName, filters.date, filters.slipNo, toast]);
 
   const filteredBillingItems = billingItems.filter(item => item.itemName && item.quantity);
+  const totalQuantity = useMemo(() => filteredBillingItems.reduce((acc, item) => acc + (item.quantity || 0), 0), [filteredBillingItems]);
 
   const handlePriceChange = (group: string, price: number) => {
     // This function is a prop for TotalsSummary, but its implementation is in billing-dashboard.
@@ -138,13 +143,16 @@ export function BillPreviewDialog({
     // The preview is read-only in this context.
   };
 
+  const isBillMode = printMode === 'bill';
+  const dialogTitle = isBillMode ? 'Bill Preview' : 'Loading Slip Preview';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
         <DialogHeader className="p-6 pb-0 print:hidden">
-          <DialogTitle>Bill Preview</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            Review the bill details below before printing or sending.
+            Review the details below before printing or sending.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
@@ -163,16 +171,7 @@ export function BillPreviewDialog({
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                   }
-                  body * {
-                    visibility: hidden;
-                  }
-                  #bill-preview-content, #bill-preview-content * {
-                    visibility: visible;
-                  }
-                  #summary-section * {
-                    visibility: visible;
-                  }
-                   #bill-preview-dialog {
+                  #bill-preview-dialog {
                     position: absolute !important;
                     left: 0 !important;
                     top: 0 !important;
@@ -186,7 +185,10 @@ export function BillPreviewDialog({
                     box-shadow: none !important;
                     transform: none !important;
                   }
-                  #dialog-footer {
+                  #bill-preview-content {
+                    visibility: visible;
+                  }
+                  #dialog-footer, .print-hidden {
                     display: none;
                   }
                    #bill-preview-content table td, #bill-preview-content table th {
@@ -197,15 +199,19 @@ export function BillPreviewDialog({
                 `}</style>
                 
                 <section id="filters-section" className="mb-6 p-4 border rounded-lg text-base">
-                    <h2 className="text-xl font-semibold mb-3 border-b pb-2">Bill Details</h2>
+                    <h2 className="text-xl font-semibold mb-3 border-b pb-2">{isBillMode ? 'Bill Details' : 'Loading Slip Details'}</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                         <div><strong className="font-semibold">Party Name:</strong> {filters.partyName}</div>
                         <div className="col-span-2"><strong className="font-semibold">Address:</strong> {filters.address}</div>
                         <div><strong className="font-semibold">Date:</strong> {filters.date ? format(new Date(filters.date), 'PPP') : 'N/A'}</div>
-                        <div><strong className="font-semibold">Slip No:</strong> {filters.slipNo || 'N/A'}</div>
-                        <div><strong className="font-semibold">Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
-                        <div><strong className="font-semibold">Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
-                        <div><strong className="font-semibold">Bill Type:</strong> <span className="capitalize">{filters.billType}</span></div>
+                        <div><strong className="font-semibold">{isBillMode ? 'Bill No:' : 'Slip No:'}</strong> {filters.slipNo || 'N/A'}</div>
+                        {isBillMode && (
+                          <>
+                            <div><strong className="font-semibold">Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
+                            <div><strong className="font-semibold">Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
+                            <div><strong className="font-semibold">Bill Type:</strong> <span className="capitalize">{filters.billType}</span></div>
+                          </>
+                        )}
                     </div>
                 </section>
 
@@ -241,26 +247,36 @@ export function BillPreviewDialog({
 
                 <Separator className="my-6" />
 
-                <section id="summary-section" className="flex justify-between items-start">
-                     <div className="w-full md:w-1/3">
-                        {filters.notes && (
-                             <>
-                                <h2 className="text-lg font-semibold mb-3 border-b pb-2">Notes</h2>
-                                <p className="text-sm text-gray-600 whitespace-pre-wrap">{filters.notes}</p>
-                             </>
-                        )}
-                    </div>
-                     <div className="w-full md:w-2/3 lg:w-1/2">
-                        <TotalsSummary
-                            billingItems={billingItems}
-                            items={items}
-                            manualPrices={manualPrices}
-                            onManualPriceChange={handlePriceChange}
-                            canEdit={false} // Preview is read-only
-                        />
-                    </div>
-                </section>
-                <footer className="text-center mt-12 text-xs text-gray-500 print:hidden">
+                {isBillMode ? (
+                  <section id="summary-section" className="flex justify-between items-start">
+                       <div className="w-full md:w-1/3">
+                          {filters.notes && (
+                               <>
+                                  <h2 className="text-lg font-semibold mb-3 border-b pb-2">Notes</h2>
+                                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{filters.notes}</p>
+                               </>
+                          )}
+                      </div>
+                       <div className="w-full md:w-2/3 lg:w-1/2">
+                          <TotalsSummary
+                              billingItems={billingItems}
+                              items={items}
+                              manualPrices={manualPrices}
+                              onManualPriceChange={handlePriceChange}
+                              canEdit={false} // Preview is read-only
+                          />
+                      </div>
+                  </section>
+                ) : (
+                  <div className="flex justify-end mt-4 p-4 bg-gray-100 rounded-lg">
+                      <div className="flex items-center gap-4 text-xl font-bold">
+                          <span>Total Quantity:</span>
+                          <span className="text-gray-800">{totalQuantity.toLocaleString('en-IN')}</span>
+                      </div>
+                  </div>
+                )}
+
+                <footer className="text-center mt-12 text-xs text-gray-500 print-hidden">
                     <p>Thank you for your business!</p>
                     <p>All disputes subject to local jurisdiction.</p>
                 </footer>
@@ -271,11 +287,13 @@ export function BillPreviewDialog({
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-          <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/>Print Bill</Button>
-          <Button onClick={handleSendWhatsApp} className="bg-green-600 hover:bg-green-700 text-white">
-            <Send className="mr-2 h-4 w-4" />
-            Send to WhatsApp
-          </Button>
+          <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/>Print</Button>
+          {isBillMode && (
+            <Button onClick={handleSendWhatsApp} className="bg-green-600 hover:bg-green-700 text-white">
+              <Send className="mr-2 h-4 w-4" />
+              Send to WhatsApp
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

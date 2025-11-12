@@ -40,8 +40,9 @@ service cloud.firestore {
        allow read, write: if isSignedIn();
     }
     
+    // Loading slips have been removed.
     match /loadingSlips/{loadingSlipId} {
-       allow read, write: if isSignedIn();
+       allow read, write: if false;
     }
     
     match /payments/{paymentId} {

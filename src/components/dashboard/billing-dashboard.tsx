@@ -7,9 +7,9 @@ import SearchFilters from '@/components/dashboard/search-filters';
 import MainBillingTable from '@/components/dashboard/main-billing-table';
 import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
-import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile, SavedOrder, SavedLoadingSlip } from '@/lib/types';
+import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile, SavedOrder } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
+import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers, ArrowLeft, Printer } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { BillPreviewDialog } from './bill-preview-dialog';
 import { ImportExportDialog } from './import-export-dialog';
@@ -48,6 +48,8 @@ interface BillingDashboardProps {
   userProfile: UserProfile;
 }
 
+type PrintMode = 'bill' | 'loadingSlip';
+
 function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
   const firestore = useFirestore();
   const auth = useAuth();
@@ -77,6 +79,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     date: new Date(),
   });
   const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
+  const [printMode, setPrintMode] = useState<PrintMode>('bill');
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [isNewItemOpen, setIsNewItemOpen] = useState(false);
@@ -174,47 +177,6 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     }
   }, [firestore, toast, savedBillsData]);
 
-  const loadSlipIntoBilling = useCallback(async (loadingSlipNo: string) => {
-    if (!firestore || !savedBillsData) return;
-    const slipRef = doc(firestore, 'loadingSlips', loadingSlipNo);
-    const slipSnap = await getDoc(slipRef);
-
-    if (slipSnap.exists()) {
-        const slipData = slipSnap.data() as SavedLoadingSlip;
-
-        // Calculate next bill slip number
-        const slipNumbers = savedBillsData.map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
-        const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
-        
-        const loadedFilters: SearchFiltersState = {
-            ...initialFilters,
-            slipNo: nextSlipNo, // Set the next slip number
-            partyName: slipData.filters.partyName,
-            address: slipData.filters.address,
-            date: slipData.filters.date ? new Date(slipData.filters.date) : new Date(),
-            notes: slipData.filters.notes
-        };
-
-        setSearchFilters(loadedFilters);
-        const loadedItems = slipData.billingItems.length > 0 ? slipData.billingItems.map((item, index) => ({ ...item, srNo: index + 1 })) : generateInitialBillingItems(5);
-        setBillingItems(loadedItems);
-        
-        // Prices will be loaded by the party price list effect
-        setManualPrices({});
-
-        toast({
-            title: "Loading Slip Loaded",
-            description: `Slip #${loadingSlipNo} is ready. New bill number is ${nextSlipNo}.`,
-        });
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Loading Slip Not Found",
-            description: `Could not find loading slip with number ${loadingSlipNo}.`,
-        });
-    }
-  }, [firestore, toast, savedBillsData]);
-
 
   useEffect(() => {
     if(!canEdit || !savedBills) return;
@@ -224,13 +186,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
         loadOrderIntoBilling(orderSlipNo);
         return;
     }
-
-    const loadingSlipNo = searchParams.get('loadingSlipNo');
-    if (loadingSlipNo) {
-        loadSlipIntoBilling(loadingSlipNo);
-        return;
-    }
-
+    
     const slipNoFromUrl = searchParams.get('slipNo');
     if (slipNoFromUrl) {
       handleLoadBill(slipNoFromUrl);
@@ -239,7 +195,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
       const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
       setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
     }
-  }, [savedBills, canEdit, searchParams, loadOrderIntoBilling, loadSlipIntoBilling, handleLoadBill]);
+  }, [savedBills, canEdit, searchParams, loadOrderIntoBilling, handleLoadBill]);
 
   const clearForm = useCallback((nextSlipNo: string) => {
     setBillingItems(generateInitialBillingItems(5));
@@ -463,6 +419,11 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
     clearForm(nextSlipNo);
   }
 
+  const openPreview = (mode: PrintMode) => {
+    setPrintMode(mode);
+    setIsBillPreviewOpen(true);
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -473,6 +434,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
           billingItems={billingItems}
           items={items || []}
           manualPrices={manualPrices}
+          printMode={printMode}
        />
         <ImportExportDialog
           isOpen={isImportExportOpen}
@@ -517,10 +479,8 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
               </Button>
             </>
           )}
-          <Button onClick={() => setIsBillPreviewOpen(true)}>
-            <FileUp className="mr-2 h-4 w-4" />
-            Preview Bill
-          </Button>
+          <Button variant="secondary" onClick={() => openPreview('loadingSlip')}><Printer className="mr-2 h-4 w-4" />Print Loading Slip</Button>
+          <Button onClick={() => openPreview('bill')}><Printer className="mr-2 h-4 w-4" />Print Bill</Button>
         </div>
       </header>
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 md:p-6">
@@ -567,5 +527,3 @@ export default function BillingDashboard(props: BillingDashboardProps) {
     </Suspense>
   )
 }
-
-    
