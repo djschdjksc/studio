@@ -155,134 +155,128 @@ export function BillPreviewDialog({
             Review the details below before printing or sending.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
-            <div ref={billRef} className="bg-white text-black" id="bill-preview-content">
-                <div className="p-8">
-                <header className="mb-8 text-center print:hidden">
-                    <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
-                    <p className="text-sm text-gray-500">
-                        Your Trusted Billing Partner <br />
-                        123 Business Rd, Commerce City, 12345
-                    </p>
-                </header>
-                <style>{`
-                @media print {
-                  body {
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                  }
-                  #bill-preview-dialog {
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    height: auto !important;
-                    overflow: visible !important;
-                    max-height: none !important;
-                    border-radius: 0 !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                    transform: none !important;
-                  }
-                  #bill-preview-content {
-                    visibility: visible;
-                  }
-                  #dialog-footer, .print-hidden {
-                    display: none;
-                  }
-                   #bill-preview-content table td, #bill-preview-content table th {
-                       border: 2px solid black !important;
-                       font-weight: bold;
-                   }
-                }
-                `}</style>
-                
-                <section id="filters-section" className="mb-6 p-4 border rounded-lg text-base">
-                    <h2 className="text-xl font-semibold mb-3 border-b pb-2">{isBillMode ? 'Bill Details' : 'Loading Slip Details'}</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-                        <div><strong className="font-semibold">Party Name:</strong> {filters.partyName}</div>
-                        <div className="col-span-2"><strong className="font-semibold">Address:</strong> {filters.address}</div>
-                        <div><strong className="font-semibold">Date:</strong> {filters.date ? format(new Date(filters.date), 'PPP') : 'N/A'}</div>
-                        <div><strong className="font-semibold">{isBillMode ? 'Bill No:' : 'Slip No:'}</strong> {filters.slipNo || 'N/A'}</div>
-                        {isBillMode && (
-                          <>
-                            <div><strong className="font-semibold">Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
-                            <div><strong className="font-semibold">Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
-                            <div><strong className="font-semibold">Bill Type:</strong> <span className="capitalize">{filters.billType}</span></div>
-                          </>
-                        )}
-                    </div>
-                </section>
-
-                <Separator className="my-6" />
-
-                <section id="billing-items-section" className="mb-6">
-                    <h2 className="text-lg font-semibold mb-3 border-b pb-2">Items</h2>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[50px]">Sr.No</TableHead>
-                                <TableHead>Item Name</TableHead>
-                                <TableHead className="text-right">Quantity</TableHead>
-                                <TableHead>Unit</TableHead>
-                                <TableHead className="text-right">U Cap</TableHead>
-                                <TableHead className="text-right">L Cap</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredBillingItems.map((item) => (
-                                <TableRow key={item.srNo}>
-                                    <TableCell>{item.srNo}</TableCell>
-                                    <TableCell className="font-medium">{item.itemName}</TableCell>
-                                    <TableCell className="text-right">{item.quantity}</TableCell>
-                                    <TableCell>{item.unit}</TableCell>
-                                    <TableCell className="text-right">{item.uCap || ''}</TableCell>
-                                    <TableCell className="text-right">{item.lCap || ''}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </section>
-
-                <Separator className="my-6" />
-
-                {isBillMode ? (
-                  <section id="summary-section" className="flex justify-between items-start">
-                       <div className="w-full md:w-1/3">
-                          {filters.notes && (
-                               <>
-                                  <h2 className="text-lg font-semibold mb-3 border-b pb-2">Notes</h2>
-                                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{filters.notes}</p>
-                               </>
+        <div id="printable-content-wrapper">
+          <style>{`
+            @media print {
+              body * {
+                visibility: hidden;
+              }
+              #printable-content-wrapper, #printable-content-wrapper * {
+                visibility: visible;
+              }
+              #printable-content-wrapper {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+              }
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              #bill-preview-content table td, #bill-preview-content table th {
+                border: 2px solid black !important;
+                font-weight: bold;
+              }
+            }
+          `}</style>
+          <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
+              <div ref={billRef} className="bg-white text-black" id="bill-preview-content">
+                  <div className="p-8">
+                  <header className="mb-8 text-center print:hidden">
+                      <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
+                      <p className="text-sm text-gray-500">
+                          Your Trusted Billing Partner <br />
+                          123 Business Rd, Commerce City, 12345
+                      </p>
+                  </header>
+                  
+                  <section id="filters-section" className="mb-6 p-4 border rounded-lg text-base">
+                      <h2 className="text-xl font-semibold mb-3 border-b pb-2">{isBillMode ? 'Bill Details' : 'Loading Slip Details'}</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+                          <div><strong className="font-semibold">Party Name:</strong> {filters.partyName}</div>
+                          <div className="col-span-2"><strong className="font-semibold">Address:</strong> {filters.address}</div>
+                          <div><strong className="font-semibold">Date:</strong> {filters.date ? format(new Date(filters.date), 'PPP') : 'N/A'}</div>
+                          <div><strong className="font-semibold">{isBillMode ? 'Bill No:' : 'Slip No:'}</strong> {filters.slipNo || 'N/A'}</div>
+                          {isBillMode && (
+                            <>
+                              <div><strong className="font-semibold">Vehicle No:</strong> {filters.vehicleNo || 'N/A'}</div>
+                              <div><strong className="font-semibold">Vehicle Type:</strong> {filters.vehicleType || 'N/A'}</div>
+                              <div><strong className="font-semibold">Bill Type:</strong> <span className="capitalize">{filters.billType}</span></div>
+                            </>
                           )}
                       </div>
-                       <div className="w-full md:w-2/3 lg:w-1/2">
-                          <TotalsSummary
-                              billingItems={billingItems}
-                              items={items}
-                              manualPrices={manualPrices}
-                              onManualPriceChange={handlePriceChange}
-                              canEdit={false} // Preview is read-only
-                          />
-                      </div>
                   </section>
-                ) : (
-                  <div className="flex justify-end mt-4 p-4 bg-gray-100 rounded-lg">
-                      <div className="flex items-center gap-4 text-xl font-bold">
-                          <span>Total Quantity:</span>
-                          <span className="text-gray-800">{totalQuantity.toLocaleString('en-IN')}</span>
-                      </div>
-                  </div>
-                )}
 
-                <footer className="text-center mt-12 text-xs text-gray-500 print-hidden">
-                    <p>Thank you for your business!</p>
-                    <p>All disputes subject to local jurisdiction.</p>
-                </footer>
-                </div>
-            </div>
-        </ScrollArea>
+                  <Separator className="my-6" />
+
+                  <section id="billing-items-section" className="mb-6">
+                      <h2 className="text-lg font-semibold mb-3 border-b pb-2">Items</h2>
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead className="w-[50px]">Sr.No</TableHead>
+                                  <TableHead>Item Name</TableHead>
+                                  <TableHead className="text-right">Quantity</TableHead>
+                                  <TableHead>Unit</TableHead>
+                                  <TableHead className="text-right">U Cap</TableHead>
+                                  <TableHead className="text-right">L Cap</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {filteredBillingItems.map((item) => (
+                                  <TableRow key={item.srNo}>
+                                      <TableCell>{item.srNo}</TableCell>
+                                      <TableCell className="font-medium">{item.itemName}</TableCell>
+                                      <TableCell className="text-right">{item.quantity}</TableCell>
+                                      <TableCell>{item.unit}</TableCell>
+                                      <TableCell className="text-right">{item.uCap || ''}</TableCell>
+                                      <TableCell className="text-right">{item.lCap || ''}</TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                  </section>
+
+                  <Separator className="my-6" />
+
+                  {isBillMode ? (
+                    <section id="summary-section" className="flex justify-between items-start">
+                         <div className="w-full md:w-1/3">
+                            {filters.notes && (
+                                 <>
+                                    <h2 className="text-lg font-semibold mb-3 border-b pb-2">Notes</h2>
+                                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{filters.notes}</p>
+                                 </>
+                            )}
+                        </div>
+                         <div className="w-full md:w-2/3 lg:w-1/2">
+                            <TotalsSummary
+                                billingItems={billingItems}
+                                items={items}
+                                manualPrices={manualPrices}
+                                onManualPriceChange={handlePriceChange}
+                                canEdit={false} // Preview is read-only
+                            />
+                        </div>
+                    </section>
+                  ) : (
+                    <div className="flex justify-end mt-4 p-4 bg-gray-100 rounded-lg">
+                        <div className="flex items-center gap-4 text-xl font-bold">
+                            <span>Total Quantity:</span>
+                            <span className="text-gray-800">{totalQuantity.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                  )}
+
+                  <footer className="text-center mt-12 text-xs text-gray-500 print:hidden">
+                      <p>Thank you for your business!</p>
+                      <p>All disputes subject to local jurisdiction.</p>
+                  </footer>
+                  </div>
+              </div>
+          </ScrollArea>
+        </div>
         <DialogFooter className="p-4 border-t bg-background print:hidden" id="dialog-footer">
           <Button variant="outline" onClick={onClose}>
             Close
