@@ -158,17 +158,16 @@ export function BillPreviewDialog({
         <div id="printable-content-wrapper">
           <style>{`
             @media print {
-              body * {
-                visibility: hidden;
-              }
-              #printable-content-wrapper, #printable-content-wrapper * {
-                visibility: visible;
+              body > *:not(#printable-content-wrapper) {
+                  display: none;
               }
               #printable-content-wrapper {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: auto;
+                  overflow: visible;
               }
               body {
                 -webkit-print-color-adjust: exact;
@@ -178,9 +177,12 @@ export function BillPreviewDialog({
                 border: 2px solid black !important;
                 font-weight: bold;
               }
+              .print-hidden {
+                  display: none !important;
+              }
             }
           `}</style>
-          <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none">
+          <ScrollArea className="max-h-[70vh] border-t print:border-0 print:max-h-none print:overflow-visible">
               <div ref={billRef} className="bg-white text-black" id="bill-preview-content">
                   <div className="p-8">
                   <header className="mb-8 text-center print:hidden">
@@ -241,24 +243,26 @@ export function BillPreviewDialog({
                   <Separator className="my-6" />
 
                   {isBillMode ? (
-                    <section id="summary-section" className="flex justify-between items-start">
-                         <div className="w-full md:w-1/3">
-                            {filters.notes && (
-                                 <>
-                                    <h2 className="text-lg font-semibold mb-3 border-b pb-2">Notes</h2>
-                                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{filters.notes}</p>
-                                 </>
-                            )}
-                        </div>
-                         <div className="w-full md:w-2/3 lg:w-1/2">
-                            <TotalsSummary
-                                billingItems={billingItems}
-                                items={items}
-                                manualPrices={manualPrices}
-                                onManualPriceChange={handlePriceChange}
-                                canEdit={false} // Preview is read-only
-                            />
-                        </div>
+                    <section id="summary-section">
+                         <div className="grid grid-cols-5 gap-4">
+                            <div className="col-span-2">
+                                {filters.notes && (
+                                    <>
+                                        <h2 className="text-lg font-semibold mb-3 border-b pb-2">Notes</h2>
+                                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{filters.notes}</p>
+                                    </>
+                                )}
+                            </div>
+                            <div className="col-span-3">
+                                <TotalsSummary
+                                    billingItems={billingItems}
+                                    items={items}
+                                    manualPrices={manualPrices}
+                                    onManualPriceChange={handlePriceChange}
+                                    canEdit={false} // Preview is read-only
+                                />
+                            </div>
+                         </div>
                     </section>
                   ) : (
                     <div className="flex justify-end mt-4 p-4 bg-gray-100 rounded-lg">
