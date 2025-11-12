@@ -20,6 +20,7 @@ import * as htmlToImage from "html-to-image";
 import { useToast } from "@/hooks/use-toast";
 import { FileUp, Printer, Send } from "lucide-react";
 import TotalsSummary from "./totals-summary";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 
 type PrintMode = 'bill' | 'loadingSlip';
 
@@ -148,7 +149,7 @@ export function BillPreviewDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl p-0 print:hidden" id="bill-preview-dialog">
+      <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
         <style>{`
           @media print {
             body * {
@@ -162,10 +163,15 @@ export function BillPreviewDialog({
               left: 0;
               top: 0;
               width: 100%;
+              height: auto;
+              overflow: visible;
             }
             #printable-content table td, #printable-content table th {
-                border: 2px solid black !important;
-                font-weight: bold;
+              border: 2px solid black !important;
+              font-weight: bold;
+            }
+            .print-hidden {
+              display: none;
             }
           }
         `}</style>
@@ -247,13 +253,21 @@ export function BillPreviewDialog({
                             )}
                         </div>
                         <div className="col-span-3">
-                            <TotalsSummary
-                                billingItems={billingItems}
-                                items={items}
-                                manualPrices={manualPrices}
-                                onManualPriceChange={handlePriceChange}
-                                canEdit={false} // Preview is read-only
-                            />
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Totals Summary</CardTitle>
+                                    <CardDescription>Grouped totals for all items.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <TotalsSummary
+                                        billingItems={billingItems}
+                                        items={items}
+                                        manualPrices={manualPrices}
+                                        onManualPriceChange={handlePriceChange}
+                                        canEdit={false}
+                                    />
+                                </CardContent>
+                            </Card>
                         </div>
                      </div>
                 </section>
@@ -288,7 +302,7 @@ export function BillPreviewDialog({
       </DialogContent>
       {/* This is the printable content that will be shown only when printing */}
       <div id="printable-content" className="hidden print:block bg-white text-black">
-        <div ref={billRef} className="p-8">
+        <div className="p-8">
             <header className="mb-8 text-center print-hidden">
                 <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
                 <p className="text-sm text-gray-500">
