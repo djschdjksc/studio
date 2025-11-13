@@ -20,7 +20,8 @@ import * as htmlToImage from "html-to-image";
 import { useToast } from "@/hooks/use-toast";
 import { FileUp, Printer, Send } from "lucide-react";
 import TotalsSummary from "./totals-summary";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+
 
 type PrintMode = 'bill' | 'loadingSlip';
 
@@ -152,44 +153,48 @@ export function BillPreviewDialog({
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
         <style>{`
           @media print {
-              body * {
-                  visibility: hidden;
-              }
-              #printable-content, #printable-content * {
-                  visibility: visible;
-              }
-              #printable-content {
-                  position: absolute;
-                  left: 0;
-                  top: 0;
-                  width: 100%;
-                  height: auto;
-                  overflow: visible;
-                  font-size: 12pt;
-              }
-               #printable-content table td, #printable-content table th {
-                  border: 2px solid black !important;
-                  font-weight: bold;
-              }
-              .print-hidden {
-                display: none !important;
-              }
+            body {
+              visibility: hidden;
+            }
+            #printable-content,
+            #printable-content * {
+              visibility: visible;
+            }
+            #printable-content {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              height: auto;
+              overflow: visible;
+              font-size: 12pt;
+            }
+            #bill-preview-dialog {
+              display: none;
+            }
+            .print-hidden {
+              display: none !important;
+            }
+            #printable-content table td,
+            #printable-content table th {
+               border: 2px solid black !important;
+               font-weight: bold;
+            }
           }
         `}</style>
-        <DialogHeader className="p-6 pb-0">
+        <DialogHeader className="p-6 pb-0 print-hidden">
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
             Review the details below before printing or sending.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh]">
+        <ScrollArea className="max-h-[70vh] print-hidden">
           <div ref={billRef} className="bg-white text-black">
               <div id="printable-content" className="p-8">
               <header className="mb-8 text-center print-hidden">
                   <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
                   <p className="text-sm text-gray-500">
-                      Your Trusted Billing Partner <br />
-                      REAL PVC PANLE
+                     REAL PVC PANLE
                   </p>
               </header>
               
@@ -288,7 +293,7 @@ export function BillPreviewDialog({
               </div>
           </div>
         </ScrollArea>
-        <DialogFooter className="p-4 border-t bg-background">
+        <DialogFooter className="p-4 border-t bg-background print-hidden">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
