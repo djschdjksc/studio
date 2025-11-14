@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser } from '@/firebase';
-import { WithId, Item, UserProfile } from '@/lib/types';
+import { WithId, Item } from '@/lib/types';
 import StockManagement from '@/components/dashboard/stock-management';
 import { doc, updateDoc, increment, collection } from 'firebase/firestore';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -41,6 +41,8 @@ export default function StockPage() {
     });
   };
   
+  const canEdit = user?.email === 'rohitvetma101010@gmail.com';
+
   if (isUserLoading || itemsLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading Stock...</div>;
   }
@@ -63,7 +65,7 @@ export default function StockPage() {
                 <StockManagement
                     items={items || []}
                     onAddStock={handleAddStock}
-                    canEdit={true} 
+                    canEdit={canEdit} 
                 />
             </div>
         </main>

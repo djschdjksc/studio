@@ -4,7 +4,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
-import { UserProfile } from '@/lib/types';
 import BillingDashboard from '@/components/dashboard/billing-dashboard';
 import { Suspense } from 'react';
 
@@ -23,17 +22,11 @@ function BillingPageContent() {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
-    // Since we removed the complex role system, we can create a default owner profile.
-    const ownerProfile: UserProfile = {
-        id: user.uid,
-        email: user.email || 'rohitvetma101010@gmail.com',
-        role: 'owner',
-        displayName: user.displayName || 'Owner',
-    };
-
+    // The user object itself is sufficient for authorization checks if needed.
+    // We pass it to the dashboard, which can then decide if the user can edit/delete.
     return (
         <div className="min-h-screen w-full bg-background">
-            <BillingDashboard userProfile={ownerProfile} />
+            <BillingDashboard user={user} />
         </div>
     );
 }

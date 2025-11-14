@@ -7,19 +7,18 @@ import OrderSearchFilters from '@/components/dashboard/order-search-filters';
 import MainBillingTable from '@/components/dashboard/main-billing-table';
 import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
-import { Party, Item, BillingItem, OrderFiltersState, SavedOrder, WithId, ItemGroup, UserProfile } from '@/lib/types';
+import { Party, Item, BillingItem, OrderFiltersState, SavedOrder, WithId, ItemGroup } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
+import { BookOpen, Save, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { BulkAddItemDialog } from './bulk-add-item-dialog';
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import Link from 'next/link';
-import { collection, doc, deleteDoc, setDoc, updateDoc, increment, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useSearchParams } from 'next/navigation';
-import { FirestorePermissionError, errorEmitter } from '@/firebase';
-import { parseISO } from 'date-fns';
+import type { User } from 'firebase/auth';
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -41,16 +40,15 @@ const initialFilters: Omit<OrderFiltersState, 'date'> = {
 };
 
 interface OrderDashboardProps {
-  userProfile: UserProfile;
+  user: User | null;
 }
 
-function OrderDashboardContent({ userProfile }: OrderDashboardProps) {
+function OrderDashboardContent({ user }: OrderDashboardProps) {
   const firestore = useFirestore();
-  const auth = useAuth();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   
-  const canEdit = userProfile.role === 'owner';
+  const canEdit = user?.email === 'rohitvetma101010@gmail.com';
 
   const partiesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'parties') : null, [firestore]);
   const { data: parties } = useCollection<Party>(partiesQuery);
@@ -93,14 +91,14 @@ function OrderDashboardContent({ userProfile }: OrderDashboardProps) {
 
 
   useEffect(() => {
-    if(!canEdit) return;
-    const slipNumbers = Object.values(savedOrders).map(order => Number(order.filters.slipNo)).filter(n => !isNaN(n));
-    const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
+    if(!canEdit || !savedOrders) return;
     
     const slipNoFromUrl = searchParams.get('slipNo');
     if (slipNoFromUrl) {
       handleLoadOrder(slipNoFromUrl);
     } else {
+      const slipNumbers = Object.values(savedOrders).map(order => Number(order.filters.slipNo)).filter(n => !isNaN(n));
+      const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
       setSearchFilters(prev => ({...prev, slipNo: nextSlipNo}));
     }
   }, [savedOrders, canEdit, searchParams]);
@@ -324,7 +322,7 @@ function OrderDashboardContent({ userProfile }: OrderDashboardProps) {
             filters={searchFilters}
             onFiltersChange={setSearchFilters}
             onLoadOrder={() => handleLoadOrder()}
-            canEdit={canEdit}
+            canEdit={!!canEdit}
             />
         </div>
         <div className="lg:col-span-3">
@@ -334,7 +332,7 @@ function OrderDashboardContent({ userProfile }: OrderDashboardProps) {
             onAddRow={addBillingItem}
             onItemChange={handleBillingItemChange}
             onRemoveRow={removeBillingItem}
-            canEdit={canEdit}
+            canEdit={!!canEdit}
             />
         </div>
         <div className="lg:col-span-2">
@@ -343,7 +341,7 @@ function OrderDashboardContent({ userProfile }: OrderDashboardProps) {
             items={items || []}
             manualPrices={manualPrices}
             onManualPriceChange={handleManualPriceChange}
-            canEdit={canEdit}
+            canEdit={!!canEdit}
             />
         </div>
       </main>

@@ -87,15 +87,6 @@ export interface Payment {
     createdAt: any; // serverTimestamp
 }
 
-// UserProfile is simplified as roles are removed
-export interface UserProfile {
-    id: string;
-    email: string;
-    displayName?: string;
-    role: 'owner';
-}
-
-
 export interface ProductionLog {
     id: string;
     machineName: string;

@@ -7,9 +7,9 @@ import SearchFilters from '@/components/dashboard/search-filters';
 import MainBillingTable from '@/components/dashboard/main-billing-table';
 import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
-import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, UserProfile, SavedOrder } from '@/lib/types';
+import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, SavedOrder } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, Shield, PackagePlus, UserPlus, Layers, ArrowLeft, Printer } from 'lucide-react';
+import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft, Printer } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { BillPreviewDialog } from './bill-preview-dialog';
 import { ImportExportDialog } from './import-export-dialog';
@@ -22,6 +22,8 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlo
 import { useSearchParams } from 'next/navigation';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
 import { parseISO } from 'date-fns';
+import type { User } from 'firebase/auth';
+
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
     return Array.from({ length: count }, (_, i) => ({
@@ -45,19 +47,18 @@ const initialFilters: Omit<SearchFiltersState, 'date'> = {
 };
 
 interface BillingDashboardProps {
-  userProfile: UserProfile;
+  user: User | null;
 }
 
 type PrintMode = 'bill' | 'loadingSlip';
 
-function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
+function BillingDashboardContent({ user }: BillingDashboardProps) {
   const firestore = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   
-  const canEdit = userProfile.role === 'owner';
-  const canDelete = userProfile.role === 'owner';
+  const canEdit = user?.email === 'rohitvetma101010@gmail.com';
 
   const partiesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'parties') : null, [firestore]);
   const { data: parties } = useCollection<Party>(partiesQuery);
@@ -442,7 +443,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
           items={items}
           onImportParties={handlePartyUpload}
           onImportItems={handleItemUpload}
-          canEdit={canEdit}
+          canEdit={!!canEdit}
         />
         <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isBulkAddOpen} onOpenChange={setIsBulkAddOpen} />
 
@@ -489,7 +490,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             filters={searchFilters}
             onFiltersChange={setSearchFilters}
             onLoadBill={() => handleLoadBill()}
-            canEdit={canEdit}
+            canEdit={!!canEdit}
             />
         </div>
         <div className="lg:col-span-3">
@@ -499,7 +500,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             onAddRow={addBillingItem}
             onItemChange={handleBillingItemChange}
             onRemoveRow={removeBillingItem}
-            canEdit={canEdit}
+            canEdit={!!canEdit}
             />
         </div>
         <div className="lg:col-span-2">
@@ -508,7 +509,7 @@ function BillingDashboardContent({ userProfile }: BillingDashboardProps) {
             items={items || []}
             manualPrices={manualPrices}
             onManualPriceChange={handleManualPriceChange}
-            canEdit={canEdit}
+            canEdit={!!canEdit}
             />
         </div>
       </main>

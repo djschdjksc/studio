@@ -3,19 +3,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if the user is the designated owner by email.
-    function isOwner() {
-      return request.auth != null && request.auth.token.email == "rohitvetma101010@gmail.com";
-    }
-
     // Helper function to check if a user is signed in.
     function isSignedIn() {
       return request.auth != null;
-    }
-
-    // User Profiles: Only the owner can manage their own profile.
-    match /users/{userId} {
-      allow read, write: if false; // Removed
     }
 
     // Since we only have a single owner user now, any signed-in user can manage the data.
@@ -40,11 +30,6 @@ service cloud.firestore {
        allow read, write: if isSignedIn();
     }
     
-    // Loading slips have been removed.
-    match /loadingSlips/{loadingSlipId} {
-       allow read, write: if false;
-    }
-    
     match /payments/{paymentId} {
       allow read, write: if isSignedIn();
     }
@@ -53,13 +38,9 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
-    // Audit Logs: Only the owner should be able to read or write logs.
-    match /logs/{logId} {
-      allow read, write: if false; // Removed
-    }
-    
-    // The access request system has been removed.
-    match /access_requests/{requestId} {
+    // Default deny all other paths that are not explicitly defined.
+    // This covers removed collections like 'users', 'access_requests', and 'logs'.
+    match /{document=**} {
       allow read, write: if false;
     }
   }
