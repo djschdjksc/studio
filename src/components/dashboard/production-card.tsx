@@ -42,7 +42,8 @@ export default function ProductionCard({ machineName, items, productionDate }: P
                     const numValue = Number(value);
                     return { ...item, [field]: isNaN(numValue) ? 0 : numValue };
                 }
-                return { ...item, [field]: value };
+                // Ensure itemName is always a string
+                return { ...item, [field]: String(value) };
             }
             return item;
         });
