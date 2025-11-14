@@ -87,32 +87,14 @@ export interface Payment {
     createdAt: any; // serverTimestamp
 }
 
-export type UserRole = 'viewer' | 'editor' | 'manager' | 'admin' | 'owner';
-
+// UserProfile is simplified as roles are removed
 export interface UserProfile {
     id: string;
     email: string;
-    role: UserRole;
     displayName?: string;
+    role: 'owner';
 }
 
-export interface AccessRequest {
-    id: string;
-    userId: string;
-    email: string;
-    requestedRole: UserRole;
-    status: 'pending' | 'approved' | 'denied';
-    createdAt: string;
-}
-
-export interface AuditLog {
-    id: string;
-    timestamp: string;
-    userId: string;
-    userEmail: string;
-    action: string;
-    details: Record<string, any>;
-}
 
 export interface ProductionLog {
     id: string;

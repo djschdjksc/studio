@@ -41,7 +41,7 @@ export default function DashboardPage() {
     
     const [isImportExportOpen, setIsImportExportOpen] = useState(false);
     
-    const isAdmin = user?.email === 'rohitvetma101010@gmail.com';
+    const canEdit = user?.email === 'rohitvetma101010@gmail.com';
 
     // Data fetching for Import/Export dialog - these will now be passed as props
     const partiesQuery = useMemoFirebase(() => firestore && user ? collection(firestore, 'parties') : null, [firestore, user]);
@@ -196,16 +196,11 @@ export default function DashboardPage() {
                 items={items || []}
                 onImportParties={handlePartyUpload}
                 onImportItems={handleItemUpload}
-                canEdit={isAdmin}
+                canEdit={canEdit}
             />
             <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-white/80 backdrop-blur-sm md:px-6">
                 <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">BillTrack Pro Dashboard</h1>
                 <div className="flex items-center gap-4">
-                    {isAdmin && (
-                        <Button variant="secondary" asChild>
-                            <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
-                        </Button>
-                    )}
                     <Button variant="ghost" size="icon" onClick={() => auth?.signOut()}>
                         <LogOut className="h-4 w-4" />
                     </Button>

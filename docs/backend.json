@@ -132,49 +132,6 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "partyId", "partyName", "amount", "date", "createdAt"]
-    },
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
-      "type": "object",
-      "description": "Stores user profile information and their role.",
-      "properties": {
-        "id": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["viewer", "editor", "manager", "admin", "owner"] },
-        "displayName": { "type": "string" }
-      },
-      "required": ["id", "email", "role"]
-    },
-    "AccessRequest": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AccessRequest",
-      "type": "object",
-      "description": "Represents a user's request for a specific role.",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "requestedRole": { "type": "string", "enum": ["viewer", "editor", "manager", "admin"] },
-        "status": { "type": "string", "enum": ["pending", "approved", "denied"] },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userId", "email", "requestedRole", "status", "createdAt"]
-    },
-    "AuditLog": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "title": "AuditLog",
-        "type": "object",
-        "description": "Logs important actions performed by users.",
-        "properties": {
-            "id": { "type": "string" },
-            "timestamp": { "type": "string", "format": "date-time" },
-            "userId": { "type": "string" },
-            "userEmail": { "type": "string", "format": "email" },
-            "action": { "type": "string" },
-            "details": { "type": "object" }
-        },
-        "required": ["id", "timestamp", "userId", "userEmail", "action"]
     }
   },
   "auth": {
@@ -187,10 +144,7 @@
       { "path": "/items/{itemId}", "definition": { "entityName": "Item", "schema": { "$ref": "#/backend/entities/Item" }, "description": "Stores items." } },
       { "path": "/billingRecords/{billingRecordId}", "definition": { "entityName": "BillingRecord", "schema": { "$ref": "#/backend/entities/BillingRecord" }, "description": "Stores billing records." } },
       { "path": "/orders/{orderId}", "definition": { "entityName": "OrderRecord", "schema": { "$ref": "#/backend/entities/OrderRecord" }, "description": "Stores sales orders." } },
-      { "path": "/payments/{paymentId}", "definition": { "entityName": "Payment", "schema": { "$ref": "#/backend/entities/Payment" }, "description": "Stores payment records from parties." } },
-      { "path": "/users/{userId}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/backend/entities/UserProfile" }, "description": "Stores user profiles." } },
-      { "path": "/access_requests/{requestId}", "definition": { "entityName": "AccessRequest", "schema": { "$ref": "#/backend/entities/AccessRequest" }, "description": "Stores user access requests." } },
-      { "path": "/logs/{logId}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/backend/entities/AuditLog" }, "description": "Stores audit logs." } }
+      { "path": "/payments/{paymentId}", "definition": { "entityName": "Payment", "schema": { "$ref": "#/backend/entities/Payment" }, "description": "Stores payment records from parties." } }
     ]
   }
 }

@@ -15,7 +15,7 @@ service cloud.firestore {
 
     // User Profiles: Only the owner can manage their own profile.
     match /users/{userId} {
-      allow read, write: if isOwner() && request.auth.uid == userId;
+      allow read, write: if false; // Removed
     }
 
     // Since we only have a single owner user now, any signed-in user can manage the data.
@@ -55,7 +55,7 @@ service cloud.firestore {
 
     // Audit Logs: Only the owner should be able to read or write logs.
     match /logs/{logId} {
-      allow read, write: if isOwner();
+      allow read, write: if false; // Removed
     }
     
     // The access request system has been removed.

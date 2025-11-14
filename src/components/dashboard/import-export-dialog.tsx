@@ -25,6 +25,8 @@ import { collection, getDocs } from "firebase/firestore";
 interface ImportExportDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  parties: Party[] | null | undefined;
+  items: Item[] | null | undefined;
   onImportParties: (parties: Omit<Party, 'id'>[]) => void;
   onImportItems: (items: Omit<Item, 'id' | 'price' | 'balance'>[]) => void;
   canEdit: boolean;
@@ -32,7 +34,9 @@ interface ImportExportDialogProps {
 
 export function ImportExportDialog({ 
     isOpen, 
-    onClose, 
+    onClose,
+    parties: initialParties,
+    items: initialItems,
     onImportParties, 
     onImportItems, 
     canEdit 
@@ -52,19 +56,9 @@ export function ImportExportDialog({
   const itemFileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if (isOpen && firestore && user) {
-        const fetchInitialData = async () => {
-             const partiesQuery = collection(firestore, 'parties');
-             const partiesSnapshot = await getDocs(partiesQuery);
-             setParties(partiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Party)));
-
-             const itemsQuery = collection(firestore, 'items');
-             const itemsSnapshot = await getDocs(itemsQuery);
-             setItems(itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Item)));
-        }
-        fetchInitialData();
-    }
-  }, [isOpen, firestore, user]);
+    if(initialParties) setParties(initialParties);
+    if(initialItems) setItems(initialItems);
+  }, [initialParties, initialItems]);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -273,5 +267,3 @@ export function ImportExportDialog({
     </Dialog>
   );
 }
-
-    

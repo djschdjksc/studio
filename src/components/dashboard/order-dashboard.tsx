@@ -1,3 +1,4 @@
+
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -49,7 +50,7 @@ function OrderDashboardContent({ userProfile }: OrderDashboardProps) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   
-  const canEdit = userProfile.role === 'editor' || userProfile.role === 'manager' || userProfile.role === 'admin' || userProfile.role === 'owner';
+  const canEdit = userProfile.role === 'owner';
 
   const partiesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'parties') : null, [firestore]);
   const { data: parties } = useCollection<Party>(partiesQuery);
