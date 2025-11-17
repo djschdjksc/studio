@@ -1,3 +1,4 @@
+
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -318,18 +319,18 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
     });
   }
 
-  const addItem = async (item: Omit<Item, 'id' | 'price' | 'balance'>) => {
+  const addItem = async (item: Omit<Item, 'id' | 'price'>) => {
     if (!canEdit || !firestore) return;
     const newDocRef = doc(collection(firestore, 'items'));
-    setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
+    setDocumentNonBlocking(newDocRef, {...item, price: 0}, {});
     toast({ title: 'Item Added', description: `Added ${item.name}.` });
   };
   
-  const addBulkItems = async (newItems: Omit<Item, 'id' | 'price' | 'balance'>[]) => {
+  const addBulkItems = async (newItems: Omit<Item, 'id' | 'price'>[]) => {
     if (!canEdit || !firestore) return;
     for (const item of newItems) {
         const newDocRef = doc(collection(firestore, 'items'));
-        setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
+        setDocumentNonBlocking(newDocRef, {...item, price: 0}, {});
     }
     toast({
       title: "Items Added!",
@@ -337,14 +338,14 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
     });
   };
   
-  const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price' | 'balance'>[]) => {
+  const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
     if (!canEdit || !firestore || !items) return;
     for (const i of items) {
         deleteDocumentNonBlocking(doc(firestore, 'items', i.id));
     }
     for (const item of uploadedItems) {
         const newDocRef = doc(collection(firestore, 'items'));
-        setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
+        setDocumentNonBlocking(newDocRef, {...item, price: 0}, {});
     }
     toast({
         title: "Items Restored!",
@@ -426,19 +427,6 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
       manualPrices
     };
     
-    const stockChangeMultiplier = billData.filters.billType === 'sale-return' ? 1 : -1;
-
-    // Adjust stock for each item in the bill
-    billData.billingItems.forEach(billedItem => {
-        const item = items?.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
-        if (item && billedItem.quantity > 0) {
-            const itemRef = doc(firestore, 'items', item.id);
-            updateDocumentNonBlocking(itemRef, {
-                balance: increment(billedItem.quantity * stockChangeMultiplier)
-            });
-        }
-    });
-
     // Save the bill
     const docRef = doc(firestore, 'billingRecords', searchFilters.slipNo);
     setDocumentNonBlocking(docRef, billData, {});

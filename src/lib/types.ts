@@ -24,7 +24,6 @@ export interface Item {
     unit: string;
     alias: string;
     price: number;
-    balance?: number;
 }
 
 export interface BillingItem {

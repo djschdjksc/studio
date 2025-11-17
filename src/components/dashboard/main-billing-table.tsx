@@ -96,7 +96,6 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                 <TableRow>
                 <TableHead className="w-[50px]">Sr.No</TableHead>
                 <TableHead>Item Name</TableHead>
-                <TableHead className="w-[100px]">Balance</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
                 <TableHead>Unit</TableHead>
                 <TableHead className="text-right">U Cap</TableHead>
@@ -106,8 +105,6 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
             </TableHeader>
             <TableBody>
                 {billingItems.map((item, index) => {
-                    const currentItem = items.find(i => i.name.toLowerCase() === item.itemName.toLowerCase());
-                    const balance = currentItem?.balance ?? 0;
                     return (
                         <TableRow key={item.srNo}>
                             <TableCell>{item.srNo}</TableCell>
@@ -121,7 +118,6 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
                                     disabled={!canEdit}
                                 />
                             </TableCell>
-                            <TableCell className="text-center font-mono">{balance}</TableCell>
                             <TableCell>
                                 <Input 
                                     id={`quantity-${index}`}

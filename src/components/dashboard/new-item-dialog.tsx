@@ -19,7 +19,7 @@ import { PlusCircle } from "lucide-react";
 import { useState, useRef, KeyboardEvent } from "react";
 
 interface NewItemDialogProps {
-    onSave: (item: Omit<Item, 'id' | 'price' | 'balance'>) => void;
+    onSave: (item: Omit<Item, 'id' | 'price'>) => void;
     itemGroups: string[];
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
@@ -124,5 +124,3 @@ export function NewItemDialog({ onSave, itemGroups, isOpen, onOpenChange }: NewI
     </Dialog>
   );
 }
-
-    

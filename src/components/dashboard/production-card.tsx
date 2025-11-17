@@ -12,7 +12,7 @@ import { ItemSearchInput } from './item-search-input';
 import { PlusCircle, Save, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch, increment } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
 
 interface ProductionItem {
     id: string;
@@ -42,7 +42,6 @@ export default function ProductionCard({ machineName, items, productionDate }: P
                     const numValue = Number(value);
                     return { ...item, [field]: isNaN(numValue) ? 0 : numValue };
                 }
-                // Ensure itemName is always a string
                 return { ...item, [field]: String(value) };
             }
             return item;
@@ -83,17 +82,13 @@ export default function ProductionCard({ machineName, items, productionDate }: P
                 createdAt: serverTimestamp(),
             };
             batch.set(logRef, logEntry);
-
-            // 2. Update the item's balance
-            const itemRef = doc(firestore, 'items', itemInfo.id);
-            batch.update(itemRef, { balance: increment(prodItem.quantity) });
         }
         
         try {
             await batch.commit();
             toast({
                 title: "Production Saved",
-                description: `Saved ${validItems.length} entries for ${machineName}. Stock balances updated.`,
+                description: `Saved ${validItems.length} entries for ${machineName}.`,
             });
             setProductionItems([]); // Clear the card after saving
         } catch (error) {

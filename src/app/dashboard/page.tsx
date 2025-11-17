@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -86,13 +87,13 @@ export default function DashboardPage() {
         });
     }
 
-    const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price' | 'balance'>[]) => {
+    const handleItemUpload = async (uploadedItems: Omit<Item, 'id' | 'price'>[]) => {
         if (!firestore || !items) return;
         // This simple replacement logic is kept for items as duplicates are less critical.
         // A more advanced implementation could check for duplicates here as well.
         for (const item of uploadedItems) {
             const newDocRef = doc(collection(firestore, 'items'));
-            setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
+            setDocumentNonBlocking(newDocRef, {...item, price: 0}, {});
         }
         toast({
             title: "Items Imported!",
@@ -126,12 +127,6 @@ export default function DashboardPage() {
             href: "/bills",
         },
         {
-            title: "Manage Stock",
-            description: "Add inventory and view item balances.",
-            icon: <Boxes className="h-8 w-8 text-green-600" />,
-            href: "/stock",
-        },
-        {
             title: "Production",
             description: "Log daily production from machines.",
             icon: <Factory className="h-8 w-8 text-purple-600" />,
@@ -148,12 +143,6 @@ export default function DashboardPage() {
                     <p className="text-2xl font-bold">{totalProduction.toLocaleString('en-IN')}</p>
                 </div>
             )
-        },
-        {
-            title: "Stock Check",
-            description: "View opening and closing stock.",
-            icon: <CheckSquare className="h-8 w-8 text-blue-600" />,
-            href: "/stock-check",
         },
         {
             title: "Party Balances",

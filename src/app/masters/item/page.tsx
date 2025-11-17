@@ -25,10 +25,10 @@ export default function NewItemPage() {
     const itemGroupsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'itemGroups') : null, [firestore, user]);
     const { data: itemGroups, isLoading: groupsLoading } = useCollection<ItemGroup>(itemGroupsQuery);
 
-    const addItem = async (item: Omit<Item, 'id' | 'price' | 'balance'>) => {
+    const addItem = async (item: Omit<Item, 'id' | 'price'>) => {
         if (!firestore) return;
         const newDocRef = doc(collection(firestore, 'items'));
-        setDocumentNonBlocking(newDocRef, {...item, price: 0, balance: 0}, {});
+        setDocumentNonBlocking(newDocRef, {...item, price: 0}, {});
         toast({ title: 'Item Added', description: `Added ${item.name}.` });
         router.push('/dashboard');
     };

@@ -28,7 +28,7 @@ interface ImportExportDialogProps {
   parties: Party[] | null | undefined;
   items: Item[] | null | undefined;
   onImportParties: (parties: Omit<Party, 'id'>[]) => void;
-  onImportItems: (items: Omit<Item, 'id' | 'price' | 'balance'>[]) => void;
+  onImportItems: (items: Omit<Item, 'id' | 'price'>[]) => void;
   canEdit: boolean;
 }
 
@@ -157,7 +157,7 @@ export function ImportExportDialog({
                 if (!json.every(row => typeof row.name === 'string' && typeof row.group === 'string' && typeof row.unit === 'string')) {
                      throw new Error("Invalid item data. Each row must have 'name', 'group', and 'unit' columns.");
                 }
-                const itemsToUpload = json.map(i => ({ name: i.name, group: i.group, unit: i.unit, alias: i.alias || '', balance: i.balance || 0 }));
+                const itemsToUpload = json.map(i => ({ name: i.name, group: i.group, unit: i.unit, alias: i.alias || '' }));
                 onImportItems(itemsToUpload);
             }
 
@@ -183,7 +183,7 @@ export function ImportExportDialog({
         sheetName = 'Parties';
         fileName = 'party-template.xlsx';
     } else {
-        data = [{ name: 'Example Item', group: 'Example Group', unit: 'PCS', alias: 'EX01', balance: 100 }];
+        data = [{ name: 'Example Item', group: 'Example Group', unit: 'PCS', alias: 'EX01' }];
         sheetName = 'Items';
         fileName = 'item-template.xlsx';
     }

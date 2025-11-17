@@ -20,10 +20,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { ScrollArea } from "../ui/scroll-area";
 
-type BulkItem = Omit<Item, 'id' | 'price' | 'balance'> & { tempId: string };
+type BulkItem = Omit<Item, 'id' | 'price'> & { tempId: string };
 
 interface BulkAddItemDialogProps {
-    onSave: (items: Omit<Item, 'id' | 'price' | 'balance'>[]) => void;
+    onSave: (items: Omit<Item, 'id' | 'price'>[]) => void;
     itemGroups: string[];
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
@@ -207,5 +207,3 @@ export function BulkAddItemDialog({ onSave, itemGroups, isOpen, onOpenChange }: 
     </Dialog>
   );
 }
-
-    

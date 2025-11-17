@@ -5,8 +5,8 @@ import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser } from '
 import { Item, SavedBill, WithId } from '@/lib/types';
 import React, { useEffect, useState } from 'react';
 import { AllBillsDialog } from '@/components/dashboard/all-bills-dialog';
-import { collection, doc, deleteDoc, increment } from 'firebase/firestore';
-import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -49,27 +49,11 @@ export default function AllBillsPage() {
   const handleDeleteBill = async (slipNo: string) => {
     if (!firestore || !items) return;
 
-    const billToDelete = savedBills[slipNo];
-    if (billToDelete) {
-        // If deleting a "sale", items go back into stock (positive increment).
-        // If deleting a "sale-return", items that were returned now are removed from stock (negative increment).
-        const stockChangeMultiplier = billToDelete.filters.billType === 'sale-return' ? -1 : 1;
-        billToDelete.billingItems.forEach(billedItem => {
-            const item = items.find(i => i.name.toLowerCase() === billedItem.itemName.toLowerCase());
-            if (item && billedItem.quantity > 0) {
-                const itemRef = doc(firestore, 'items', item.id);
-                updateDocumentNonBlocking(itemRef, {
-                    balance: increment(billedItem.quantity * stockChangeMultiplier)
-                });
-            }
-        });
-    }
-
     const docRef = doc(firestore, 'billingRecords', slipNo);
     deleteDocumentNonBlocking(docRef);
     toast({
         title: "Bill Deleted",
-        description: `Bill with Slip No. ${slipNo} has been deleted and stock has been restored.`,
+        description: `Bill with Slip No. ${slipNo} has been deleted.`,
     });
   };
 
