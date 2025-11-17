@@ -213,11 +213,11 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
   const clearForm = useCallback((nextSlipNo: string) => {
     setBillingItems(generateInitialBillingItems(5));
     setManualPrices({});
-    setSearchFilters(prev => ({
+    setSearchFilters({
         ...initialFilters,
-        date: prev.date, // Keep the same date
+        date: new Date(), 
         slipNo: nextSlipNo,
-    }));
+    });
     setIsDirty(false); // Form is clean after reset
   }, []);
 
