@@ -154,6 +154,10 @@ export function BillPreviewDialog({
         <style>{`
           @media print {
             body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            body * {
               visibility: hidden;
             }
             #printable-content,
@@ -161,24 +165,36 @@ export function BillPreviewDialog({
               visibility: visible;
             }
             #printable-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              height: auto;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              height: auto !important;
               overflow: visible;
-              font-size: 12pt;
+              font-size: 14pt;
+              color: black;
+            }
+            #printable-content h2 {
+              color: hsl(var(--primary)) !important;
+              font-weight: 600;
+            }
+             #printable-content .print-header h1 {
+                color: hsl(var(--primary)) !important;
+             }
+            #printable-content table th {
+               background-color: hsl(var(--primary)) !important;
+               color: hsl(var(--primary-foreground)) !important;
+               font-weight: 600;
+            }
+            #printable-content table td,
+            #printable-content table th {
+               border: 2px solid hsl(var(--primary)) !important;
             }
             #bill-preview-dialog {
               display: none;
             }
             .print-hidden {
               display: none !important;
-            }
-            #printable-content table td,
-            #printable-content table th {
-               border: 2px solid black !important;
-               font-weight: bold;
             }
           }
         `}</style>
@@ -191,7 +207,7 @@ export function BillPreviewDialog({
         <ScrollArea className="max-h-[70vh] print-hidden">
           <div ref={billRef} className="bg-white text-black">
               <div id="printable-content" className="p-8">
-              <header className="mb-8 text-center print-hidden">
+              <header className="mb-8 text-center print-header">
                   <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
                   <p className="text-sm text-gray-500">
                      REAL PVC PANLE
