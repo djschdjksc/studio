@@ -9,7 +9,7 @@ import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, SavedOrder } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft, Printer } from 'lucide-react';
+import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft, Printer, FilePlus } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { BillPreviewDialog } from './bill-preview-dialog';
 import { ImportExportDialog } from './import-export-dialog';
@@ -206,6 +206,17 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
         slipNo: nextSlipNo,
     }));
   }, []);
+
+  const handleNewBill = () => {
+    if (!savedBillsData) return;
+    const slipNumbers = savedBillsData.map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
+    const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
+    clearForm(nextSlipNo);
+    toast({
+        title: "New Bill",
+        description: "Form cleared. Ready to create a new bill."
+    });
+  }
 
   // Effect to load party price list or last bill prices
   useEffect(() => {
@@ -455,6 +466,12 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
             <h1 className="text-xl font-bold md:text-2xl font-headline text-primary">Create Bill</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+           {canEdit && (
+              <Button onClick={handleNewBill}>
+                <FilePlus className="mr-2 h-4 w-4" />
+                New Bill
+              </Button>
+            )}
           {canEdit && (
             <Button variant="outline" onClick={() => setIsImportExportOpen(true)}>
                 <Import className="mr-2 h-4 w-4" />
@@ -480,7 +497,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
             </>
           )}
           <Button variant="secondary" onClick={() => openPreview('loadingSlip')}><Printer className="mr-2 h-4 w-4" />Print Loading Slip</Button>
-          <Button onClick={() => openPreview('bill')}><Printer className="mr-2 h-4 w-4" />Print Bill</Button>
+          <Button onClick={() => openPreview('bill')} variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground"><Printer className="mr-2 h-4 w-4" />Print Bill</Button>
         </div>
       </header>
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 md:p-6">
