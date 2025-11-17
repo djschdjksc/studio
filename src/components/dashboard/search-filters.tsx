@@ -28,7 +28,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
     if (field === 'partyName') {
       const party = parties.find(p => p.name.toLowerCase() === String(value).toLowerCase());
       if (party) {
-        newFilters.address = `${party.address}, ${party.district}, ${party.state} - ${party.pincode}`;
+        newFilters.address = `${party.address || ''}${party.address && (party.district || party.state || party.pincode) ? ', ' : ''}${party.district || ''}${party.district && (party.state || party.pincode) ? ', ' : ''}${party.state || ''}${party.state && party.pincode ? ' - ' : ''}${party.pincode || ''}`.replace(/, ,/g, ',').replace(/^,|,$/g, '');
       } else {
         newFilters.address = "";
       }
@@ -39,7 +39,12 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
   
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = e.target.value; // yyyy-mm-dd
-    onFiltersChange({ ...filters, date: dateValue ? new Date(dateValue) : undefined });
+    const date = dateValue ? new Date(dateValue) : undefined;
+    // Adjust for timezone offset
+    const timezoneOffset = date ? date.getTimezoneOffset() * 60000 : 0;
+    const adjustedDate = date ? new Date(date.getTime() + timezoneOffset) : undefined;
+
+    onFiltersChange({ ...filters, date: adjustedDate });
   }
   
   const getDateValue = () => {

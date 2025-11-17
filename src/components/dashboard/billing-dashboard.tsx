@@ -1,4 +1,3 @@
-
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -23,6 +22,16 @@ import { useSearchParams } from 'next/navigation';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
 import { parseISO } from 'date-fns';
 import type { User } from 'firebase/auth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
@@ -78,6 +87,8 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
     ...initialFilters,
     date: new Date(),
   });
+  const [isDirty, setIsDirty] = useState(false);
+  const [isNewBillConfirmOpen, setIsNewBillConfirmOpen] = useState(false);
   const [isBillPreviewOpen, setIsBillPreviewOpen] = useState(false);
   const [printMode, setPrintMode] = useState<PrintMode>('bill');
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
@@ -125,6 +136,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
       setBillingItems(loadedItems);
 
       setManualPrices(billData.manualPrices || {});
+      setIsDirty(false); // Reset dirty state on load
       toast({
         title: "Bill Loaded",
         description: `Bill with Slip No. ${slipNo} has been loaded.`,
@@ -163,6 +175,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
         const loadedItems = orderData.billingItems.length > 0 ? orderData.billingItems.map((item, index) => ({ ...item, srNo: index + 1 })) : generateInitialBillingItems(5);
         setBillingItems(loadedItems);
         setManualPrices(orderData.manualPrices || {});
+        setIsDirty(true); // Mark as dirty since it's a new bill from an order
 
         toast({
             title: "Order Loaded",
@@ -205,9 +218,18 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
         date: prev.date, // Keep the same date
         slipNo: nextSlipNo,
     }));
+    setIsDirty(false); // Form is clean after reset
   }, []);
 
-  const handleNewBill = () => {
+  const handleNewBillClick = () => {
+    if (isDirty) {
+      setIsNewBillConfirmOpen(true);
+    } else {
+      proceedWithNewBill();
+    }
+  }
+
+  const proceedWithNewBill = () => {
     if (!savedBillsData) return;
     const slipNumbers = savedBillsData.map(bill => Number(bill.filters.slipNo)).filter(n => !isNaN(n));
     const nextSlipNo = slipNumbers.length > 0 ? String(Math.max(...slipNumbers) + 1) : "1";
@@ -228,6 +250,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
     // Prioritize the saved price list on the party object
     if (selectedParty.priceList && Object.keys(selectedParty.priceList).length > 0) {
         setManualPrices(selectedParty.priceList);
+        setIsDirty(true);
         return;
     }
 
@@ -264,6 +287,8 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
                 errorEmitter.emit('permission-error', permissionError);
             }
             setManualPrices({});
+        } finally {
+            setIsDirty(true);
         }
     };
 
@@ -338,10 +363,12 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
 
   const addBillingItem = () => {
     setBillingItems(prev => [...prev, { srNo: prev.length + 1, itemName: "", quantity: 0, unit: "", uCap: 0, lCap: 0 }]);
+    setIsDirty(true);
   }
   
   const removeBillingItem = (srNo: number) => {
     setBillingItems(prev => prev.filter(item => item.srNo !== srNo).map((item, index) => ({...item, srNo: index + 1})));
+    setIsDirty(true);
   }
 
   const handleBillingItemChange = (index: number, field: keyof BillingItem, value: string | number) => {
@@ -366,10 +393,12 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
 
     updatedItems[index] = itemToUpdate;
     setBillingItems(updatedItems);
+    setIsDirty(true);
   };
 
   const handleManualPriceChange = (group: string, price: number) => {
     setManualPrices(prev => ({...prev, [group.toLowerCase()]: price}))
+    setIsDirty(true);
   }
 
   const handleSaveBill = async () => {
@@ -424,6 +453,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
         description: `Bill with Slip No. ${searchFilters.slipNo} has been saved successfully.`,
     });
 
+    setIsDirty(false); // Reset dirty state after save
     const currentSlipNo = Number(searchFilters.slipNo);
     const nextSlipNo = isNaN(currentSlipNo) ? "" : String(currentSlipNo + 1);
 
@@ -434,6 +464,11 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
     setPrintMode(mode);
     setIsBillPreviewOpen(true);
   }
+
+  const handleFiltersChange = (newFilters: SearchFiltersState) => {
+    setSearchFilters(newFilters);
+    setIsDirty(true);
+  };
 
 
   return (
@@ -457,6 +492,28 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
           canEdit={!!canEdit}
         />
         <BulkAddItemDialog onSave={addBulkItems} itemGroups={(itemGroups || []).map(g => g.name)} isOpen={isBulkAddOpen} onOpenChange={setIsBulkAddOpen} />
+         <AlertDialog open={isNewBillConfirmOpen} onOpenChange={setIsNewBillConfirmOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>You have unsaved changes</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Are you sure you want to start a new bill? Any changes you've made will be lost.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    onClick={() => {
+                    proceedWithNewBill();
+                    setIsNewBillConfirmOpen(false);
+                    }}
+                >
+                    Discard Changes
+                </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
 
       <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 border-b bg-background/80 backdrop-blur-sm md:px-6">
         <div className="flex items-center gap-4">
@@ -467,7 +524,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
            {canEdit && (
-              <Button onClick={handleNewBill}>
+              <Button onClick={handleNewBillClick}>
                 <FilePlus className="mr-2 h-4 w-4" />
                 New Bill
               </Button>
@@ -505,7 +562,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
             <SearchFilters 
             parties={parties || []}
             filters={searchFilters}
-            onFiltersChange={setSearchFilters}
+            onFiltersChange={handleFiltersChange}
             onLoadBill={() => handleLoadBill()}
             canEdit={!!canEdit}
             />
