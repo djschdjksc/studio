@@ -13,7 +13,7 @@ interface TotalsSummaryProps {
     billingItems: BillingItem[];
     items: Item[];
     manualPrices: Record<string, number>;
-    payments: BillPayment[];
+    payments?: BillPayment[]; // Make payments optional to support order dashboard
     onManualPriceChange: (group: string, price: number) => void;
     canEdit: boolean;
 }
@@ -25,7 +25,7 @@ interface SummaryItem {
     totalPrice: number;
 }
 
-export default function TotalsSummary({ billingItems, items, manualPrices, payments, onManualPriceChange, canEdit }: TotalsSummaryProps) {
+export default function TotalsSummary({ billingItems, items, manualPrices, payments = [], onManualPriceChange, canEdit }: TotalsSummaryProps) {
 
     const { summaryItems, grandTotal, totalPayments, balanceDue } = useMemo(() => {
         const summaryMap = new Map<string, { totalQty: number, totalPrice: number }>();
@@ -86,11 +86,11 @@ export default function TotalsSummary({ billingItems, items, manualPrices, payme
         }
 
         const grandTotal = allSummaryItems.reduce((acc, item) => acc + item.totalPrice, 0);
-        const totalPayments = payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+        const totalPayments = (payments || []).reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
         const balanceDue = grandTotal - totalPayments;
 
 
-        return { summaryItems, grandTotal, totalPayments, balanceDue };
+        return { summaryItems: allSummaryItems, grandTotal, totalPayments, balanceDue };
 
     }, [billingItems, items, manualPrices, payments]);
 
@@ -161,11 +161,15 @@ export default function TotalsSummary({ billingItems, items, manualPrices, payme
             <span className="text-muted-foreground">Grand Total:</span>
             <span className="font-semibold">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
-        <div className="flex justify-between items-center text-md">
-            <span className="text-muted-foreground">Payments:</span>
-            <span className="font-semibold text-green-600">- ₹{totalPayments.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-        <Separator className="my-1"/>
+        {payments && payments.length > 0 && (
+          <>
+            <div className="flex justify-between items-center text-md">
+                <span className="text-muted-foreground">Payments:</span>
+                <span className="font-semibold text-green-600">- ₹{totalPayments.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <Separator className="my-1"/>
+          </>
+        )}
         <div className="flex justify-between items-center text-lg">
             <span className="font-bold">Balance Due:</span>
             <span className="font-bold text-primary">₹{balanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
