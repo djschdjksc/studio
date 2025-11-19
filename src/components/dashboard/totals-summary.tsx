@@ -4,14 +4,16 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BillingItem, Item } from "@/lib/types";
+import { BillingItem, Item, BillPayment } from "@/lib/types";
 import { useMemo } from "react";
 import { Input } from "../ui/input";
+import { Separator } from "../ui/separator";
 
 interface TotalsSummaryProps {
     billingItems: BillingItem[];
     items: Item[];
     manualPrices: Record<string, number>;
+    payments: BillPayment[];
     onManualPriceChange: (group: string, price: number) => void;
     canEdit: boolean;
 }
@@ -23,9 +25,9 @@ interface SummaryItem {
     totalPrice: number;
 }
 
-export default function TotalsSummary({ billingItems, items, manualPrices, onManualPriceChange, canEdit }: TotalsSummaryProps) {
+export default function TotalsSummary({ billingItems, items, manualPrices, payments, onManualPriceChange, canEdit }: TotalsSummaryProps) {
 
-    const { summaryItems, grandTotal } = useMemo(() => {
+    const { summaryItems, grandTotal, totalPayments, balanceDue } = useMemo(() => {
         const summaryMap = new Map<string, { totalQty: number, totalPrice: number }>();
 
         // Calculate totals for regular item groups
@@ -84,10 +86,13 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
         }
 
         const grandTotal = allSummaryItems.reduce((acc, item) => acc + item.totalPrice, 0);
+        const totalPayments = payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+        const balanceDue = grandTotal - totalPayments;
 
-        return { summaryItems: allSummaryItems, grandTotal };
 
-    }, [billingItems, items, manualPrices]);
+        return { summaryItems, grandTotal, totalPayments, balanceDue };
+
+    }, [billingItems, items, manualPrices, payments]);
 
 
     const handlePriceChange = (item: string, value: string) => {
@@ -115,7 +120,7 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
         <CardDescription>Grouped totals for all items.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow p-0">
-        <ScrollArea className="h-[35vh]">
+        <ScrollArea className="h-[20vh]">
           <Table>
             <TableHeader className="sticky top-0 bg-card">
               <TableRow>
@@ -151,10 +156,19 @@ export default function TotalsSummary({ billingItems, items, manualPrices, onMan
           </Table>
         </ScrollArea>
       </CardContent>
-      <CardFooter className="flex justify-end p-4 border-t bg-card">
-        <div className="flex items-center gap-4 text-lg font-bold">
-            <span>Grand Total:</span>
-            <span className="text-primary">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+      <CardFooter className="flex flex-col items-stretch p-4 border-t bg-card gap-2">
+        <div className="flex justify-between items-center text-md">
+            <span className="text-muted-foreground">Grand Total:</span>
+            <span className="font-semibold">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+        <div className="flex justify-between items-center text-md">
+            <span className="text-muted-foreground">Payments:</span>
+            <span className="font-semibold text-green-600">- ₹{totalPayments.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+        <Separator className="my-1"/>
+        <div className="flex justify-between items-center text-lg">
+            <span className="font-bold">Balance Due:</span>
+            <span className="font-bold text-primary">₹{balanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       </CardFooter>
     </Card>

@@ -35,6 +35,12 @@ export interface BillingItem {
     lCap: number;
 }
 
+export interface BillPayment {
+    id: string;
+    amount: number | '';
+    description: string;
+}
+
 export interface SearchFiltersState {
     partyName: string;
     address: string;
@@ -67,6 +73,7 @@ export interface SavedBill {
     filters: SearchFiltersState;
     billingItems: BillingItem[];
     manualPrices: Record<string, number>;
+    payments?: BillPayment[];
 }
 
 export interface SavedOrder {

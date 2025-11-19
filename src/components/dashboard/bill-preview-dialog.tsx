@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { SearchFiltersState, BillingItem, Item, SummaryItem } from "@/lib/types";
+import { SearchFiltersState, BillingItem, Item, SummaryItem, BillPayment } from "@/lib/types";
 import { format } from "date-fns";
 import React, { useRef, useMemo, useCallback } from "react";
 import * as htmlToImage from "html-to-image";
@@ -32,6 +32,7 @@ interface BillPreviewDialogProps {
   billingItems: BillingItem[];
   items: Item[];
   manualPrices: Record<string, number>;
+  payments: BillPayment[];
   printMode: PrintMode;
 }
 
@@ -42,12 +43,13 @@ export function BillPreviewDialog({
   billingItems,
   items,
   manualPrices,
+  payments,
   printMode,
 }: BillPreviewDialogProps) {
   const billRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const { summaryItems, grandTotal } = useMemo(() => {
+  const { summaryItems, grandTotal, totalPayments, balanceDue } = useMemo(() => {
     const summaryMap = new Map<string, { totalQty: number }>();
 
     billingItems.forEach((billItem) => {
@@ -96,9 +98,12 @@ export function BillPreviewDialog({
     }
 
     const grandTotal = allSummaryItems.reduce((acc, item) => acc + item.totalPrice, 0);
+    const totalPayments = payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+    const balanceDue = grandTotal - totalPayments;
 
-    return { summaryItems: allSummaryItems.filter(item => item.totalPrice > 0 || item.totalQty > 0), grandTotal };
-  }, [billingItems, items, manualPrices]);
+
+    return { summaryItems: allSummaryItems.filter(item => item.totalPrice > 0 || item.totalQty > 0), grandTotal, totalPayments, balanceDue };
+  }, [billingItems, items, manualPrices, payments]);
   
   const handlePrint = () => {
     window.print();
@@ -147,6 +152,7 @@ export function BillPreviewDialog({
 
   const isBillMode = printMode === 'bill';
   const dialogTitle = isBillMode ? 'Bill Preview' : 'Loading Slip Preview';
+  const filteredPayments = payments.filter(p => typeof p.amount === 'number' && p.amount > 0);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -267,6 +273,27 @@ export function BillPreviewDialog({
                 <section id="summary-section">
                      <div className="grid grid-cols-5 gap-4">
                         <div className="col-span-2">
+                           {filteredPayments.length > 0 && (
+                                <div className="mb-4">
+                                  <h2 className="text-lg font-semibold mb-3 border-b pb-2">Payments Received</h2>
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {filteredPayments.map(p => (
+                                        <TableRow key={p.id}>
+                                          <TableCell>{p.description || 'Payment'}</TableCell>
+                                          <TableCell className="text-right">₹{Number(p.amount).toLocaleString('en-IN')}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              )}
                             {filters.notes && (
                                 <>
                                     <h2 className="text-lg font-semibold mb-3 border-b pb-2">Notes</h2>
@@ -278,13 +305,13 @@ export function BillPreviewDialog({
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Totals Summary</CardTitle>
-                                    <CardDescription>Grouped totals for all items.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <TotalsSummary
                                         billingItems={billingItems}
                                         items={items}
                                         manualPrices={manualPrices}
+                                        payments={payments}
                                         onManualPriceChange={handlePriceChange}
                                         canEdit={false}
                                     />

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { NewItemDialog } from '@/components/dashboard/new-item-dialog';
@@ -7,9 +8,9 @@ import SearchFilters from '@/components/dashboard/search-filters';
 import MainBillingTable from '@/components/dashboard/main-billing-table';
 import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
-import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, SavedOrder } from '@/lib/types';
+import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, SavedOrder, BillPayment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft, Printer, FilePlus } from 'lucide-react';
+import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft, Printer, FilePlus, Banknote } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { BillPreviewDialog } from './bill-preview-dialog';
 import { ImportExportDialog } from './import-export-dialog';
@@ -33,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import PaymentsSection from './payments-section';
 
 
 const generateInitialBillingItems = (count: number): BillingItem[] => {
@@ -84,6 +86,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
 
   const [billingItems, setBillingItems] = useState<BillingItem[]>(generateInitialBillingItems(5));
   const [manualPrices, setManualPrices] = useState<Record<string, number>>({});
+  const [payments, setPayments] = useState<BillPayment[]>([]);
   const [searchFilters, setSearchFilters] = useState<SearchFiltersState>({
     ...initialFilters,
     date: new Date(),
@@ -137,6 +140,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
       setBillingItems(loadedItems);
 
       setManualPrices(billData.manualPrices || {});
+      setPayments(billData.payments || []);
       setIsDirty(false); // Reset dirty state on load
       toast({
         title: "Bill Loaded",
@@ -176,6 +180,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
         const loadedItems = orderData.billingItems.length > 0 ? orderData.billingItems.map((item, index) => ({ ...item, srNo: index + 1 })) : generateInitialBillingItems(5);
         setBillingItems(loadedItems);
         setManualPrices(orderData.manualPrices || {});
+        setPayments([]); // Start with no payments
         setIsDirty(true); // Mark as dirty since it's a new bill from an order
 
         toast({
@@ -214,6 +219,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
   const clearForm = useCallback((nextSlipNo: string) => {
     setBillingItems(generateInitialBillingItems(5));
     setManualPrices({});
+    setPayments([]);
     setSearchFilters({
         ...initialFilters,
         date: new Date(), 
@@ -402,6 +408,11 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
     setIsDirty(true);
   }
 
+  const handlePaymentChange = (updatedPayments: BillPayment[]) => {
+    setPayments(updatedPayments);
+    setIsDirty(true);
+  }
+
   const handleSaveBill = async () => {
     if (!canEdit || !firestore) return;
     if (!searchFilters.slipNo) {
@@ -424,7 +435,8 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
     const billData: Omit<SavedBill, 'id'> = {
       filters: { ...searchFilters, date: searchFilters.date ? new Date(searchFilters.date).toISOString() : new Date().toISOString() },
       billingItems: billingItems.filter(item => item.itemName && item.quantity),
-      manualPrices
+      manualPrices,
+      payments: payments.filter(p => typeof p.amount === 'number' && p.amount > 0),
     };
     
     // Save the bill
@@ -458,6 +470,11 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
     setIsDirty(true);
   };
 
+  const addPayment = () => {
+    setPayments(prev => [...prev, {id: crypto.randomUUID(), amount: '', description: ''}]);
+    setIsDirty(true);
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -468,6 +485,7 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
           billingItems={billingItems}
           items={items || []}
           manualPrices={manualPrices}
+          payments={payments}
           printMode={printMode}
        />
         <ImportExportDialog
@@ -517,12 +535,9 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
                 New Bill
               </Button>
             )}
-          {canEdit && (
-            <Button variant="outline" onClick={() => setIsImportExportOpen(true)}>
-                <Import className="mr-2 h-4 w-4" />
-                Import/Export
+            <Button variant="outline" onClick={addPayment}>
+                <Banknote className="mr-2 h-4 w-4" /> Add Payment
             </Button>
-          )}
           <Button variant="outline" asChild>
             <Link href="/bills">
                 <BookOpen className="mr-2 h-4 w-4" />
@@ -532,7 +547,6 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
           {canEdit && (
             <>
               <Button onClick={() => setIsNewGroupOpen(true)} variant="outline"><Layers className="mr-2 h-4 w-4" />New Group</Button>
-              <Button onClick={() => setIsBulkAddOpen(true)}><PackagePlus className="mr-2 h-4 w-4" />Bulk Add Items</Button>
                <Button onClick={() => setIsNewItemOpen(true)} variant="outline"><PackagePlus className="mr-2 h-4 w-4" />New Item</Button>
                <Button onClick={() => setIsNewPartyOpen(true)} variant="outline"><UserPlus className="mr-2 h-4 w-4" />New Party</Button>
               <Button variant="outline" onClick={handleSaveBill}>
@@ -565,12 +579,14 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
             canEdit={!!canEdit}
             />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex flex-col gap-4">
+            <PaymentsSection payments={payments} onPaymentsChange={handlePaymentChange} canEdit={!!canEdit} />
             <TotalsSummary 
             billingItems={billingItems} 
             items={items || []}
             manualPrices={manualPrices}
             onManualPriceChange={handleManualPriceChange}
+            payments={payments}
             canEdit={!!canEdit}
             />
         </div>
