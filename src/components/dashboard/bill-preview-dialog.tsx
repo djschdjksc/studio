@@ -302,21 +302,15 @@ export function BillPreviewDialog({
                             )}
                         </div>
                         <div className="col-span-3">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Totals Summary</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <TotalsSummary
-                                        billingItems={billingItems}
-                                        items={items}
-                                        manualPrices={manualPrices}
-                                        payments={payments}
-                                        onManualPriceChange={handlePriceChange}
-                                        canEdit={false}
-                                    />
-                                </CardContent>
-                            </Card>
+                            <h2 className="text-lg font-semibold mb-3 border-b pb-2">Totals Summary</h2>
+                            <TotalsSummary
+                                billingItems={billingItems}
+                                items={items}
+                                manualPrices={manualPrices}
+                                payments={payments}
+                                onManualPriceChange={handlePriceChange}
+                                canEdit={false}
+                            />
                         </div>
                      </div>
                 </section>
