@@ -184,7 +184,8 @@ export function BillPreviewDialog({
              #printable-content .totals-summary-print-container > div > div {
                 height: auto !important;
              }
-             #printable-content .totals-summary-print-container [data-radix-scroll-area-viewport] {
+             #printable-content [data-radix-scroll-area-viewport] {
+                height: auto !important;
                 overflow: visible !important;
              }
             #printable-content h2 {
@@ -309,15 +310,17 @@ export function BillPreviewDialog({
                             )}
                         </div>
                         <div className="col-span-3 totals-summary-print-container">
-                            <h2 className="text-lg font-semibold mb-3 border-b pb-2">Totals Summary</h2>
-                            <TotalsSummary
-                                billingItems={billingItems}
-                                items={items}
-                                manualPrices={manualPrices}
-                                payments={payments}
-                                onManualPriceChange={handlePriceChange}
-                                canEdit={false}
-                            />
+                             <div className="col-span-3">
+                                <h2 className="text-lg font-semibold mb-3 border-b pb-2">Totals Summary</h2>
+                                <TotalsSummary
+                                    billingItems={billingItems}
+                                    items={items}
+                                    manualPrices={manualPrices}
+                                    payments={payments}
+                                    onManualPriceChange={handlePriceChange}
+                                    canEdit={false}
+                                />
+                            </div>
                         </div>
                      </div>
                 </section>
