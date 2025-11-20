@@ -10,7 +10,7 @@ import TotalsSummary from '@/components/dashboard/totals-summary';
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { Party, Item, BillingItem, SearchFiltersState, SavedBill, WithId, ItemGroup, SavedOrder, BillPayment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft, Printer, FilePlus, Banknote } from 'lucide-react';
+import { BookOpen, FileUp, Save, Import, LogOut, PackagePlus, UserPlus, Layers, ArrowLeft, Printer, FilePlus, Banknote, PlusCircle } from 'lucide-react';
 import { NewItemGroupDialog } from './new-item-group-dialog';
 import { BillPreviewDialog } from './bill-preview-dialog';
 import { ImportExportDialog } from './import-export-dialog';
@@ -538,6 +538,9 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
             <Button variant="outline" onClick={addPayment}>
                 <Banknote className="mr-2 h-4 w-4" /> Add Payment
             </Button>
+             <Button variant="outline" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={addBillingItem}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Row
+            </Button>
           <Button variant="outline" asChild>
             <Link href="/bills">
                 <BookOpen className="mr-2 h-4 w-4" />
@@ -573,7 +576,6 @@ function BillingDashboardContent({ user }: BillingDashboardProps) {
             <MainBillingTable 
             billingItems={billingItems}
             items={items || []}
-            onAddRow={addBillingItem}
             onItemChange={handleBillingItemChange}
             onRemoveRow={removeBillingItem}
             canEdit={!!canEdit}

@@ -1,11 +1,11 @@
 
 "use client";
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BillingItem, Item } from "@/lib/types";
 import { ItemSearchInput } from "./item-search-input";
@@ -13,7 +13,7 @@ import { ItemSearchInput } from "./item-search-input";
 interface MainBillingTableProps {
   billingItems: BillingItem[];
   items: Item[];
-  onAddRow: () => void;
+  onAddRow?: () => void; // Made optional as it's now in the header
   onItemChange: (index: number, field: keyof BillingItem, value: string | number) => void;
   onRemoveRow: (srNo: number) => void;
   canEdit: boolean;
@@ -41,7 +41,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
         e.preventDefault();
         if (currentFieldIndex === fieldIdMap.length - 1) { // Last field in the row
             if (rowIndex === billingItems.length - 1) { // Last row
-                onAddRow();
+                if (onAddRow) onAddRow(); // Check if onAddRow is provided before calling
                 // Use setTimeout to allow React to re-render
                 setTimeout(() => focusCell(rowIndex + 1, 'itemName-input'), 0);
             } else {
@@ -76,19 +76,6 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-            <div>
-                <CardTitle>Billing Details</CardTitle>
-                <CardDescription>All items for the current bill.</CardDescription>
-            </div>
-            {canEdit && (
-                <Button variant="outline" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={onAddRow}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Row
-                </Button>
-            )}
-        </div>
-      </CardHeader>
       <CardContent className="flex-grow p-0">
         <ScrollArea className="h-[50vh] w-full">
             <Table>
