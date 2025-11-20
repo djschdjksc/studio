@@ -159,26 +159,26 @@ export function BillPreviewDialog({
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
         <style>{`
           @media print {
-            body {
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
             body * {
               visibility: hidden;
             }
-            #printable-content,
-            #printable-content * {
+            #printable-content, #printable-content * {
               visibility: visible;
             }
             #printable-content {
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100% !important;
-              height: auto !important;
-              overflow: visible;
-              font-size: 14pt;
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              padding: 2rem;
               color: black;
+            }
+            .print-hidden {
+              display: none;
+            }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
              #printable-content .totals-summary-print-container > div,
              #printable-content .totals-summary-print-container > div > div {
@@ -192,9 +192,6 @@ export function BillPreviewDialog({
               color: hsl(var(--primary)) !important;
               font-weight: 600;
             }
-             #printable-content .print-header h1 {
-                color: hsl(var(--primary)) !important;
-             }
             #printable-content table th {
                background-color: hsl(var(--primary)) !important;
                color: hsl(var(--primary-foreground)) !important;
@@ -203,12 +200,6 @@ export function BillPreviewDialog({
             #printable-content table td,
             #printable-content table th {
                border: 2px solid hsl(var(--primary)) !important;
-            }
-            #bill-preview-dialog {
-              display: none;
-            }
-            .print-hidden {
-              display: none !important;
             }
           }
         `}</style>
@@ -303,16 +294,14 @@ export function BillPreviewDialog({
                             )}
                         </div>
                         <div className="col-span-3 totals-summary-print-container">
-                             <div className="col-span-3">
-                                <TotalsSummary
-                                    billingItems={billingItems}
-                                    items={items}
-                                    manualPrices={manualPrices}
-                                    payments={payments}
-                                    onManualPriceChange={handlePriceChange}
-                                    canEdit={false}
-                                />
-                            </div>
+                            <TotalsSummary
+                                billingItems={billingItems}
+                                items={items}
+                                manualPrices={manualPrices}
+                                payments={payments}
+                                onManualPriceChange={handlePriceChange}
+                                canEdit={false}
+                            />
                         </div>
                      </div>
                 </section>
