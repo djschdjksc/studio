@@ -104,7 +104,9 @@ export function BillPreviewDialog({
   }, [billingItems, items, manualPrices, payments]);
   
   const handlePrint = () => {
+    document.body.classList.add('printing');
     window.print();
+    document.body.classList.remove('printing');
   };
 
   const handleSendWhatsApp = useCallback(() => {
@@ -157,39 +159,22 @@ export function BillPreviewDialog({
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
         <style>{`
           @media print {
-            body > *:not(#bill-preview-dialog) {
-              display: none !important;
+            .printing #printable-content {
+              display: block;
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              height: auto;
+              background: white;
+              z-index: 9999;
             }
-            #bill-preview-dialog {
-              max-width: 100vw !important;
-              width: 100% !important;
-              height: 100vh !important;
-              position: fixed !important;
-              top: 0 !important;
-              left: 0 !important;
-              transform: none !important;
-              border: none !important;
-              border-radius: 0 !important;
-              padding: 0 !important;
-              margin: 0 !important;
+            .printing > body > *:not(#printable-content) {
+              display: none !important;
             }
             .print-hidden {
               display: none !important;
             }
-            #printable-content {
-              display: block !important;
-            }
-             .totals-summary-print-container {
-                height: auto !important;
-             }
-             .totals-summary-print-container > div,
-             .totals-summary-print-container > div > div {
-                height: auto !important;
-             }
-             .totals-summary-print-container [data-radix-scroll-area-viewport] {
-                height: auto !important;
-                overflow: visible !important;
-             }
           }
         `}</style>
         <DialogHeader className="p-6 pb-0 print-hidden">
@@ -282,7 +267,7 @@ export function BillPreviewDialog({
                                 </>
                             )}
                         </div>
-                         <div className="col-span-3 totals-summary-print-container">
+                         <div className="col-span-3">
                             <TotalsSummary
                                 billingItems={billingItems}
                                 items={items}
