@@ -113,7 +113,7 @@ export default function TotalsSummary({ billingItems, items, manualPrices, payme
 
 
   return (
-    <Card className="h-full flex flex-col border-0 shadow-none">
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Totals Summary</CardTitle>
         <CardDescription>Grouped totals for all items.</CardDescription>
