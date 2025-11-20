@@ -45,6 +45,7 @@ export function BillPreviewDialog({
   printMode,
 }: BillPreviewDialogProps) {
   const billRef = useRef<HTMLDivElement>(null);
+  const printAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const { summaryItems, grandTotal, totalPayments, balanceDue } = useMemo(() => {
@@ -104,9 +105,10 @@ export function BillPreviewDialog({
   }, [billingItems, items, manualPrices, payments]);
   
   const handlePrint = () => {
-    document.body.classList.add('printing');
-    window.print();
-    document.body.classList.remove('printing');
+    if (billRef.current && printAreaRef.current) {
+        printAreaRef.current.innerHTML = billRef.current.innerHTML;
+        window.print();
+    }
   };
 
   const handleSendWhatsApp = useCallback(() => {
@@ -155,37 +157,17 @@ export function BillPreviewDialog({
   const filteredPayments = payments.filter(p => typeof p.amount === 'number' && p.amount > 0);
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
-        <style>{`
-          @media print {
-            .printing #printable-content {
-              display: block;
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              height: auto;
-              background: white;
-              z-index: 9999;
-            }
-            .printing > body > *:not(#printable-content) {
-              display: none !important;
-            }
-            .print-hidden {
-              display: none !important;
-            }
-          }
-        `}</style>
-        <DialogHeader className="p-6 pb-0 print-hidden">
+      <DialogContent className="max-w-3xl p-0">
+        <DialogHeader className="p-6 pb-0">
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
             Review the details below before printing or sending.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] print-hidden">
-          <div ref={billRef} className="bg-white text-black">
-              <div id="printable-content" className="p-8">
+        <ScrollArea className="max-h-[70vh]">
+          <div ref={billRef} className="bg-white text-black p-8">
               
               <section id="filters-section" className="mb-6 p-4 border rounded-lg text-base">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
@@ -288,10 +270,9 @@ export function BillPreviewDialog({
                 </div>
               )}
 
-              </div>
           </div>
         </ScrollArea>
-        <DialogFooter className="p-4 border-t bg-background print-hidden">
+        <DialogFooter className="p-4 border-t bg-background">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
@@ -305,5 +286,23 @@ export function BillPreviewDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {/* This is the dedicated, hidden area for printing */}
+    <div className="print-only">
+        <div ref={printAreaRef}></div>
+    </div>
+    <style jsx global>{`
+        .print-only {
+            display: none;
+        }
+        @media print {
+            body > *:not(.print-only) {
+                display: none;
+            }
+            .print-only {
+                display: block;
+            }
+        }
+    `}</style>
+  </>
   );
 }
