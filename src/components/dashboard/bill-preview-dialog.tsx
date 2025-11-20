@@ -20,8 +20,6 @@ import * as htmlToImage from "html-to-image";
 import { useToast } from "@/hooks/use-toast";
 import { FileUp, Printer, Send } from "lucide-react";
 import TotalsSummary from "./totals-summary";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-
 
 type PrintMode = 'bill' | 'loadingSlip';
 
@@ -159,35 +157,32 @@ export function BillPreviewDialog({
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
         <style>{`
           @media print {
-            body * {
-              visibility: hidden;
-            }
-            #printable-content, #printable-content * {
-              visibility: visible;
-            }
-            #printable-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              padding: 2rem;
-              color: black;
-            }
-            .print-hidden {
-              display: none;
-            }
             body {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-             #printable-content .totals-summary-print-container > div,
-             #printable-content .totals-summary-print-container > div > div {
-                height: auto !important;
-             }
-             #printable-content [data-radix-scroll-area-viewport] {
-                height: auto !important;
+            .print-hidden {
+              display: none !important;
+            }
+            #bill-preview-dialog {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                max-width: 100vw;
+                max-height: 100vh;
+                border-radius: 0;
+                border: none;
                 overflow: visible !important;
-             }
+            }
+            #printable-content {
+              display: block;
+            }
+            #printable-content table td,
+            #printable-content table th {
+               border: 2px solid hsl(var(--primary)) !important;
+            }
             #printable-content h2 {
               color: hsl(var(--primary)) !important;
               font-weight: 600;
@@ -197,10 +192,17 @@ export function BillPreviewDialog({
                color: hsl(var(--primary-foreground)) !important;
                font-weight: 600;
             }
-            #printable-content table td,
-            #printable-content table th {
-               border: 2px solid hsl(var(--primary)) !important;
-            }
+             .totals-summary-print-container {
+                height: auto !important;
+             }
+             .totals-summary-print-container > div,
+             .totals-summary-print-container > div > div {
+                height: auto !important;
+             }
+             .totals-summary-print-container [data-radix-scroll-area-viewport] {
+                height: auto !important;
+                overflow: visible !important;
+             }
           }
         `}</style>
         <DialogHeader className="p-6 pb-0 print-hidden">
@@ -293,7 +295,7 @@ export function BillPreviewDialog({
                                 </>
                             )}
                         </div>
-                        <div className="col-span-3 totals-summary-print-container">
+                         <div className="col-span-3 totals-summary-print-container">
                             <TotalsSummary
                                 billingItems={billingItems}
                                 items={items}
