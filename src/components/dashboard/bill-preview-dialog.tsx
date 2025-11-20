@@ -223,7 +223,6 @@ export function BillPreviewDialog({
               <div id="printable-content" className="p-8">
               
               <section id="filters-section" className="mb-6 p-4 border rounded-lg text-base">
-                  <h2 className="text-xl font-semibold mb-3 border-b pb-2">{isBillMode ? 'Bill Details' : 'Loading Slip Details'}</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                       <div><strong className="font-semibold">Party Name:</strong> {filters.partyName}</div>
                       <div className="col-span-2"><strong className="font-semibold">Address:</strong> {filters.address}</div>
@@ -305,7 +304,6 @@ export function BillPreviewDialog({
                         </div>
                         <div className="col-span-3 totals-summary-print-container">
                              <div className="col-span-3">
-                                <h2 className="text-lg font-semibold mb-3 border-b pb-2">Totals Summary</h2>
                                 <TotalsSummary
                                     billingItems={billingItems}
                                     items={items}
