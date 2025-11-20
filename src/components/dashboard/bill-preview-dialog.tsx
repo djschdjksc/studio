@@ -157,40 +157,27 @@ export function BillPreviewDialog({
       <DialogContent className="max-w-3xl p-0" id="bill-preview-dialog">
         <style>{`
           @media print {
-            body {
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
+            body > *:not(#bill-preview-dialog) {
+              display: none !important;
+            }
+            #bill-preview-dialog {
+              max-width: 100vw !important;
+              width: 100% !important;
+              height: 100vh !important;
+              position: fixed !important;
+              top: 0 !important;
+              left: 0 !important;
+              transform: none !important;
+              border: none !important;
+              border-radius: 0 !important;
+              padding: 0 !important;
+              margin: 0 !important;
             }
             .print-hidden {
               display: none !important;
             }
-            #bill-preview-dialog {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                max-width: 100vw;
-                max-height: 100vh;
-                border-radius: 0;
-                border: none;
-                overflow: visible !important;
-            }
             #printable-content {
-              display: block;
-            }
-            #printable-content table td,
-            #printable-content table th {
-               border: 2px solid hsl(var(--primary)) !important;
-            }
-            #printable-content h2 {
-              color: hsl(var(--primary)) !important;
-              font-weight: 600;
-            }
-            #printable-content table th {
-               background-color: hsl(var(--primary)) !important;
-               color: hsl(var(--primary-foreground)) !important;
-               font-weight: 600;
+              display: block !important;
             }
              .totals-summary-print-container {
                 height: auto !important;
