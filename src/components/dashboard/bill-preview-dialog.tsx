@@ -221,12 +221,6 @@ export function BillPreviewDialog({
         <ScrollArea className="max-h-[70vh] print-hidden">
           <div ref={billRef} className="bg-white text-black">
               <div id="printable-content" className="p-8">
-              <header className="mb-8 text-center print-header">
-                  <h1 className="text-3xl font-bold text-gray-800">BillTrack Pro</h1>
-                  <p className="text-sm text-gray-500">
-                     REAL PVC PANLE
-                  </p>
-              </header>
               
               <section id="filters-section" className="mb-6 p-4 border rounded-lg text-base">
                   <h2 className="text-xl font-semibold mb-3 border-b pb-2">{isBillMode ? 'Bill Details' : 'Loading Slip Details'}</h2>
