@@ -3,7 +3,6 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { BillingItem, Item, BillPayment } from "@/lib/types";
 import { useMemo } from "react";
 import { Input } from "../ui/input";
@@ -120,7 +119,6 @@ export default function TotalsSummary({ billingItems, items, manualPrices, payme
         <CardDescription>Grouped totals for all items.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow p-0">
-        <ScrollArea className="h-[25vh]">
           <Table>
             <TableHeader className="sticky top-0 bg-card">
               <TableRow>
@@ -154,9 +152,8 @@ export default function TotalsSummary({ billingItems, items, manualPrices, payme
               ))}
             </TableBody>
           </Table>
-        </ScrollArea>
       </CardContent>
-      <CardFooter className="flex flex-col items-stretch p-4 border-t bg-card gap-2">
+      <CardFooter className="flex flex-col items-stretch p-4 border-t bg-card gap-2 mt-auto">
         <div className="flex justify-between items-center text-md">
             <span className="text-muted-foreground">Grand Total:</span>
             <span className="font-semibold">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
