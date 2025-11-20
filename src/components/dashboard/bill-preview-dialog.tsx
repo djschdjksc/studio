@@ -327,10 +327,6 @@ export function BillPreviewDialog({
                 </div>
               )}
 
-              <footer className="text-center mt-12 text-xs text-gray-500 print-hidden">
-                  <p>Thank you for your business!</p>
-                  <p>All disputes subject to local jurisdiction.</p>
-              </footer>
               </div>
           </div>
         </ScrollArea>
