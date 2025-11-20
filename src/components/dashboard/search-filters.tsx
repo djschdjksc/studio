@@ -59,10 +59,7 @@ export default function SearchFilters({ parties, filters, onFiltersChange, onLoa
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Search & Filters</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
           <div className="space-y-2 col-span-2 xl:col-span-1">
             <Label htmlFor="partyName">Party Name</Label>
