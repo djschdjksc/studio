@@ -35,12 +35,6 @@ export interface BillingItem {
     lCap: number;
 }
 
-export interface BillPayment {
-    id: string;
-    amount: number | '';
-    description: string;
-}
-
 export interface SearchFiltersState {
     partyName: string;
     address: string;
@@ -73,7 +67,6 @@ export interface SavedBill {
     filters: SearchFiltersState;
     billingItems: BillingItem[];
     manualPrices: Record<string, number>;
-    payments?: BillPayment[];
 }
 
 export interface SavedOrder {
@@ -81,16 +74,6 @@ export interface SavedOrder {
     filters: OrderFiltersState;
     billingItems: BillingItem[];
     manualPrices: Record<string, number>;
-}
-
-export interface Payment {
-    id: string;
-    partyId: string;
-    partyName: string;
-    amount: number;
-    date: string; // ISO String
-    notes?: string;
-    createdAt: any; // serverTimestamp
 }
 
 export interface ProductionLog {

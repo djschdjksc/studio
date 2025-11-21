@@ -115,22 +115,6 @@
         }
       },
       "required": ["id", "filters"]
-    },
-    "Payment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Payment",
-      "type": "object",
-      "description": "Represents a payment received from a party.",
-      "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the Payment." },
-        "partyId": { "type": "string", "description": "ID of the party who made the payment." },
-        "partyName": { "type": "string", "description": "Name of the party." },
-        "amount": { "type": "number", "description": "The amount of money received." },
-        "date": { "type": "string", "format": "date-time", "description": "Date the payment was received." },
-        "notes": { "type": "string", "description": "Optional notes about the payment." },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "partyId", "partyName", "amount", "date", "createdAt"]
     }
   },
   "auth": {
@@ -142,8 +126,7 @@
       { "path": "/itemGroups/{itemGroupId}", "definition": { "entityName": "ItemGroup", "schema": { "$ref": "#/backend/entities/ItemGroup" }, "description": "Stores item group information." } },
       { "path": "/items/{itemId}", "definition": { "entityName": "Item", "schema": { "$ref": "#/backend/entities/Item" }, "description": "Stores items." } },
       { "path": "/billingRecords/{billingRecordId}", "definition": { "entityName": "BillingRecord", "schema": { "$ref": "#/backend/entities/BillingRecord" }, "description": "Stores billing records." } },
-      { "path": "/orders/{orderId}", "definition": { "entityName": "OrderRecord", "schema": { "$ref": "#/backend/entities/OrderRecord" }, "description": "Stores sales orders." } },
-      { "path": "/payments/{paymentId}", "definition": { "entityName": "Payment", "schema": { "$ref": "#/backend/entities/Payment" }, "description": "Stores payment records from parties." } }
+      { "path": "/orders/{orderId}", "definition": { "entityName": "OrderRecord", "schema": { "$ref": "#/backend/entities/OrderRecord" }, "description": "Stores sales orders." } }
     ]
   }
 }

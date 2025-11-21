@@ -13,7 +13,7 @@ import { ItemSearchInput } from "./item-search-input";
 interface MainBillingTableProps {
   billingItems: BillingItem[];
   items: Item[];
-  onAddRow?: () => void; // Made optional as it's now in the header
+  onAddRow?: () => void;
   onItemChange: (index: number, field: keyof BillingItem, value: string | number) => void;
   onRemoveRow: (srNo: number) => void;
   canEdit: boolean;
@@ -41,7 +41,7 @@ export default function MainBillingTable({ billingItems, items, onAddRow, onItem
         e.preventDefault();
         if (currentFieldIndex === fieldIdMap.length - 1) { // Last field in the row
             if (rowIndex === billingItems.length - 1) { // Last row
-                if (onAddRow) onAddRow(); // Check if onAddRow is provided before calling
+                if (onAddRow) onAddRow();
                 // Use setTimeout to allow React to re-render
                 setTimeout(() => focusCell(rowIndex + 1, 'itemName-input'), 0);
             } else {

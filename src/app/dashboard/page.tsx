@@ -4,12 +4,12 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FilePlus, Users, Package, Boxes, Library, LogOut, Shield, Import, Factory, CheckSquare, Banknote, VenetianMask, BookCheck, ShoppingCart, ListOrdered } from "lucide-react";
+import { FilePlus, Users, Package, Library, LogOut, Import, Factory, BookCheck, ShoppingCart, ListOrdered, VenetianMask } from "lucide-react";
 import Link from "next/link";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useState, useMemo } from "react";
 import { ImportExportDialog } from "@/components/dashboard/import-export-dialog";
-import { Party, Item, ProductionLog, WithId } from "@/lib/types";
+import { Party, Item, ProductionLog } from "@/lib/types";
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc } from "firebase/firestore";
@@ -143,12 +143,6 @@ export default function DashboardPage() {
                     <p className="text-2xl font-bold">{totalProduction.toLocaleString('en-IN')}</p>
                 </div>
             )
-        },
-        {
-            title: "Party Balances",
-            description: "View and manage party balances.",
-            icon: <Banknote className="h-8 w-8 text-teal-600" />,
-            href: "/party-balances",
         },
         {
             title: "Party Prices",

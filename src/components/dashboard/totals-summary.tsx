@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BillingItem, Item, BillPayment } from "@/lib/types";
+import { BillingItem, Item } from "@/lib/types";
 import { useMemo } from "react";
 import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
@@ -12,7 +12,6 @@ interface TotalsSummaryProps {
     billingItems: BillingItem[];
     items: Item[];
     manualPrices: Record<string, number>;
-    payments?: BillPayment[]; // Make payments optional to support order dashboard
     onManualPriceChange: (group: string, price: number) => void;
     canEdit: boolean;
     isPrinting?: boolean; // Add this prop
@@ -25,9 +24,9 @@ interface SummaryItem {
     totalPrice: number;
 }
 
-export default function TotalsSummary({ billingItems, items, manualPrices, payments = [], onManualPriceChange, canEdit, isPrinting = false }: TotalsSummaryProps) {
+export default function TotalsSummary({ billingItems, items, manualPrices, onManualPriceChange, canEdit, isPrinting = false }: TotalsSummaryProps) {
 
-    const { summaryItems, grandTotal, totalPayments, balanceDue } = useMemo(() => {
+    const { summaryItems, grandTotal } = useMemo(() => {
         const summaryMap = new Map<string, { totalQty: number, totalPrice: number }>();
 
         // Calculate totals for regular item groups
@@ -86,13 +85,10 @@ export default function TotalsSummary({ billingItems, items, manualPrices, payme
         }
 
         const grandTotal = allSummaryItems.reduce((acc, item) => acc + item.totalPrice, 0);
-        const totalPayments = (payments || []).reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
-        const balanceDue = grandTotal - totalPayments;
 
+        return { summaryItems: allSummaryItems, grandTotal };
 
-        return { summaryItems: allSummaryItems, grandTotal, totalPayments, balanceDue };
-
-    }, [billingItems, items, manualPrices, payments]);
+    }, [billingItems, items, manualPrices]);
 
 
     const handlePriceChange = (item: string, value: string) => {
@@ -159,22 +155,9 @@ export default function TotalsSummary({ billingItems, items, manualPrices, payme
           </Table>
       </CardContent>
       <CardFooter className="flex flex-col items-stretch p-4 border-t bg-card gap-2 mt-auto">
-        <div className="flex justify-between items-center text-md">
-            <span className="text-muted-foreground">Grand Total:</span>
-            <span className="font-semibold">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-        {payments && payments.length > 0 && (
-          <>
-            <div className="flex justify-between items-center text-md">
-                <span className="text-muted-foreground">Payments:</span>
-                <span className="font-semibold text-green-600">- ₹{totalPayments.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-            <Separator className="my-1"/>
-          </>
-        )}
         <div className="flex justify-between items-center text-lg">
-            <span className="font-bold">Balance Due:</span>
-            <span className="font-bold text-primary">₹{balanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-bold">Grand Total:</span>
+            <span className="font-bold text-primary">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       </CardFooter>
     </Card>
