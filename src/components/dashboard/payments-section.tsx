@@ -20,6 +20,7 @@ export default function PaymentsSection({ payments, onPaymentsChange, canEdit }:
     const updatedPayments = payments.map(p => {
       if (p.id === id) {
         if (field === 'amount') {
+          // Correctly handle the type: it must be number or an empty string.
           return { ...p, amount: value === '' ? '' : Number(value) };
         }
         return { ...p, [field]: value };
