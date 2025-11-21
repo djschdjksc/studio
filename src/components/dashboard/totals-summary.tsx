@@ -15,6 +15,7 @@ interface TotalsSummaryProps {
     payments?: BillPayment[]; // Make payments optional to support order dashboard
     onManualPriceChange: (group: string, price: number) => void;
     canEdit: boolean;
+    isPrinting?: boolean; // Add this prop
 }
 
 interface SummaryItem {
@@ -24,7 +25,7 @@ interface SummaryItem {
     totalPrice: number;
 }
 
-export default function TotalsSummary({ billingItems, items, manualPrices, payments = [], onManualPriceChange, canEdit }: TotalsSummaryProps) {
+export default function TotalsSummary({ billingItems, items, manualPrices, payments = [], onManualPriceChange, canEdit, isPrinting = false }: TotalsSummaryProps) {
 
     const { summaryItems, grandTotal, totalPayments, balanceDue } = useMemo(() => {
         const summaryMap = new Map<string, { totalQty: number, totalPrice: number }>();
@@ -136,16 +137,20 @@ export default function TotalsSummary({ billingItems, items, manualPrices, payme
                     {item.totalQty || ''}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Input
-                        id={`price-${index}`}
-                        type="number"
-                        value={item.price || ''}
-                        onChange={(e) => handlePriceChange(item.item, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                        className="text-right h-8"
-                        placeholder="0.00"
-                        disabled={!canEdit}
-                    />
+                    {isPrinting ? (
+                        <span className="font-bold text-black">{item.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    ) : (
+                        <Input
+                            id={`price-${index}`}
+                            type="number"
+                            value={item.price || ''}
+                            onChange={(e) => handlePriceChange(item.item, e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, index)}
+                            className="text-right h-8"
+                            placeholder="0.00"
+                            disabled={!canEdit}
+                        />
+                    )}
                   </TableCell>
                   <TableCell className="text-right font-semibold">₹{item.totalPrice.toFixed(2)}</TableCell>
                 </TableRow>

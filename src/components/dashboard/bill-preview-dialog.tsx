@@ -111,15 +111,12 @@ export function BillPreviewDialog({
 
     if (printWindow) {
       printWindow.document.write('<html><head><title>Print Bill</title>');
-      // Find all stylesheet links in the main document
       const styles = Array.from(document.styleSheets)
         .map(styleSheet => {
           try {
-            // Check if href is available and it's a relative or same-origin path
             if (styleSheet.href && (styleSheet.href.startsWith(window.location.origin) || styleSheet.href.startsWith('/'))) {
               return `<link rel="stylesheet" href="${styleSheet.href}">`;
             }
-            // For inline styles or ones we can't access, try to copy rules
             let rules = '';
             if (styleSheet.cssRules) {
                 rules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('\n');
@@ -127,7 +124,6 @@ export function BillPreviewDialog({
             return `<style>${rules}</style>`;
 
           } catch (e) {
-            // Security errors can happen with cross-origin stylesheets
             console.warn("Could not copy styles from cross-origin stylesheet:", styleSheet.href);
             return '';
           }
@@ -140,14 +136,13 @@ export function BillPreviewDialog({
       printWindow.document.write('</body></html>');
       printWindow.document.close();
 
-      // Add a short timeout to ensure content is loaded before printing
       setTimeout(() => {
+        printWindow.focus();
         printWindow.print();
-        // Set up an event listener to close the window after the print dialog is handled
         printWindow.onbeforeunload = () => {
           printWindow.close();
         };
-      }, 500); // 500ms delay
+      }, 500);
 
     } else {
       toast({
@@ -304,6 +299,7 @@ export function BillPreviewDialog({
                                 payments={payments}
                                 onManualPriceChange={handlePriceChange}
                                 canEdit={false}
+                                isPrinting={true}
                             />
                         </div>
                      </div>
