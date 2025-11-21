@@ -134,7 +134,7 @@ export function BillPreviewDialog({
         })
         .join('');
       printWindow.document.write(styles);
-      printWindow.document.write('<style>body { margin: 20px; } @page { size: auto; margin: 20px; }</style>');
+      printWindow.document.write('<style>body { margin: 20px; font-size: 14pt; } @page { size: auto; margin: 20px; }</style>');
       printWindow.document.write('</head><body>');
       printWindow.document.write(printContent);
       printWindow.document.write('</body></html>');
