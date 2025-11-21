@@ -235,7 +235,7 @@ export function BillPreviewDialog({
               <Separator className="my-6" />
 
               <section id="billing-items-section" className="mb-6">
-                  <h2 className="text-lg font-semibold mb-3 border-b pb-2">Items</h2>
+                  
                   <Table>
                       <TableHeader>
                           <TableRow>
