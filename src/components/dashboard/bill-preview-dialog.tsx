@@ -45,7 +45,6 @@ export function BillPreviewDialog({
   printMode,
 }: BillPreviewDialogProps) {
   const billRef = useRef<HTMLDivElement>(null);
-  const printAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const { summaryItems, grandTotal, totalPayments, balanceDue } = useMemo(() => {
@@ -105,9 +104,34 @@ export function BillPreviewDialog({
   }, [billingItems, items, manualPrices, payments]);
   
   const handlePrint = () => {
-    if (billRef.current && printAreaRef.current) {
-        printAreaRef.current.innerHTML = billRef.current.innerHTML;
-        window.print();
+    if (!billRef.current) return;
+
+    const printContent = billRef.current.innerHTML;
+    const printWindow = window.open('', '', 'height=800,width=800');
+
+    if (printWindow) {
+        printWindow.document.write('<html><head><title>Print Bill</title>');
+        // Link to the main stylesheet
+        const styles = Array.from(document.styleSheets)
+            .map(s => s.href ? `<link rel="stylesheet" href="${s.href}">` : '')
+            .join('');
+        printWindow.document.write(styles);
+        printWindow.document.write('<style>body { margin: 20px; } @page { size: auto;  margin: 0mm; }</style>');
+        printWindow.document.write('</head><body >');
+        printWindow.document.write(printContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 250); // A small delay to ensure content and styles load
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Could not open print window",
+            description: "Please disable your pop-up blocker and try again.",
+        });
     }
   };
 
@@ -286,23 +310,6 @@ export function BillPreviewDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    {/* This is the dedicated, hidden area for printing */}
-    <div className="print-only">
-        <div ref={printAreaRef}></div>
-    </div>
-    <style jsx global>{`
-        .print-only {
-            display: none;
-        }
-        @media print {
-            body > *:not(.print-only) {
-                display: none;
-            }
-            .print-only {
-                display: block;
-            }
-        }
-    `}</style>
   </>
   );
 }
